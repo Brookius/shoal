@@ -70,13 +70,34 @@
                                                  .pdc-verdict-spine, .sp-tl-dot--warn). Kept for
                                                  completeness so a future fill has a defined pair
                                                  rather than a fresh guess. */
-    --on-inverse:         var(--surface-low); /* ink on the --text dark fill (sidebar,
-                                                 mobile nav, cog): 12.9:1 — AAA ✓.
-                                                 The PAPER tone, not pure white, because
-                                                 that is literally what the ink↔paper swap
-                                                 in CLAUDE colour UI.md describes — and it
-                                                 is the value .logo-name already used as a
-                                                 raw hex before this token existed. */
+    --on-type:            #FFFFFF;            /* ink on the dive-type categorical ramp
+                                                 (.dD-spine span, .lf-type-chip.sel) — a
+                                                 white constant here, but NOT theme-constant:
+                                                 the dark ramp lifts differently and needs
+                                                 #091010 (.theme-harbour), 4.80:1 worst-case
+                                                 across all 10 members in each theme. */
+    --on-inverse:         #FAF6F1;             /* ink for the sidebar/mobile-nav/cog — all
+                                                 PERMANENTLY dark chrome (fixed gradients,
+                                                 not var(--text)-driven), so this is a
+                                                 constant like --accent-on-dark, not a
+                                                 derived pair — no .theme-harbour override
+                                                 exists or should. Was `var(--surface-low)`
+                                                 until 2026-08-06: that resolved to this same
+                                                 #FAF6F1 in light mode by coincidence (the
+                                                 value .logo-name used as a raw hex before
+                                                 this token existed), but flips DARK in
+                                                 .theme-harbour (--surface-low there is
+                                                 #182827) — found live: dark-on-dark logo
+                                                 text and dive count on the always-dark
+                                                 sidebar. Confirmed nothing in the app still
+                                                 uses background: var(--text) (the case this
+                                                 derivation was actually built for — see
+                                                 the .mobile-cog fix earlier the same day,
+                                                 which removed the one site that did) before
+                                                 pinning this to a literal. The PAPER tone,
+                                                 not pure white, because that is literally
+                                                 what the ink↔paper swap in CLAUDE colour
+                                                 UI.md describes. */
 
     /* ── CONTRAST CORRECTION, applied 2026-07-29 ─────────────────────────
        Writing the on-* pairs above is what surfaced these; they were
@@ -150,10 +171,29 @@
                                                pre-filter). Mirrors --accent-dim's recipe on a neutral
                                                instead of the reserved interactive colour. */
     --taupe-border: rgba(114,101,87,0.25);
-    --accent: #4A90B8;        /* interactive INK — text, strokes, tints. Themes may lift this. */
+    --accent: #4A90B8;        /* interactive strokes, tints, non-text fills.
+                                  NOT for text — see --accent-text below. Themes may lift this. */
     --accent-fill: #407DA0;   /* solid button/control FILL with white text — constant across themes */
     --accent-dim: rgba(74,144,184,0.1);
     --accent-border: rgba(74,144,184,0.3);
+    /* --accent as TEXT on this app's normal surfaces measures 3.27:1 — fails
+       AA (CLAUDE colour UI.md — "Cerulean-as-text audit"). A separate token
+       rather than darkening --accent itself, because --accent also does
+       fill/stroke work (every *-border/-dim tint) that has no contrast
+       obligation and shouldn't darken along with the text — same reasoning --accent-fill already
+       established (a fill and its ink are sized for different jobs).
+       Precedent: --accent-on-dark already does exactly this for a different
+       surface (a lift for dark nav bars); this is the light-surface
+       equivalent, so it gets the parallel name. Same hue/saturation as
+       --accent (202°/44%), lightness taken down from 51% to 40% — the
+       minimum reduction that clears 4.5:1 (measured: 4.50:1 on
+       --surface-base, 4.95:1 on --surface). Applied 2026-08-04 to the
+       genuinely-interactive bucket only (nav links, toggles, hover/active
+       states, buttons) — the video/footage metadata cluster and the
+       mobile-picker-tag/bold-emphasis bucket are deliberately still on
+       bare --accent, per this doc's own note to fix those together in one
+       pass rather than piecemeal. */
+    --accent-text: #397191;
     /* Colour system v2 — see "CLAUDE colour UI.md" (source of truth) */
     --success: #3B7650;                       /* reserved: scale-good */
     --success-dim: rgba(59,118,80,0.12);
@@ -233,30 +273,56 @@
     --font-size-sm:   14px;
     --font-size-base: 16px;
 
+    /* ── Radius scale (BRIEF-play-store-readiness.md §5 step 7 — started
+       2026-07-31, exact-match migration finished 2026-08-02). The 4 sites
+       genuinely unambiguous by construction — every declaration whose raw
+       value was BYTE-IDENTICAL to one of the 4 steps below, migrated by a
+       scripted, anchored substitution (`border-radius:\s*Npx\s*;` only —
+       incapable of matching a compound/multi-corner value like
+       "8px 8px 0 0", so nothing subtler was ever at risk of a false
+       match): 8px → --radius-md (44 sites, incl. --radius-full's
+       pre-existing 4), 6px → --radius-sm (30), 4px → --radius-xs (17),
+       12px → --radius-lg (16). Verified by distribution count before/after
+       (242 declarations total, unchanged) and a live visual check — nothing
+       COULD look different, since every substitution replaced a number with
+       a variable equal to that exact number, but the render was confirmed
+       anyway, not assumed.
+       Deliberately still NOT migrated, same reasoning as before: 50% (24,
+       semantically "make this a circle" — a genuinely different concept
+       from this scale, never folds into it), and every value that ISN'T an
+       exact match to a step below — 5px (20), 7px (17), 10px (16), 3px
+       (10), 9px (8), plus a long tail (2/14/20/16/24/13px) and the
+       multi-corner/compound declarations. These need a real per-site visual
+       judgement call (does this 5px really carry the same intent as the
+       6px next to it, or was it deliberately smaller) that a scripted
+       substitution can't make safely — still a future pass, not this one.
+       ──────────────────────────────────────────────────────────────── */
+    --radius-xs:   4px;   /* small badges, tags, tight controls */
+    --radius-sm:   6px;   /* inputs, small cards */
+    --radius-md:   8px;   /* the dominant button/icon-button radius */
+    --radius-lg:   12px;  /* larger cards, panels, sheets */
+    --radius-full: 999px; /* pill chips/tags — always resolves fully-rounded
+                              regardless of the element's own height, unlike
+                              50%, which produces an ellipse on a non-square
+                              box and is reserved for genuine circles (dots,
+                              drag handles) rather than folded into this scale */
+
     /* Width of the footage watch-mode sightings tab. Used three times in one
        relationship (panel gutter, parked offset, tab width) — they must agree
        exactly or the tab either hides off-screen or overlaps the content. */
     --fm-tab-w: 46px;
 
     /* ── Background texture — dial intensities here (one place) ─────────────
-       Neutral-only (cream/taupe/deep-water at low alpha). Three layers:
+       Neutral-only (cream/taupe/deep-water at low alpha). Two layers:
        1. Depth gradient — page background on EVERY page (fixed to viewport,
           light surface → deep bottom, always in view).
-       2. Caustics shimmer — animated dappled light on stat / data-ribbon
-          surfaces (stat band, ribbon bubbles, stats summary cards). Light
-          pools, so contrast with the figures improves rather than dims.
-       3. Sun-on-water mesh — STATIC warm blobs on informative surfaces
+       2. Sun-on-water mesh — STATIC warm blobs on informative surfaces
           (journal, welcome, settings). Texture without motion.
-       Set any opacity to 0 to disable that layer. */
+       Set any opacity to 0 to disable that layer. (A third, animated
+       "caustics shimmer" layer — dial-controlled, SVG feTurbulence-driven —
+       was removed 2026-08-06: rarely used, and its filter hardcoded a
+       warm-cream output regardless of theme, which would have blocked it
+       app-wide dark mode anyway.) */
     --tex-depth-strength:  0.90;  /* depth-gradient page background */
     --tex-mesh-opacity:    0.6;   /* static mesh on informative surfaces */
-
-    /* ── Shimmer dial — ONE user-facing value drives the whole effect ──────────
-       --shimmer (0..1) is set by the Settings slider (persisted to localStorage,
-       applied to :root in JS). Opacity uses a squared curve (subtle at low end,
-       dramatic at high end). Animation speed is set in JS via setShimmer().
-       --tex-shimmer-opacity is DERIVED — don't set it directly. */
-    --shimmer:             0.6;   /* ← the dial (Settings slider overrides this) */
-    --shimmer-opacity-max: 0.90;  /* ceiling for multiply-blend opacity (warm lighting-color keeps shadows on-palette) */
-    --tex-shimmer-opacity: calc(var(--shimmer) * var(--shimmer) * var(--shimmer-opacity-max));
   }

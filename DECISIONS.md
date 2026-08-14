@@ -398,6 +398,24 @@ The History view's job is **navigation** — find one dive among 200+ and dip in
 
 ## Things explicitly not built (and why)
 
+**The governing principle, stated in `README.md`:** *"Just like the ocean,
+you could always go deeper. But usually the best things to see are within a
+certain depth range."*
+
+Shoal is designed by imposing conscious limits. Every entry in this section
+is a case of deciding it's **fine not to have that** — not a gap waiting to
+be filled, not a shortcoming to apologise for. The default answer to "could
+Shoal also do X?" is usually yes, technically; the useful question is whether
+X is inside the range where the good stuff actually is.
+
+Two practical consequences worth remembering when reading the rest of this
+section. First, an item here is not an implicit roadmap item — `ROADMAP.md`
+tracks what isn't built *yet*; this tracks what isn't built *on purpose*, and
+moving something between them should be a deliberate decision, not a drift.
+Second, when a limit is user-visible, say so plainly rather than hiding it —
+the Seasearch export directing people to draw the seabed sketch on paper is
+the model: the gap is named, the reason given, no apology.
+
 ### Native app wrapper
 Not built yet. The PWA is the right foundation while the feature set is still evolving. When a wrapper is needed, **Tauri is the intended path for both desktop and mobile** (Capacitor is the mobile fallback only) — see the detailed entries below and ROADMAP.md.
 

@@ -815,28 +815,37 @@ marine row. Tapping the card opens the full-view dive file; the ✎ quick-edit a
 
 ---
 
-## Never disparage other products in public-facing text
+## Never name and shame a product or company in public-facing text
 
-**Rule: no public-facing copy names a competitor unfavourably, or
-characterises a whole category of other tools as getting it wrong.** This
-covers the landing page, app copy, `README.md`, and any other tracked doc in
-the public repo. Comparative research is fine and useful — it lives in
-`research/` (gitignored) and can inform *what Shoal builds*, but it never
-becomes the argument for why Shoal is worth using.
+**The line is between a *category* and a *maker*.**
 
-Two reasons, one practical and one substantive. Practically, the repo is
-public and AGPL: anything written here is quotable, permanent, and attached
-to a single named author. Substantively, **other tools were designed the way
-they were for reasons** — usually a different user, a different era, or a
-constraint not visible from outside. "They neglected X" is nearly always a
-worse read than "they optimised for Y."
+**Fine:** observing that a general-purpose tool, format or habit does a poor
+job of a specific task — a paper logbook, a camera roll, a spreadsheet, a
+folder of photos. That's describing how people currently try to solve the
+problem, and why it doesn't hold up. `README.md` → "Why this exists" is the
+reference example: the paper log can't answer the question, and a camera roll
+hands you a scroll of AI-guessed "Octopus" results that aren't a record. Both
+are formats being used for a job they weren't built for.
 
-Say what Shoal does and who it's for. That's a stronger claim anyway, because
-it survives the competitor shipping the feature tomorrow. `README.md` →
-"Why this exists" is the reference example: it opens on the question Shoal
-answers, not on what anyone else fails to do. Landing-page copy follows the
-same rule — the closest it comes to a comparison is *"your paper logbook
-can't"*, which is a format, not a product someone made.
+**Not fine:** naming a specific product or company unfavourably, in the
+landing page, app copy, `README.md`, or any tracked doc in the public repo.
+Not because the criticism would be wrong, but because it isn't the
+positioning Shoal has chosen — and that choice hasn't been made
+consciously, so nothing should drift into it by accident.
+
+Comparative research on named products is genuinely useful and should keep
+happening — it lives in `research/` (gitignored) and informs *what Shoal
+builds*. It just never becomes the public argument for using it.
+
+Two reasons the line sits there. Practically, the repo is public and AGPL:
+anything written here is quotable, permanent, and attached to one named
+author. Substantively, **specific products were designed the way they were
+for reasons** — a different user, a different era, a constraint invisible
+from outside. "They neglected X" is nearly always a worse read than "they
+optimised for Y." A category has no such defence to make; a company does.
+
+Naming a product neutrally is unaffected — `index.html` tells users they can
+export a `.uddf` from Subsurface or MacDive, which is help, not comparison.
 
 ---
 

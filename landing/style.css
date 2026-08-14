@@ -54,8 +54,8 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
-a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
-a:hover { color: #3B7899; }
+a { color: var(--accent-text); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: var(--accent-fill); }
 img { max-width: 100%; display: block; }
 
 /* ── Depth-gradient page background — the strongest "feels like Shoal" cue ── */
@@ -557,7 +557,7 @@ img { max-width: 100%; display: block; }
    narrow phone instead of crushing together. */
 .footer-links a { font-size: var(--font-size-xs); color: var(--text-muted);
                   letter-spacing: 0.03em; text-decoration: none; }
-.footer-links a:hover { color: var(--accent); text-decoration: underline; }
+.footer-links a:hover { color: var(--accent-text); text-decoration: underline; }
 
 /* ═══════════════════════ PLATFORM STATUS ═══════════════════════
    Deliberately NOT three equal columns — that would imply parity between
@@ -573,7 +573,7 @@ img { max-width: 100%; display: block; }
 }
 .platform-tag {
   font-size: var(--font-size-xs); font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--accent); margin: 0 0 4px;
+  text-transform: uppercase; color: var(--accent-text); margin: 0 0 4px;
 }
 .platform-secondary-grid {
   display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 20px;
@@ -602,7 +602,7 @@ img { max-width: 100%; display: block; }
 .platform-download {
   display: inline-block; margin-top: 12px;
   font-family: var(--sans); font-size: var(--font-size-sm); font-weight: 600;
-  color: var(--accent); background: transparent; border: 1px solid var(--accent-border);
+  color: var(--accent-text); background: transparent; border: 1px solid var(--accent-border);
   border-radius: 8px; padding: 8px 16px; text-decoration: none;
 }
 .platform-download:hover { background: var(--accent-dim); }
@@ -634,23 +634,28 @@ img { max-width: 100%; display: block; }
 
 /* ═══════════════════════ DESKTOP (≥900px) ═══════════════════════ */
 @media (min-width: 900px) {
-  .hero-inner { flex-direction: row; align-items: center; justify-content: space-between; gap: 72px; }
-  .hero-copy { max-width: 540px; flex: 1 1 0; }
+  /* Top-aligned, not centred. The phone is ~790px tall; vertically centring a
+     ~350px copy block against it pushed the headline a third of the way down
+     the page, below where the eye lands. The small top offset stops the copy
+     sitting dead level with the phone's top edge. */
+  .hero-inner { flex-direction: row; align-items: flex-start; justify-content: space-between; gap: 72px; }
+  .hero-copy { max-width: 540px; flex: 1 1 0; padding-top: 48px; }
   .hero-phone-wrap { flex: 0 0 auto; margin: 0; max-width: none; }
 
   /* Restore the full phone-mockup illusion — only useful once the visitor
      ISN'T already holding a real phone (see the mobile-first rules above). */
+  /* Width and height are a pair — a real phone is about 1:2.17 (iPhone 15 Pro)
+     to 1:2.22 (Pixel 9). Raising the height alone to fit more content made this
+     1:2.39, which reads as a stretched, unreal device. Keep the ratio when
+     changing either value: 356 x 772 = 1:2.17. */
   .phone-frame {
-    width: clamp(272px, 78vw, 332px); background: var(--text); border-radius: 46px;
+    width: clamp(272px, 78vw, 356px); background: var(--text); border-radius: 46px;
     padding: 11px; box-shadow: 0 28px 64px rgba(28,48,48,0.32); border: 1px solid rgba(255,255,255,0.08);
     margin: 0 auto;
   }
   .phone-screen {
     background: var(--bg); border: none; box-shadow: none;
-    /* Tall enough that the Dive log list below the map shows real rows, not
-       just its header — that list IS the answer to the headline's question,
-       so clipping it to a heading defeats the hero. */
-    border-radius: 36px; overflow: hidden; height: 792px;
+    border-radius: 36px; overflow: hidden; height: 772px;
   }
   .phone-notch, .status-bar { display: block; }
   .status-bar { display: flex; }
