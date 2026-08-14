@@ -2276,3 +2276,25 @@ designed for fetching that many species in one session).
 
 #### How to credit (when the time comes)
 The standard approach for a web app is a **Data Sources** page (linked from the footer or an About modal) listing each provider, their data licence, and a link to their terms. IUCN's required citation format is documented at iucnredlist.org/about/cite.
+
+---
+
+### Species distribution: OBIS `/checklist`, not WoRMS distribution strings
+
+**Decision:** species region data (the "Found in" line, and the log-form
+country pre-filter) is built from OBIS's `/checklist?areaid=X` endpoint, not
+WoRMS's `AphiaDistributionsByAphiaID`.
+
+**Why:** WoRMS returns free-text location names — "Indo-Pacific" /
+"Tropical Indo-Pacific" / "Indo-West Pacific" — an estimated 50–200
+inconsistent strings needing manual normalisation, with all the fuzzy-matching
+fragility that implies. OBIS `/checklist` returns every species recorded in a
+given area, each carrying a `taxonID` that **is** the same WoRMS AphiaID
+already stored in `data/species-db.js`. That makes the join plain integer
+equality rather than string matching. OBIS areas have clean numeric IDs
+(Indonesia = `115`), found by name lookup via `/area`. Confirmed by direct
+testing before committing to it, not assumed from the docs.
+
+**The known cost, still unresolved:** OBIS area IDs are whole-country EEZs,
+which is too coarse for large countries — see ROADMAP.md → "In progress" for
+the `au` region matching 75% of the database.

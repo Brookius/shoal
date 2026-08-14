@@ -1,182 +1,143 @@
 # Roadmap
 
-Future ideas and long-term vision for the dive log. These are not immediate build tasks — see DECISIONS.md for what's been built and why.
+What isn't built yet, in three tiers:
+
+- **In progress** — partly shipped, with a known gap still open
+- **Next** — committed and scoped enough to start
+- **Ideas** — not committed: research, speculation, or blocked on something else
+
+Nothing here describes shipped work. For that: `CHANGELOG.md` (what shipped,
+when), `CLAUDE.md` → "Built" (what exists now), `DECISIONS.md` (why, and what
+was rejected).
 
 ---
 
-## Build sequence (recommended order)
+## At a glance
 
-**Shipped:** the `uid` foundation and the full v2.3 video build (phases
-2.31–2.38), the security pass (2.391–2.394), dark mode for the footage modal
-(Harbour Night, 2.39), rename-trip and the Brave/Safari export fallback, the
-**v2.5 Tauri desktop shell** (`briefs-archive/v2.5-BRIEF-desktop-tauri.md`)
-with its bundled-ffmpeg one-button proxy flow, **v2.6 dive planning**
-(tide calendar, Open-Meteo wind/sea, the surface-interval calculator, desktop
-Admiralty tide times — see CHANGELOG.md and CLAUDE.md → "What's been built"),
-**v2.7 hash routing + overlay view-stack** (hash-fragment panel routing so
-Android back navigates between panels; `_pushOverlayState`/`closeTopOverlay`
-overlay stack so back closes modals; species-profile sighting rows navigate to
-dive file; footage clip rows open watch mode in Tauri; per-panel scroll
-restoration — see CHANGELOG.md v2.66–2.69 and DECISIONS.md), **v2.72.x
-notes-as-journal + desktop dive file redesign** (dive title field, journal
-read-back in serif, dive file rebuilt around a full-bleed ambient map hero +
-floating data bubbles + 2-column marine grid; 3-layer background texture system
-with a single user `--shimmer` dial — see CHANGELOG.md v2.72–2.72.2 and
-DECISIONS.md → "Background texture system"), and **v2.74 log-form redesign**
-(full visual overhaul of the log-capture form and edit modal: dive-type chip
-grid, segmented toggles, vis/temp gradient dials, weather icon picker, map-pin
-location card with two-way Country/Region geocoding, desktop two-column rail
-with relocatable map and species photo grid; edit modal parity — see `js/logform.js`
-and DECISIONS.md → "Log-form redesign: prefix-aware wiring").
-Species-profile video linking and OBIS's custom-species registry foundation
-both shipped as part of v2.3, ahead of the features below that were originally
-sequenced *after* it. Also shipped since: **v2.76 sidecar filename hygiene**
-(`briefs-archive/v2.76-BRIEF-sidecar-filename-hygiene.md` — coordinated
-canonical renaming so a divenum/site change can't strand a footage or profile
-sidecar) and **dive computer profile import, complete through Phase C**
-(`briefs-archive/v2.8-BRIEF-dive-profile-import.md` — UDDF parsing +
-physical-signature matching in v2.76, the depth/time SVG chart in v2.8; see
-CLAUDE.md → "Dive computer profile import" for the shipped design).
-
-1. **Still open from the v2.3 unlock, not yet built:**
-   - **OBIS / Darwin Core export** — the registry is there; the CSV
-     generation (Event/Occurrence/eMoF tables) isn't.
-   - **Species Album — undiscovered species + personal photo upload.** The
-     Album itself shipped; this is specifically the "all 1,279 species,
-     greyed-out until logged" view and photo-upload-to-unlock extension (see
-     CLAUDE.md → "Not yet built").
-2. **Own-key IUCN Red List lookups** — see the dedicated section below.
-   Needs research before it's buildable, so it isn't sequenced yet.
-3. **Sidecar hygiene's two optional extras, if ever wanted** — §4 (a
-   one-time repair pass renaming every already-drifted file in one go,
-   rather than only healing a dive the next time it's saved) and §5 (a
-   deeper uid-scan discovery guardrail that would let a renamed `.md` or
-   sidecar still find its partner). Neither is a blocker; both were
-   deliberately left unbuilt when the core guardrail shipped in v2.76 — see
-   `briefs-archive/v2.76-BRIEF-sidecar-filename-hygiene.md` §4/§5 for the
-   design rather than re-deriving it from scratch if this ever gets picked up.
-
-**Seasearch is explicitly later.** It adds a cluster of new *scalar*
-frontmatter fields (seabed types/cover, litter, etc.). Low conflict risk with
-the items above, but keep it clearly after them, never tangled in the middle.
+| Tier | Items |
+|---|---|
+| **In progress** | Tank data from BLE sync · Species region accuracy · Android app · Dive-file tab design · Sidecar hygiene extras |
+| **Next** | OBIS / Darwin Core export · Species Album undiscovered view · Seasearch export · Saved dive plans |
+| **Ideas** | Species wishlist map · Multi-level deco profiles · Seabed sketch tool · Coral bleaching · Sea temperature · Cloud footage hosting · Cloud photo library · Suunto Nautic · Notarisation · Live IUCN lookups |
 
 ---
 
-## Sync from Dive Computer (BLE)
+# In progress
 
-**Shipped v2.86–2.88 (browser) and v2.98 (native shell transport).** See
-`CHANGELOG.md` and `BRIEF-dive-computer-sync.md` for the design record. Scope
-was set BLE-only, Shearwater + Suunto, Garmin excluded.
+Each of these has a working feature behind it and one specific thing still
+missing.
 
-### What's left
+## Tank size and pressure from BLE sync
 
-- **Tank size/pressure isn't extracted from BLE-synced dives yet** — the
-  one remaining fidelity gap vs. a UDDF-imported dive. NDL, deco/
-  safety-stop, and primary gas-mix extraction all shipped 2026-07-15
-  (`BRIEF-dive-computer-sync.md` §17–§18) — gas mix in particular was
-  validated as an exact 96/96-dive match against real UDDF ground truth,
-  not just plausibility. `DC_FIELD_TANK` is the same shape of task again
-  (libdivecomputer already parses it; `download.c` just doesn't extract
-  it yet) — not picked up in the same pass since neither ask was
-  specifically about tank/pressure.
-- **Suunto Nautic isn't supported, and can't be yet** — confirmed
-  2026-07-15 it isn't in libdivecomputer's `descriptor.c` at the vendored
-  0.9.0 release (Suunto BLE coverage there is EON Steel, EON Core, D5, EON
-  Steel Black only). Needs upstream libdivecomputer support first, then a
-  version bump of the vendored copy — two dependencies, not one. Worth
-  checking libdivecomputer's release notes periodically rather than
-  assuming it's landed.
+The one remaining fidelity gap between a Bluetooth-synced dive and a
+UDDF-imported one. `DC_FIELD_TANK` is the same shape of task as the gas-mix
+extraction that already works — libdivecomputer parses it, `download.c` just
+doesn't read it out yet. See `BRIEF-dive-computer-sync.md` §17–§18.
 
----
+## Species region accuracy — the `au` region is too broad
 
-## Dive-profile chart (depth/time visualisation)
+Australia matches 951/1,267 species (75% of the database), because OBIS's
+Australia area is the whole-country EEZ — temperate Tasmania and the tropical
+GBR combined — and one of the most heavily-sampled areas in OBIS. At that
+match rate both the "Found in" line and the log-form pre-filter barely narrow
+anything for an Australia-tagged dive.
 
-**Shipped v2.8 — nothing outstanding.** See `CHANGELOG.md`, CLAUDE.md → "Dive
-computer profile import", and `briefs-archive/v2.8-BRIEF-dive-profile-import.md`
-§7 for the design record.
+Worth checking whether OBIS has a GBR-specific sub-area (the way Mexico,
+Egypt, Spain and France are split by territory) and re-running
+`scripts/fetch-species-regions.py` against that instead. Clear
+`scripts/species-regions.json` before any re-run — that cache is keyed by
+region, not species.
 
----
+## Android app
 
-## Mobile dive-file segmented control — revisit design
+An Android build target exists in `src-tauri/`, sharing the same Rust project
+as the macOS build, but there's no polished install flow or public release.
+See `BRIEF-play-store-readiness.md` for what's left.
 
-The Marine/Overview/Notes control (`.df-seg`) got an affordance fix in v2.82
-— every segment now has its own border at rest, not just the active one, so
-all three read as tappable rather than two of them looking like static
-labels next to a highlighted pill (see DECISIONS.md for the v1.951
-comparison that diagnosed it). **Luke isn't satisfied the design is right
-yet even with that fix** — flagged directly, no specifics given on what
-still feels off. Worth a proper look rather than assuming the border fix
-was the whole story; don't treat this as closed.
+**Validate before committing to it:** Tauri-mobile is younger and less
+battle-tested than Capacitor's mobile story. Test Tauri's `fs` plugin against
+real Android field-logging — write to an arbitrary folder, survive an app
+update, no SAF surprises — *before* building on it. The Capacitor fallback is
+scoped in `DECISIONS.md`, and the web code is wrapper-agnostic either way, so
+waiting costs nothing.
 
----
+## Mobile dive-file tab design
 
-## Dive Planning — future extensions
+The Marine/Overview/Journal control got an affordance fix in v2.82 — every
+segment now has its own border at rest, so all three read as tappable. **The
+design still isn't right**, flagged directly, with no specifics on what feels
+off. Don't treat the border fix as the whole story.
 
-The "Plan" tab (tides, weather, surface-interval calculator) shipped in v2.6
-— see `CHANGELOG.md` for what's live and `CLAUDE.md` → "What's been built"
-for the feature summary. Original MVP spec archived at
-`briefs-archive/v2.6-BRIEF-dive-planning.md`. What's left is genuinely future:
-- **Saved dive plans.** Ship the MVP as ephemeral planning first, then design persistence: store/recall `DivePlan` objects (localStorage), and optionally **promote a plan to a logged dive** once completed (pre-fills the log form from the plan + conditions).
-- **Multi-level profiles in the surface-interval calculator.** Each planned dive currently models a single depth for the whole bottom time (square profile — the same conservative simplification basic PADI/BSAC tables use). The vendored engine already supports real multi-level segments (e.g. 10 min at 30m → 20 min at 18m → 15 min at 10m); exposing that would mean each planned dive gets multiple depth/time legs instead of one number, giving credit for shallower portions of a dive without resorting to "average depth" (which discards exactly the timing information that drives decompression risk, and would be unsafe to substitute in).
-- **Coral bleaching layer (for trips abroad).** NOAA Coral Reef Watch Bleaching Alert Area (0–4) for a destination, via ERDDAP (keyless REST) — the same data behind the Esri ocean-hub map Luke liked. Pull from the NOAA source, not Esri (no ArcGIS token). Confirm an ERDDAP node allows browser CORS, else route via a desktop Rust fetch like tides. Pairs with the existing GPS + species data.
-- **Sea surface temperature** (already a separate roadmap item) shares the Open-Meteo Marine call, so fold it into the Plan conditions card when built.
-- **Species wishlist + sighting map** (already a separate roadmap item, see below) — pick up to 3 species you're hoping to see, plot real OBIS occurrence records near the active planning location.
+## Sidecar hygiene — two optional extras
+
+The core guardrail shipped; both of these were deliberately left unbuilt and
+neither is a blocker: a one-time repair pass that renames every
+already-drifted file in one go (rather than healing each dive the next time
+it's saved), and a deeper uid-scan discovery guardrail so a renamed `.md` or
+sidecar can still find its partner. Designs are in
+`briefs-archive/v2.76-BRIEF-sidecar-filename-hygiene.md` §4/§5 — read those
+rather than re-deriving if this gets picked up.
 
 ---
 
-## Dive Planning — Species Wishlist & Sighting Map
+# Next
 
-Lets a diver planning a trip pick up to 3 species they're hoping to see, then plots actual third-party sighting records (not the diver's own data) near the planned location. **Deliberately Plan-only** — the Species Album profile map (below) stays personal-sightings-only; community/external occurrence data must never mix into it.
+Scoped and ready. Roughly in build order.
 
+## OBIS / Darwin Core export
 
-### Anchor: reuse Plan's existing location slots
+Export dive data in the standard format for submission to the Ocean
+Biodiversity Information System. The custom-species registry this depends on
+already exists; the CSV generation doesn't.
 
-`js/planner.js` already tracks up to 5 saved planning locations (`_planLocations`, with `_planLat`/`_planLng`/`_planLocName` for the active one). No new location picker is needed — the map and query both key off whichever slot is active.
+**Format** — Darwin Core Archive, three CSV tables:
 
-### New surface: Plan currently has no map at all
+- **Event** — one row per dive (date, location, depth, duration)
+- **Occurrence** — one row per sighting (scientificName, AphiaID, occurrenceStatus)
+- **eMoF** — one row per measurement (organism count, depth seen)
 
-Checked — zero Leaflet references anywhere in `planner.js`. This feature is the first map in the Plan panel, so it's new screen real estate, not an extension of an existing instance. Build it with the existing primitives in `js/map.js` (`loadLeaflet`, `initMap`, `renderMapMarkers`, `destroyMap`) rather than a new map stack.
+AphiaIDs are already stored on each sighting at log time. Unvalidated
+free-text species entries need manual AphiaID resolution before submission —
+`exportUnvalidatedSpecies` in `js/species.js` produces that worklist.
 
-### Species picker: reuse, not new build
+## Species Album — undiscovered species, and personal photos
 
-Cap selection at 3. Reuse the existing context-agnostic species picker (`showMobileSpeciesPicker` on mobile, the desktop photo-grid panel) already shared by the log form, edit modal, and footage modal — same component, new context tag, no new UI to design.
+**Build this with the species profile work below — they're the same feature
+from two directions.**
 
-### Query
+**Undiscovered species.** All 1,275 species in the DB shown, with unlogged
+ones as greyed-out silhouettes using the iNaturalist reference photo as a
+"ghost" image. Avoid the "1,275 blank spaces" problem by grouping with a
+count — "3/23 sharks photographed" — and expanding on tap.
 
-```
-GET https://api.obis.org/v3/occurrence?taxonid={aphiaId1},{aphiaId2},{aphiaId3}&geometry={WKT bbox around _planLat/_planLng}&size=500
-```
+**Personal photo upload.** Once you've photographed a species, your photo
+replaces the iNat reference. Data model: a separate localStorage key (e.g.
+`divelog-album`) mapping `scientificName → { photoDataUrl, dateAdded, diveId }`.
+File picker on desktop, camera roll on Android.
 
-Confirmed by direct testing: `taxonid` accepts a comma-separated list in a single call, and `geometry` (WKT) correctly scopes results to a bounding box — a Komodo-area box returned real, nearby green-turtle records, not noise from elsewhere. The bbox is built from `_planLat`/`_planLng` with a buffer (~50km is a reasonable starting point); the exact radius is a tuning decision, not an architectural one.
+**Gamification hooks.** Total discovered count ("47 / 1,275 species"), rarity
+indicators from IUCN status, milestone badges ("First shark", "First CR
+species", "10 species").
 
-### Quality and licence filtering
+**On the profile side:** personal photos and videos replacing the iNat
+reference, and a meaningful profile for *undiscovered* species — habitat
+notes and group context ("where it's typically found") rather than an empty
+dive log.
 
-Two things confirmed by testing real OBIS responses, both need handling before a record reaches the map:
-- **Licence:** the `license` field is sometimes `null` on real records, not just CC0/CC BY/CC BY-NC as documented — treat missing licence as not-safe-to-show, same caution already applied to iNat photos with no confirmed CC source.
-- **Quality flags:** OBIS exposes its own QC `flags` field — a real green-turtle telemetry record came back flagged `NO_DEPTH, ON_LAND` in testing. Respect `flags`/`dropped` so a planning map doesn't plot a turtle "sighting" on dry land.
+## Seasearch compatibility and export
 
-### Zero-species state
+[Seasearch](https://www.seasearch.org.uk) is a UK marine conservation citizen
+science programme backed by the Wildlife Trusts, Natural England, JNCC, BSAC
+and PADI. It collects structured dive observation data for UK marine
+databases. The barrier to taking part is the paper form — comprehensive but
+intimidating — and the app can remove most of that by pre-filling everything
+it already knows.
 
-No map layer renders until at least one species is picked. This matches how the rest of Plan already behaves — nothing auto-fetches speculatively (the Admiralty UK bounding-box gate, opt-in folder sync). Show an inert prompt instead: *"Pick up to 3 species you're hoping to see."* This also means the overwhelming-data scenario can't happen by construction, not by tuning.
+**Deliberately sequenced after the items above.** It adds a cluster of new
+scalar frontmatter fields; low conflict risk, but keep it clearly after the
+others rather than tangled in the middle.
 
-### Persistence
-
-Ephemeral per planning session is enough for v1 — mirrors the existing "ship the MVP ephemeral, design persistence later" approach already set for Saved Dive Plans. The last-picked species per location could later piggyback on the same lightweight pattern as the autocomplete cache, but isn't required for v1.
-
-### When to build
-
-Independent of Saved Dive Plans — no hard dependency either way. Natural to build alongside the Species Distribution Data work below, since both lean on the same OBIS API knowledge (AphiaID joins, licence/flag filtering).
-
----
-
-## Seasearch Compatibility
-
-[Seasearch](https://www.seasearch.org.uk) is a UK marine conservation citizen science programme backed by the Wildlife Trusts, Natural England, JNCC, BSAC, PADI, and others. It collects structured dive observation data and submits it to UK marine databases. The barrier to participation is the paper form — comprehensive but intimidating. The app can remove most of that barrier by pre-filling everything it can from logged dive data.
-
-
-### New fields still needed on the dive object
-
-GPS (`gps_lat`/`gps_lng`) and R/O/C abundance are already captured. The remaining fields Seasearch needs:
+GPS and R/O/C abundance are already captured. The remaining fields:
 
 ```javascript
 seabed_types: [],       // multi-select — Rocky Reef | Boulders | Cobbles and Pebbles |
@@ -192,196 +153,148 @@ litter: '',             // free text — man-made objects seen
 photos_taken: false,    // boolean
 ```
 
-**OBIS/eMoF note:** R/O/C maps to `organismQuantity` (R→1, O→5, C→20) with `organismQuantityType = "Seasearch abundance category"`. This is valid Darwin Core.
+**OBIS/eMoF note:** R/O/C maps to `organismQuantity` (R→1, O→5, C→20) with
+`organismQuantityType = "Seasearch abundance category"`. Valid Darwin Core.
 
-### Seasearch export
+**The export** — an "Export for Seasearch" button producing a pre-filled
+printable HTML form matching the Seasearch Observation Form layout. Submitted
+by email to `forms@seasearch.org.uk` or handed to a dive organiser.
 
-A **"Export for Seasearch"** button generates a pre-filled output covering all fields the app can answer. Format: printable HTML matching the Seasearch Observation Form layout (or structured PDF). Submission: email to `forms@seasearch.org.uk` or hand to a dive organiser.
+**The seabed sketch is deliberately not automated.** Seasearch asks for a
+hand-drawn side-on sketch with depth annotations, direction and distance
+scale. That has genuine scientific value a structured field can't replicate,
+so the export directs the user to complete that section on paper.
 
-**The seabed profile drawing is intentionally not automated.** Seasearch asks for a hand-drawn side-on sketch of the seabed with depth annotations, direction, and distance scale. This has genuine scientific value that a checkbox or structured field cannot replicate. The decision is to acknowledge this gap honestly — a note in the export directs the user to complete Section 3 of the paper form manually.
+## Saved dive plans
 
----
-
-## Seabed Profile Sketch Tool
-
-A future feature that partially automates the Seasearch seabed profile drawing. Rather than freehand on paper, present a canvas with the depth axis pre-scaled from the dive's logged max depth. The diver draws a rough seabed line and taps to place annotation pins (free text labels at specific points along the profile). Output is an SVG or image that can be embedded in the Seasearch export and attached to the Obsidian dive note.
-
-**Important distinction:** The dive computer profile (time vs depth) is not the same as a seabed profile (distance vs depth) and cannot be used directly. However:
-- The depth range pre-scales the Y axis, removing the hardest part of the drawing
-- On drift dives over sloping reefs, the time axis loosely correlates with distance — making the computer profile a useful rough guide for the seabed shape
-
-Do not build this until Seasearch export is complete.
-
----
-
-## Species Album — remaining work
-
-The logged-species index, taxonomy-grouped thumbnails, profile modal (photo hero, GPS map, dive log), and live search are live. What's not yet built:
-
-**Undiscovered species.** The full Zelda: Breath of the Wild Compendium concept — all 1,279 species in the DB shown, with ones you haven't logged appearing as greyed-out silhouettes using the iNaturalist reference photo as the "ghost" image. Avoid the "1,279 blank spaces" problem by grouping with a count like "3/23 sharks photographed"; expand on tap.
-
-**Personal photo upload.** Once you've photographed a species, your photo replaces the iNat reference in the profile. Data model: a separate localStorage key (e.g. `divelog-album`) mapping `scientificName → { photoDataUrl, dateAdded, diveId }`. File picker on desktop; camera roll on Android (no persistent folder pointer without a native wrapper).
-
-**Gamification hooks.** Total discovered count ("47 / 1,279 species"), rarity indicators using IUCN status, milestone badges ("First shark", "First CR species", "10 species").
+The Plan panel is ephemeral today. This is persistence: store and recall
+`DivePlan` objects in localStorage, and optionally **promote a plan to a
+logged dive** once completed — pre-filling the log form from the plan plus
+the conditions recorded at the time.
 
 ---
 
-## Species Profile Pages — remaining work
+# Ideas
 
-The modal currently shows: iNat photo hero, GPS map of sighting sites, and a dive-log list. Remaining:
+Not committed. Research done, or waiting on something.
 
-- **Personal photos and videos** on the profile — your shots replace the iNat reference once uploaded (see Species Album above for the data model)
-- **Profile for undiscovered species** — when tapping a greyed-out species, show habitat notes and group context ("where it's typically found") rather than an empty dive log
+## Species wishlist and sighting map
 
-The more dives you log, the richer each profile becomes automatically. A green sea turtle seen across 8 dives in Indonesia and the Philippines becomes a personal field record spanning years — and genuinely valuable OBIS data.
+Pick up to 3 species you're hoping to see while planning a trip, then plot
+real third-party occurrence records near the planned location. **Plan-panel
+only** — the Species Album's map is the diver's own sighting record and must
+stay uncontaminated by third-party data.
 
-**Note:** Profile pages and the album grid are the same feature from two directions. Build them together. Species distribution data (see below) is a natural addition to the profile — build it at the same time.
-
----
-
-## Species Distribution Data
-
-Show divers which oceans and regions a species lives in — a short text line in the Species Album profile, **not a map layer**. The album's GPS map is the diver's own personal sighting record; it must stay uncontaminated by third-party data (see the Plan-panel feature above for where occurrence data actually belongs).
-
-### Data source: OBIS `/checklist`, not WoRMS distribution strings
-
-Originally scoped against WoRMS's `AphiaDistributionsByAphiaID` endpoint, which returns free-text location names ("Indo-Pacific" / "Tropical Indo-Pacific" / "Indo-West Pacific") needing manual normalisation across an estimated 50–200 inconsistent strings. Testing the OBIS API directly (see the Plan-panel feature above) found a cleaner path:
+Reuses Plan's existing location slots (`_planLocations` in `js/planner.js`)
+and the existing context-agnostic species picker, so there's no new picker or
+location UI to design. It would be the first map in the Plan panel — build on
+the `js/map.js` primitives, not a new map stack.
 
 ```
-GET https://api.obis.org/v3/checklist?areaid={areaID}
+GET https://api.obis.org/v3/occurrence?taxonid={id1},{id2},{id3}&geometry={WKT bbox}&size=500
 ```
 
-Confirmed by direct testing: this returns every species recorded in a given OBIS area, each with a `taxonID` field — the **same WoRMS AphiaID** already stored in `data/species-db.js`. That's a plain integer-equality join, not fuzzy string matching. OBIS areas (`/area`, confirmed via testing) include country EEZs with clean numeric IDs (e.g. Indonesia = `115`), found by name lookup.
+Confirmed by direct testing: `taxonid` takes a comma-separated list in one
+call, and `geometry` correctly scopes to a bounding box — a Komodo-area box
+returned real nearby green-turtle records, not noise. Two things that testing
+also surfaced, both needing handling before a record reaches the map:
 
-### Data model — unchanged from the original plan
+- **Licence** — the `license` field is sometimes `null` on real records, not
+  just the documented CC0/CC BY/CC BY-NC. Treat missing licence as
+  not-safe-to-show, the same caution already applied to iNat photos.
+- **Quality flags** — OBIS exposes its own QC `flags`; a real green-turtle
+  telemetry record came back flagged `NO_DEPTH, ON_LAND`. Respect
+  `flags`/`dropped` so a planning map doesn't plot a turtle on dry land.
 
-Same 7th field, same display, same diver-friendly vocabulary — only the *source* of the mapping changes:
+The 3-species cap does double duty: it bounds the query, and it keeps a
+3-colour marker legend readable on a phone. Nothing renders until a species is
+picked, so the overwhelming-data case can't happen by construction.
 
-```javascript
-// Before: [commonName, scientificName, aphiaId, group, photoUrl, iucnStatus]
-// After:  [commonName, scientificName, aphiaId, group, photoUrl, iucnStatus, regions]
-["Green sea turtle","Chelonia mydas",137206,"Reptile","https://...","LC","ip|sea|rs|med|na|car|ep|au"]
-```
+## Multi-level profiles in the surface-interval calculator
 
-**Region codes** (a fixed, small, diver-facing vocabulary — kept deliberately coarser than OBIS's own area/LME taxonomy, which is either too granular for a "Found in" line or has unfamiliar names):
+Each planned dive currently models one depth for the whole bottom time — a
+square profile, the same conservative simplification PADI/BSAC tables make.
+The vendored engine already supports real multi-level segments (10 min at 30m
+→ 20 min at 18m → 15 min at 10m). Exposing that would give credit for the
+shallower parts of a dive without resorting to "average depth", which
+discards exactly the timing information that drives decompression risk and
+would be unsafe to substitute in.
 
-| Code  | Meaning                          |
-| ----- | -------------------------------- |
-| `ip`  | Indo-Pacific (broad tropical)    |
-| `sea` | Southeast Asia specifically      |
-| `rs`  | Red Sea                          |
-| `med` | Mediterranean                    |
-| `na`  | NE Atlantic / UK-European waters |
-| `car` | Caribbean                        |
-| `ep`  | Eastern Pacific                  |
-| `au`  | Australian/GBR waters            |
+## Seabed profile sketch tool
 
-### Shipped 2026-07-20 — script, album display, and browser pre-filter
+Partially automates the Seasearch seabed drawing: a canvas with the depth axis
+pre-scaled from the dive's logged max depth, on which the diver draws a rough
+seabed line and taps to place annotated pins. Outputs SVG for the Seasearch
+export and the dive note.
 
-All three pieces are done: `scripts/fetch-species-regions.py` (build-time
-region table), the "Found in" line in the Species Album (`js/album.js`), and
-the log-form country pre-filter (`js/species.js`/`js/logform.js`). See
-`CHANGELOG.md` and CLAUDE.md → "Built" for what they do.
+**Don't build before Seasearch export exists.** Note the dive computer's
+profile (time vs depth) is *not* a seabed profile (distance vs depth) and
+can't be used directly — though the depth range does pre-scale the Y axis, and
+on drift dives over sloping reefs the time axis loosely correlates with
+distance.
 
-Re-run the script whenever the species list or its AphiaIDs change — clear
-`scripts/species-regions.json` first, since that cache is keyed by region,
-not species, and will otherwise serve membership computed against old IDs.
+## Coral bleaching layer
 
-**Still open — the `au` region is too broad to be useful.** Australia matches
-951/1,267 species (75% of the database), because OBIS's Australia area is the
-whole-country EEZ — temperate Tasmania and the tropical GBR combined — and is
-one of the most heavily-sampled areas in OBIS. At that match rate both the
-"Found in" line and the browser pre-filter barely narrow anything for an
-Australia-tagged dive. Worth checking whether OBIS has a GBR-specific
-sub-area (the way Mexico/Egypt/Spain/France are split by territory) and
-re-running against that instead.
+NOAA Coral Reef Watch Bleaching Alert Area (0–4) for a destination, via
+ERDDAP (keyless REST). Pull from the NOAA source, not Esri — no ArcGIS token.
+Confirm an ERDDAP node allows browser CORS, else route through a desktop Rust
+fetch the way tides already do. Pairs naturally with the existing GPS and
+species data.
 
-### When to build
+## Sea surface temperature
 
-~~After the species profile undiscovered-species view is started (they share the profile modal).~~ Both pieces above shipped ahead of the undiscovered-species view — the "Found in" line works standalone in the existing profile modal without needing that feature first. Undiscovered-species view remains separate future work.
+"Typical SST in [month]: X°C" for a GPS-tagged dive site. Shares the
+Open-Meteo Marine call the Plan panel already makes, so fold it into the Plan
+conditions card rather than building a separate fetch.
 
----
+## Cloud footage hosting
 
-## OBIS / Darwin Core Export
+The end-state for the video layer. Footage today — tagging, proxies and
+watching — is Tauri-only, because the videos are local files. Decoupling
+*storage* would let watching go cross-platform.
 
-Export dive data in the standard format for submission to the Ocean Biodiversity Information System.
+Backblaze B2 is the first target, but the design is a **pluggable provider**
+so a user can link their own cloud. Each clip's `sources[]` already carries a
+`kind` (today `local`; cloud kinds reserved) behind the `resolveVideoUrl()`
+seam — this grows into existing infrastructure rather than being a rewrite.
 
-**Planned format:** Darwin Core Archive — three CSV tables:
-- **Event:** one row per dive (date, location, depth, duration)
-- **Occurrence:** one row per species sighting (scientificName, AphiaID, occurrenceStatus)
-- **eMoF:** one row per measurement (organism count, depth seen)
+The intended split: **desktop app = the workspace** (tag species, generate
+proxies, upload), **browser and mobile = viewers** (stream tagged footage, no
+authoring, no local files).
 
-AphiaIDs are already stored on each sighting at log time. Unvalidated free-text species entries will need manual AphiaID resolution before submission.
+Open questions: per-provider auth (B2 application keys vs OAuth); whether a
+small Cloudflare Worker is needed for token exchange — which revisits the
+"no server" line; upload progress and retry UX; range-request streaming on
+the web viewers; and who pays for storage (likely the user's own account).
 
----
+## Cloud photo library integration
 
-## Cloud Photo Library Integration
+iCloud, Google Photos and OneDrive all have official OAuth APIs — this is how
+Lightroom mobile works — but they need a backend to handle the token exchange
+securely. Proton Drive has no stable public API as of early 2026.
 
-If the app ever gains a backend, it could connect directly to cloud photo libraries:
+This is the point where the "no server" decision gets revisited: a small
+Cloudflare Worker on the free tier could handle OAuth cleanly without a full
+backend.
 
-- **iCloud / Google Photos / OneDrive** — all have official APIs with OAuth. This is how apps like Lightroom mobile work. Requires a backend to handle the OAuth token exchange securely.
-- **Proton Drive** — no stable public API as of early 2026. Proton is building one but it's not available for third-party apps yet.
+## Suunto Nautic support — blocked upstream
 
-**The architectural shift:** Cloud photo integration is the point where the "no server" decision gets revisited. A small Cloudflare Worker (free tier) could handle OAuth cleanly and unlock all major providers without a full backend.
+Not in libdivecomputer's `descriptor.c` at the vendored 0.9.0 release (its
+Suunto BLE coverage is EON Steel, EON Core, D5, EON Steel Black only). Needs
+upstream support first, *then* a version bump of the vendored copy — two
+dependencies, not one, and neither is ours to move. Worth checking
+libdivecomputer's release notes periodically rather than assuming it's landed.
 
-**Simplest middle ground without a backend:** Google Photos has a limited API that can work client-side with a public OAuth client ID — used by some hobby apps, though not ideal.
+## Notarisation
 
----
+The `.dmg` is unsigned and un-notarized, so first launch needs the Gatekeeper
+right-click dance (documented in `README.md`). An Apple Developer account
+would remove that friction — a cost and admin decision, not an engineering one.
 
+## Live IUCN Red List lookups — blocked on licensing
 
-## Desktop + Mobile App (Tauri) — one wrapper for both
-
-**Desktop shipped v2.5** (macOS, `briefs-archive/v2.5-BRIEF-desktop-tauri.md`).
-See `CHANGELOG.md` and README.md → "Install on Mac" for what exists; the
-Tauri-vs-Electron call and the Capacitor fallback are in `DECISIONS.md`.
-
-### What's left
-
-- **Mobile on the same toolchain.** Tauri v2 mobile means the phone app can
-  be the same project with a mobile target added, sharing the capability
-  seams (`resolveVideoUrl`, the filesystem-write seam). An Android build
-  target exists in `src-tauri/` already, but no polished install flow or
-  public release — see `BRIEF-play-store-readiness.md`.
-- **Validate before committing.** Tauri-mobile is younger and less
-  battle-tested than Capacitor's mobile story. At the mobile-wrapper moment,
-  test Tauri's `fs` plugin against real Android field-logging (write to an
-  arbitrary folder, survive app updates, no SAF surprises) *before*
-  committing to it. If it disappoints, the Capacitor fallback is scoped in
-  `DECISIONS.md`. The web code is wrapper-agnostic either way, so waiting
-  costs nothing.
-- **Notarisation.** The `.dmg` is unsigned and un-notarized, so first launch
-  needs the Gatekeeper right-click dance (README.md documents it). An Apple
-  Developer account would remove that friction.
-
----
-
-## Cloud Footage Hosting (Backblaze B2 / pluggable) — future
-
-The end-state for the video layer. Today footage (tagging, proxies, **and** watching) is
-**Tauri-app-only** — the videos are local files and proxies use the macOS Apple/VideoToolbox
-encoder (see CLAUDE.md and `v2.7-BRIEF-mobile-nav-routing.md` §8). The future vision
-decouples *storage* so watching can go cross-platform:
-
-- **Cloud storage holds the footage + proxies.** Backblaze B2 is the first target, but the
-  design is a **pluggable provider** so a user can link their cloud of choice. Each clip's
-  `sources[]` already carries a `kind` (today `local`; cloud kinds reserved) behind the
-  `resolveVideoUrl()` seam — so this grows into existing infrastructure, not a rewrite.
-- **Roles by platform (the intended split):**
-  - **Tauri desktop app = the workspace** — tag species from videos, generate proxies
-    (Apple encoder), upload to the cloud.
-  - **Browser + mobile = viewers** — stream tagged species' footage from the cloud; no
-    authoring, no local files. The v2.8 species-profile player becomes the cross-platform
-    viewer at this point.
-- **Why this ordering:** footage is a power-user layer. Most users just log; only once they
-  value the core do they add their own footage. Keeping the video layer app-only until the
-  cloud exists keeps web/mobile focused on logging + watching, not file management.
-- **Open questions (pre-brief):** per-provider auth (B2 application keys vs OAuth for
-  others); whether a small Cloudflare Worker is needed for token exchange (revisits the
-  "no server" line — cf. the Cloud Photo Library section); upload progress/retry UX in the
-  Tauri workspace; range-request streaming playback on the web viewers; and who pays for
-  storage (likely the user's own B2 account).
-
-Not a brief yet — `v2.8-BRIEF-species-footage-player.md` is the (Tauri-scoped) watch surface
-this would later make cross-platform.
-
----
+Conservation status is currently baked into `data/species-db.js` at build
+time. Fetching it live per-species would keep it fresh, but the IUCN Red List
+API's terms need resolving directly with IUCN first — including whether a
+per-user "own key" arrangement changes anything (it doesn't, on the reading in
+`DECISIONS.md`). Not buildable until that conversation happens.

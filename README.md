@@ -23,17 +23,30 @@ This README is the **onboarding hub** — start here.
 
 ## Why this exists
 
-Most dive-logging tools force a choice: serious logging with marine life as an
-afterthought (Subsurface, MacDive), or a species encyclopedia with a shallow
-log bolted on (Seabook, OceanScout). Shoal tries to be both properly — a real
-BSAC-format log (conditions, gas, SAC rate, dive-computer profile import) with
-a 1,275-species offline database (photos + IUCN conservation status) as a
-first-class part of every dive, not a tag.
+*Where did I see that octopus?*
+
+It's hard to answer that with a paper log. A camera roll is only marginally
+better, giving you a bunch of objects that the AI search classifies as
+"Octopus" that you need to scroll through every time. When you do find it,
+it's a nice picture but not a record. Shoal is built so every creature you
+see is attached to the dive you saw it on, the site, and the trip. Tap a
+species and you get everywhere you've encountered it: dated, mapped, in order.
+
+Underneath sits a full BSAC-format log — conditions, gas, SAC rate,
+dive-computer profile import — with a 1,275-species offline database (photos,
+IUCN conservation status) as a first-class part of every dive rather than a
+tag on it. The two aren't separate features. The join between them is the
+whole point.
 
 The other deliberate choice: **no server, no database, no account.** Every
 dive is a `.md` file with YAML frontmatter, sitting in a folder you control.
 If Shoal disappears tomorrow, your dives don't — you can read them in any text
 editor.
+
+Ultimately, Shoal aims to give scuba divers enough data that they can
+visualise their history and the marine life they met along the way. 
+Just like the ocean, you could always go deeper. 
+But usually the best things to see are within a certain depth range.
 
 ---
 

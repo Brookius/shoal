@@ -815,6 +815,31 @@ marine row. Tapping the card opens the full-view dive file; the ✎ quick-edit a
 
 ---
 
+## Never disparage other products in public-facing text
+
+**Rule: no public-facing copy names a competitor unfavourably, or
+characterises a whole category of other tools as getting it wrong.** This
+covers the landing page, app copy, `README.md`, and any other tracked doc in
+the public repo. Comparative research is fine and useful — it lives in
+`research/` (gitignored) and can inform *what Shoal builds*, but it never
+becomes the argument for why Shoal is worth using.
+
+Two reasons, one practical and one substantive. Practically, the repo is
+public and AGPL: anything written here is quotable, permanent, and attached
+to a single named author. Substantively, **other tools were designed the way
+they were for reasons** — usually a different user, a different era, or a
+constraint not visible from outside. "They neglected X" is nearly always a
+worse read than "they optimised for Y."
+
+Say what Shoal does and who it's for. That's a stronger claim anyway, because
+it survives the competitor shipping the feature tomorrow. `README.md` →
+"Why this exists" is the reference example: it opens on the question Shoal
+answers, not on what anyone else fails to do. Landing-page copy follows the
+same rule — the closest it comes to a comparison is *"your paper logbook
+can't"*, which is a format, not a product someone made.
+
+---
+
 ## Which doc does this go in?
 
 Four docs, four questions. Content drifts between them unless the split is
