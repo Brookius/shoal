@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Shoal",
+  "version": "1.0.0",
+  "identifier": "com.brookius.divelog",
+  "build": {
+    "frontendDist": "../webdist",
+    "devUrl": "http://localhost:8080",
+    "beforeDevCommand": "python3 scripts/dev-server.py 8080",
+    "beforeBuildCommand": "bash src-tauri/prepare-web.sh"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Shoal",
+        "width": 1280,
+        "height": 900,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      },
+      "dangerousDisableAssetCspModification": ["script-src", "style-src"],
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://inaturalist-open-data.s3.amazonaws.com https://static.inaturalist.org https://*.tile.openstreetmap.org; media-src 'self' blob: asset: http://asset.localhost; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:27123 https://nominatim.openstreetmap.org https://overpass-api.de https://raw.githubusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com https://diveshoal.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "minSdkVersion": 26
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "mobile": [
+        { "scheme": ["shoal-oauth"] }
+      ]
+    }
+  }
+}

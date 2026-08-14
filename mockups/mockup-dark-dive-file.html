@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark mode — Dive file (hero, profile chart, overview)</title>
+<style>
+/* Harbour Night on the dive file. Two things here are more than a re-colour:
+   the profile chart's water column and locked-deco shade both have derivations
+   that INVERT on dark, and the tank gauge's fixed-position number colours rest
+   on a premise that stops being true. Both worked through below.
+   Token reasoning: mockups/mockup-dark-tokens.html. */
+:root{
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --serif:Georgia,serif; --display:Georgia,serif;
+  --font-size-xs:12px; --font-size-sm:14px; --font-size-base:16px;
+  --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-full:999px;
+}
+.theme-harbour{
+  color:var(--text);
+  --surface-lowest:#091010; --surface-low:#182827; --surface-base:#111E1D;
+  --surface-high:#20312F; --surface-highest:#2E3E3B;
+  --bg:var(--surface-base); --surface:var(--surface-low); --surface2:var(--surface-high);
+  --border:rgba(237,230,218,0.08); --border-mid:rgba(237,230,218,0.17);
+  --text:#EDE6DA; --text-muted:#BFB3A2; --text-dim:#857D70;
+  --taupe-dim:rgba(191,179,162,0.1); --taupe-border:rgba(191,179,162,0.28);
+  --accent:#74B3D8; --accent-fill:#407DA0;
+  /* the light theme's accent ink/text SPLIT collapses on dark: #74B3D8 already
+     clears 4.91:1 at worst as text, so no second darkened value is needed.
+     Leaving --accent-text at its light #397191 fails on every rung (2.11–3.61). */
+  --accent-text:#74B3D8;
+  --accent-dim:rgba(116,179,216,0.12); --accent-border:rgba(116,179,216,0.36);
+  --success:#5FB180; --warn:#E98A6A; --danger:#E96E4C; --gold:#D9B45C;
+  --violet-deep:#A98BD6;
+  --on-accent:#FFFFFF; --on-danger:#091010; --on-type:#091010;
+  --type-Boat:#2A8B9C;
+  /* profile chart — calm and warn survive; deco and both fills are re-derived */
+  --profile-calm:#89B7D1;
+  --profile-warn:#E0734F;
+  --profile-deco:#E14752;        /* was #6A2C1C — 1.45:1, invisible on dark */
+  --profile-fill-top:#1F3337;    /* was #C0D8E6 */
+  --profile-fill-bottom:#233740; /* was #65A1C3 */
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);
+     font-size:var(--font-size-base);line-height:1.55;padding-bottom:70px}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.9;
+  background:linear-gradient(180deg,#182827 0%,#111E1D 42%,#0B1616 100%)}
+.main{max-width:1180px;margin:0 auto;padding:0 2.5rem}
+.df-body{max-width:1130px;margin:0 auto}
+.note{max-width:78ch;margin:24px auto 0;padding:0 2.5rem;font-size:var(--font-size-sm);color:var(--text-muted)}
+.note b{color:var(--text)} code{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text)}
+
+/* ── app bar ────────────────────────────────────────────────────────────── */
+.df-appbar{display:flex;align-items:center;gap:8px;padding:10px 0;position:sticky;top:0;z-index:49;
+  background:var(--bg);border-bottom:1px solid var(--border)}
+.df-back{font-family:var(--mono);font-size:var(--font-size-xs);padding:6px 13px;border-radius:var(--radius-sm);
+  border:1px solid var(--border-mid);background:var(--surface);color:var(--text-muted);cursor:pointer}
+.df-back:hover{color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim)}
+.df-appbar .sp{flex:1}
+.df-more{width:32px;height:32px;border-radius:var(--radius-md);border:1px solid var(--border-mid);
+  background:var(--surface);color:var(--text-muted);cursor:pointer}
+
+/* ── full-bleed ambient hero ────────────────────────────────────────────── */
+.df-hero{padding:16px 0 0;margin:0 -2.5rem}
+.df-hero-map{height:260px;position:relative;overflow:hidden;background:var(--surface2)}
+.df-map-fake{position:absolute;inset:0;
+  background:radial-gradient(circle at 47% 46%,rgba(116,179,216,.34) 0 6px,transparent 8px),
+    linear-gradient(155deg,#1D3134 0%,#17272B 52%,#101E21 100%)}
+.df-map-fake::after{content:'';position:absolute;inset:0;opacity:.5;
+  background:repeating-linear-gradient(70deg,transparent 0 44px,rgba(237,230,218,.05) 44px 45px),
+             repeating-linear-gradient(-20deg,transparent 0 56px,rgba(237,230,218,.04) 56px 57px)}
+.df-hero-gradient{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(9,16,16,0) 30%,rgba(9,16,16,.90) 100%)}
+.df-hero-content{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 2.5rem 20px}
+.df-site{font-family:var(--display);font-size:30px;font-weight:500;letter-spacing:-.02em;color:#EDE6DA}
+.df-meta{font-family:var(--mono);font-size:var(--font-size-xs);color:rgba(237,230,218,.78);
+  letter-spacing:.05em;margin-top:5px}
+.df-type-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:var(--radius-full);
+  font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--type-Boat);color:var(--on-type);margin-bottom:9px;align-self:flex-start}
+
+/* ── profile chart ──────────────────────────────────────────────────────── */
+.df-pc{margin:22px 0 0;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:16px 18px 14px;position:relative;overflow:hidden}
+.df-pc-svgwrap{position:relative}
+.df-pc svg{width:100%;height:auto;display:block}
+.df-pc-stop{position:absolute;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.08em;
+  padding:2px 8px;border-radius:var(--radius-full);background:var(--surface2);color:var(--text-muted);
+  border:1px solid var(--border-mid);white-space:nowrap}
+.df-pc-legend{display:flex;align-items:center;gap:10px;margin:12px 0 0;
+  font-family:var(--mono);font-size:10px;color:var(--text-muted)}
+.df-pc-legend-bar{flex:1;height:7px;border-radius:4px;
+  background:linear-gradient(90deg,var(--profile-deco) 0%,var(--profile-warn) 34%,var(--profile-calm) 100%)}
+.df-pc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;
+  padding-top:13px;border-top:1px solid var(--border)}
+.df-pc-stats .cell{text-align:center}
+.df-pc-stats .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-muted)}
+.df-pc-stats .v{font-size:24px;font-weight:200;letter-spacing:-.03em;color:var(--text);margin-top:3px}
+.df-pc-stats .v small{font-size:var(--font-size-xs);color:var(--text-muted);font-weight:400}
+.df-vis-bar{height:5px;border-radius:3px;margin:6px auto 0;max-width:74px;position:relative;
+  background:linear-gradient(90deg,#16302F,#275C63,#3C7E9C,#9ecce7);box-shadow:0 0 0 1px var(--border-mid)}
+.df-vis-tick{position:absolute;top:-2px;width:3px;height:9px;border-radius:2px;background:var(--surface);
+  box-shadow:0 0 0 1px rgba(9,16,16,.6)}
+
+/* ── journal + overview row (desktop) ───────────────────────────────────── */
+.df-desk-journal-row{display:grid;grid-template-columns:2fr 1fr;gap:22px;margin-top:22px}
+.df-journal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:24px 28px 28px;position:relative;overflow:hidden}
+.df-journal::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:radial-gradient(circle at 22% 18%,rgba(191,179,162,.07),transparent 44%),
+             radial-gradient(circle at 78% 74%,rgba(116,179,216,.06),transparent 46%)}
+.df-journal>*{position:relative;z-index:1}
+.df-journal h3{font-family:var(--display);font-size:20px;font-weight:500;letter-spacing:-.01em;color:var(--text)}
+.df-journal hr{border:none;border-top:1px solid var(--border-mid);margin:12px 0 16px}
+.df-journal p{font-family:var(--serif);font-size:16px;line-height:1.75;color:var(--text-muted)}
+.df-journal p+p{margin-top:14px}
+
+.df-ov{display:flex;flex-direction:column;gap:12px}
+.df-ov-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px 15px}
+.df-ov-k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:9px}
+.df-temp-bar{height:11px;border-radius:var(--radius-full);position:relative;
+  background:linear-gradient(90deg,#275C63,#3C7E9C,#9ecce7,#cadaea,#e9ba6a);
+  box-shadow:0 0 0 1px var(--border-mid)}
+.df-temp-tick{position:absolute;top:-4px;width:3px;height:19px;border-radius:2px;background:var(--text);
+  box-shadow:0 0 0 1px rgba(9,16,16,.7)}
+.df-temp-val{display:flex;justify-content:space-between;margin-top:7px;
+  font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted)}
+.df-temp-val b{color:var(--text);font-size:var(--font-size-sm)}
+.df-chevs{display:flex;align-items:flex-end;gap:5px}
+.df-chevs svg{stroke:var(--text-dim);fill:none;stroke-width:2}
+.df-chevs svg.on{stroke:var(--accent)}
+.df-ov-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);
+  font-size:var(--font-size-sm)}
+.df-ov-row:last-child{border-bottom:none}
+.df-ov-row svg{width:16px;height:16px;stroke:var(--text-muted);fill:none;stroke-width:1.7;flex-shrink:0}
+.df-ov-row .lbl{color:var(--text-muted);flex:1;min-width:0}
+.df-ov-row .val{color:var(--text);text-align:right}
+.df-ov-tank-svg{width:100%;height:auto;display:block}
+.df-ov-tank-txt{font-family:var(--mono);font-size:20px;font-weight:700}
+.df-ov-tank-foot{display:flex;justify-content:space-between;align-items:baseline;margin-top:7px;
+  font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted)}
+.sac-good{color:var(--success);font-weight:700}
+
+/* ── mobile tab strip demo ──────────────────────────────────────────────── */
+.tabdemo{max-width:420px;margin:0 auto}
+.df-seg{display:flex;gap:3px;background:var(--surface2);border-radius:9px 9px 0 0;padding:4px 4px 0}
+.df-seg-btn{flex:1;padding:9px 6px;border:none;background:transparent;border-radius:7px 7px 0 0;
+  font-family:var(--mono);font-size:var(--font-size-xs);letter-spacing:.05em;color:var(--text-muted);
+  cursor:pointer;position:relative;margin-bottom:-1px}
+.df-seg-btn.active{background:var(--surface);color:var(--text);font-weight:700}
+.df-seg-btn.active::after{content:'';position:absolute;left:10px;right:10px;bottom:0;height:1px;
+  background:var(--accent);border-radius:1px 1px 0 0}
+.df-seg-panel{background:var(--surface);border:1px solid var(--border);border-top:none;
+  border-radius:0 0 var(--radius-lg) var(--radius-lg);padding:14px 16px}
+.cap{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-dim);
+  letter-spacing:.06em;text-transform:uppercase;margin:36px 0 10px;text-align:center}
+@media(max-width:900px){.df-desk-journal-row{grid-template-columns:1fr}.main{padding:0 6px}
+  .df-hero{margin:0 -6px}.df-hero-content{padding:0 14px 16px}}
+</style>
+</head>
+<body class="theme-harbour">
+
+<div class="main">
+<div class="df-body">
+
+  <div class="df-appbar">
+    <button class="df-back">← History</button>
+    <span class="sp"></span>
+    <button class="df-back">✎ Edit</button>
+    <button class="df-more">⋯</button>
+  </div>
+
+  <!-- ── hero ────────────────────────────────────────────────────────── -->
+  <div class="df-hero">
+    <div class="df-hero-map">
+      <div class="df-map-fake"></div>
+      <div class="df-hero-gradient"></div>
+      <div class="df-hero-content">
+        <span class="df-type-badge">Boat</span>
+        <div class="df-site">Batu Bolong</div>
+        <div class="df-meta">DIVE #128 · KOMODO, INDONESIA · 6 MAY 2026 · NAGA BIRU</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── profile chart ───────────────────────────────────────────────── -->
+  <div class="df-pc">
+    <div class="df-pc-svgwrap">
+      <svg viewBox="0 0 700 226" preserveAspectRatio="none" style="height:226px">
+        <defs>
+          <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="var(--profile-fill-top)"/>
+            <stop offset="100%" stop-color="var(--profile-fill-bottom)"/>
+          </linearGradient>
+          <!-- NDL colour: calm while there's headroom, warming as it runs out,
+               locked at --profile-deco once NDL genuinely crosses zero -->
+          <linearGradient id="ndl" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="var(--profile-calm)"/>
+            <stop offset="26%"  stop-color="var(--profile-calm)"/>
+            <stop offset="44%"  stop-color="var(--profile-warn)"/>
+            <stop offset="56%"  stop-color="var(--profile-deco)"/>
+            <stop offset="74%"  stop-color="var(--profile-warn)"/>
+            <stop offset="100%" stop-color="var(--profile-calm)"/>
+          </linearGradient>
+        </defs>
+        <!-- water column: surface down to the diver -->
+        <path d="M0,0 L27,120 L81,164 L162,147 L242,120 L323,107 L404,93 L485,73 L565,53 L619,33 L660,33 L700,0 Z"
+              fill="url(#water)"/>
+        <!-- depth gridlines -->
+        <g stroke="rgba(237,230,218,0.09)" stroke-width="1">
+          <line x1="0" y1="67"  x2="700" y2="67"/>
+          <line x1="0" y1="133" x2="700" y2="133"/>
+          <line x1="0" y1="200" x2="700" y2="200"/>
+        </g>
+        <!-- the curve -->
+        <polyline points="0,0 27,120 81,164 162,147 242,120 323,107 404,93 485,73 565,53 619,33 660,33 700,0"
+                  fill="none" stroke="url(#ndl)" stroke-width="3.5"
+                  stroke-linejoin="round" stroke-linecap="round"/>
+        <!-- NDL-hits-zero marker -->
+        <line x1="392" y1="0" x2="392" y2="226" stroke="var(--profile-deco)" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <!-- entry / exit dots -->
+        <circle cx="0"   cy="0" r="5" fill="var(--surface)" stroke="var(--profile-calm)" stroke-width="2.5"/>
+        <circle cx="700" cy="0" r="5" fill="var(--surface)" stroke="var(--profile-calm)" stroke-width="2.5"/>
+      </svg>
+      <span class="df-pc-stop" style="left:0;top:2px">09:15</span>
+      <span class="df-pc-stop" style="right:0;top:2px">10:07</span>
+      <span class="df-pc-stop" style="left:83%;top:56%">SAFETY · 5M · 3MIN</span>
+    </div>
+
+    <div class="df-pc-legend">
+      <span>NDL 25 min+</span>
+      <span class="df-pc-legend-bar"></span>
+      <span>deco</span>
+    </div>
+
+    <div class="df-pc-stats">
+      <div class="cell"><div class="k">Max depth</div><div class="v">24.6<small> m</small></div></div>
+      <div class="cell"><div class="k">Avg depth</div><div class="v">14.2<small> m</small></div></div>
+      <div class="cell"><div class="k">Bottom time</div><div class="v">52<small> min</small></div></div>
+      <div class="cell"><div class="k">Visibility</div><div class="v">18<small> m</small></div>
+        <div class="df-vis-bar"><span class="df-vis-tick" style="left:60%"></span></div></div>
+    </div>
+  </div>
+
+  <!-- ── journal + overview ──────────────────────────────────────────── -->
+  <div class="df-desk-journal-row">
+    <div class="df-journal">
+      <h3>Hooked in on the ridge</h3>
+      <hr>
+      <p>Ripping current on the north side — we dropped early, swam hard for the ridge and hooked in behind the rocks
+      before it could push us off. Worth it. The trevally were working a bait ball right on the lip and the whole thing
+      just hung there for twenty minutes.</p>
+      <p>A hawksbill came through low over the coral about halfway, completely unbothered, and went straight past
+      Yasmine at arm's length. Unhooked at 80 bar and let it carry us round the corner into the sand.</p>
+    </div>
+
+    <div class="df-ov">
+      <div class="df-ov-tile">
+        <div class="df-ov-k">Water temperature</div>
+        <div class="df-temp-bar"><span class="df-temp-tick" style="left:80%"></span></div>
+        <div class="df-temp-val"><span>0 °c</span><b>28 °c</b><span>35 °c</span></div>
+      </div>
+
+      <div class="df-ov-tile">
+        <div class="df-ov-k">Current — moderate</div>
+        <div class="df-chevs">
+          <svg class="on" width="15" height="15" viewBox="0 0 24 24"><path d="M7 5l8 7-8 7"/></svg>
+          <svg class="on" width="20" height="20" viewBox="0 0 24 24"><path d="M7 5l8 7-8 7"/></svg>
+          <svg width="26" height="26" viewBox="0 0 24 24"><path d="M7 5l8 7-8 7"/></svg>
+        </div>
+      </div>
+
+      <div class="df-ov-tile">
+        <div class="df-ov-k">Cylinder &amp; pressure</div>
+        <svg viewBox="0 0 300 60" class="df-ov-tank-svg" role="img" aria-label="Cylinder pressure 200 down to 50 bar">
+          <clipPath id="dftk"><path d="M 56 6 L 266 6 Q 292 6 292 30 Q 292 54 266 54 L 56 54 Q 38 54 38 36 L 38 24 Q 38 6 56 6 Z"></path></clipPath>
+          <rect x="5" y="17" width="12" height="26" rx="4" style="fill:var(--text-muted)"></rect>
+          <rect x="16" y="26" width="13" height="8" rx="2" style="fill:var(--text-muted)"></rect>
+          <rect x="27" y="24" width="16" height="12" rx="2" style="fill:var(--text-muted)"></rect>
+          <path d="M 56 6 L 266 6 Q 292 6 292 30 Q 292 54 266 54 L 56 54 Q 38 54 38 36 L 38 24 Q 38 6 56 6 Z" style="fill:var(--surface2)"></path>
+          <g clip-path="url(#dftk)"><rect x="228.5" y="0" width="65.5" height="60" style="fill:var(--accent)"></rect></g>
+          <path d="M 56 6 L 266 6 Q 292 6 292 30 Q 292 54 266 54 L 56 54 Q 38 54 38 36 L 38 24 Q 38 6 56 6 Z"
+                fill="none" style="stroke:var(--border-mid)" stroke-width="1.5"></path>
+          <!-- start number sits on the EMPTY BODY here, so it takes --text.
+               On dark that is no longer unconditionally safe — see note below. -->
+          <text x="58" y="37" text-anchor="start" class="df-ov-tank-txt" style="fill:var(--text)">200</text>
+          <!-- end number sits on the FILL, so it takes the paper tone (6.69:1) -->
+          <text x="272" y="37" text-anchor="end" class="df-ov-tank-txt" style="fill:var(--surface)">50</text>
+        </svg>
+        <div class="df-ov-tank-foot">
+          <span>Nitrox 32 · Steel 12 L</span>
+          <span><span class="sac-good">16.2</span> SAC</span>
+        </div>
+      </div>
+
+      <div class="df-ov-tile">
+        <div class="df-ov-row"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 10l7-7 7 7"/></svg>
+          <span class="lbl">Safety stop</span><span class="val">5 m · 3 min</span></div>
+        <div class="df-ov-row"><svg viewBox="0 0 24 24"><path d="M6 20V9l6-5 6 5v11z"/></svg>
+          <span class="lbl">Suit / weight</span><span class="val">3 mm · 5 kg</span></div>
+        <div class="df-ov-row"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+          <span class="lbl">Buddy</span><span class="val">Yasmine</span></div>
+        <div class="df-ov-row"><svg viewBox="0 0 24 24"><path d="M4 17s3-9 8-9 8 9 8 9"/><circle cx="12" cy="18" r="2"/></svg>
+          <span class="lbl">Operator</span><span class="val">Naga Biru</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── mobile tab strip ────────────────────────────────────────────── -->
+  <div class="cap">Mobile tab strip — the folder-tab join, on dark</div>
+  <div class="tabdemo">
+    <div class="df-seg">
+      <button class="df-seg-btn">Marine <span style="opacity:.7">14</span></button>
+      <button class="df-seg-btn active">Overview</button>
+      <button class="df-seg-btn">Journal</button>
+    </div>
+    <div class="df-seg-panel">
+      <div class="df-ov-k">Water temperature</div>
+      <div class="df-temp-bar"><span class="df-temp-tick" style="left:80%"></span></div>
+      <div class="df-temp-val"><span>0 °c</span><b>28 °c</b><span>35 °c</span></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="note" style="margin-top:40px">
+<b>The profile chart is the only place a token's own derivation went wrong rather than just its value.</b>
+<code>--profile-fill-top/-bottom</code> are defined as <code>--accent</code> lerped toward <i>white</i>, and
+<code>--profile-deco</code> as <code>--danger</code> darkened toward <i>black</i>. Carried onto a dark canvas
+unchanged, the water column becomes a glowing white block (10.36:1 against the card) and locked-deco becomes
+invisible (1.45:1). Both are re-derived above against the theme's own anchors instead of white/black. The chart
+reads these through <code>getComputedStyle</code>, so it re-themes on its own — which is exactly why a wrong value
+here would ship silently.<br><br>
+<b>Locked-deco is worth its own line.</b> "Darker = worse" is a light-mode idea; on a dark canvas darker means
+less visible, so every darkened candidate landed at 2.04–2.69:1 over the water column — a state whose entire job is to
+be unmissable, rendered nearly invisible. On dark, "deeper" has to mean <i>more saturated and pushed redder</i>:
+<code>#E14752</code> sits 18° red of <code>--profile-warn</code> at chroma 0.19, clears 3.29 / 3.09 against the two
+fill stops, and holds ΔEok 0.088 from warn — a wider gap than the two have in light mode.<br><br>
+<b>The tank gauge has a logic bug on dark, not a colour one.</b> The start number is coloured
+<code>--text</code> <i>unconditionally</i>, and the code says why: dark ink reads on both the empty body (11.09:1) and
+the blue fill (3.94:1), so it's safe wherever the fill edge lands. That premise inverts here — <code>--text</code> is
+now the <i>light</i> ink, giving 10.98:1 on the empty body but <b>1.84:1 on the fill</b>. A nearly-full tank
+(220→190, described in that same comment as the common case) would swallow its own start number. The end number is
+fine, because its existing "is it on the fill" guard happens to still ask the right question.<br><br>
+The fix is to apply that same predicate to <i>both</i> numbers rather than to one — the ink for each depends only on
+whether it sits on fill or body, and light mode merely got away with skipping the test for one of them. Switching the
+fill to <code>--accent-fill</code> instead would let both inks sit on one mid-tone (3.63 / 3.40), but that is thinner
+than the per-position answer and changes how the gauge looks in <i>both</i> themes.<br><br>
+<b>Unchanged and correct:</b> the vis and temp gradient bars keep their baked literals — they encode water clarity and
+temperature, not UI state — and gain only a <code>box-shadow</code> ring so their dark ends don't merge with the
+canvas. The hero's own gradient scrim already anchors on near-black and needed nothing.
+</div>
+
+</body>
+</html>

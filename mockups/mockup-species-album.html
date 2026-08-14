@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Species Album (L1, v2)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --bg:#F5EBD8; --surface:#FAF6F1; --surface2:#EDE5D8;
+    --border:rgba(28,48,48,0.10); --border-mid:rgba(28,48,48,0.18);
+    --text:#1C3030; --text-muted:#8B7B6A; --text-dim:#B5A898;
+    --accent:#4A90B8; --accent-dim:rgba(74,144,184,0.10); --accent-border:rgba(74,144,184,0.30);
+    --success:#4F9D6B; --pending:#E0734F;
+    --violet-soft:#9B7EC8; --violet-deep:#6A4A9A; --gold:#D4A843;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --xs:12px; --sm:14px; --base:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.45;padding:30px 14px 80px}
+
+  .lead{max-width:960px;margin:0 auto 26px;background:var(--surface);padding:14px 18px;border-radius:10px;font-size:var(--sm);color:var(--text-muted);border:1px solid var(--border)}
+  .lead b{color:var(--text)}
+
+  .wrap{max-width:960px;margin:0 auto}
+
+  .panel-head h1{font-size:24px;font-weight:600;letter-spacing:-0.01em}
+  .panel-head .sub{font-family:var(--mono);font-size:var(--xs);color:var(--text-muted);margin-top:6px;letter-spacing:0.04em}
+
+  /* Search bar (sort dropdown removed) */
+  .bar{display:flex;gap:10px;align-items:center;margin:18px 0 12px}
+  .bar input{flex:1;font-family:var(--sans);font-size:var(--sm);padding:9px 12px;border:1px solid var(--border-mid);border-radius:8px;background:var(--surface);color:var(--text)}
+  .bar input::placeholder{color:var(--text-dim)}
+
+  /* Category nav — horizontal pill strip, sticky as you scroll */
+  .catnav{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;padding:8px 0 12px;
+          position:sticky;top:0;background:var(--bg);z-index:5;border-bottom:1px solid var(--border);margin-bottom:18px}
+  .catnav::-webkit-scrollbar{display:none}
+  .cat-pill{flex-shrink:0;font-family:var(--mono);font-size:var(--xs);padding:6px 12px;border-radius:999px;
+            border:1px solid var(--border-mid);background:var(--surface);color:var(--text-muted);cursor:pointer;
+            white-space:nowrap;text-decoration:none;letter-spacing:0.02em}
+  .cat-pill:hover{color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim)}
+
+  /* Group section */
+  .gsec{margin-bottom:28px;scroll-margin-top:64px}
+  .gsec-h{display:flex;align-items:baseline;gap:9px;font-family:var(--mono);font-size:var(--xs);color:var(--accent);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px}
+  .gsec-h .emoji{font-size:14px;letter-spacing:0}
+  .gsec-h .n{color:var(--text-dim);font-weight:400;letter-spacing:0.04em;text-transform:none}
+  .gsec-h .arrows{margin-left:auto;display:flex;gap:6px}
+  .arrow{width:28px;height:28px;border-radius:6px;border:1px solid var(--border-mid);background:var(--surface);color:var(--text-muted);font-family:var(--mono);font-size:var(--sm);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .arrow:hover{color:var(--accent);border-color:var(--accent-border)}
+
+  /* Thumbnail strip — horizontal scroll-snap */
+  .strip{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:2px 0 6px;-webkit-overflow-scrolling:touch}
+  .strip::-webkit-scrollbar{display:none}
+  .thumb{flex:0 0 152px;scroll-snap-align:start;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;transition:transform .12s, border-color .12s, box-shadow .12s}
+  .thumb:hover{transform:translateY(-2px);border-color:var(--accent-border);box-shadow:0 6px 14px rgba(0,0,0,0.06)}
+  .thumb .photo{aspect-ratio:1;background:var(--surface2);overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .thumb .photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .photo .ph{font-size:46px;opacity:0.45}
+  .thumb .meta{padding:8px 10px 10px}
+  .thumb .nm{font-size:var(--sm);font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+  /* badge sits in meta whitespace — better contrast than over photo */
+  .thumb .row{display:flex;align-items:center;gap:8px;margin-top:4px}
+  .thumb .sub{font-size:var(--xs);color:var(--text-muted);font-family:var(--mono)}
+
+  /* IUCN badges */
+  .iucn{font-family:var(--mono);font-size:11px;font-weight:600;padding:1px 5px;border-radius:4px;border:1px solid var(--border)}
+  .iucn-CR{background:rgba(106,74,154,0.15);color:#6A4A9A;border-color:rgba(106,74,154,0.30);font-weight:700}
+  .iucn-EN{background:rgba(155,126,200,0.15);color:#9B7EC8;border-color:rgba(155,126,200,0.30)}
+  .iucn-VU{background:rgba(212,168,67,0.15);color:#a07a10;border-color:rgba(212,168,67,0.30)}
+  .iucn-NT{background:rgba(139,123,106,0.10);color:var(--text-muted)}
+  .iucn-LC{background:rgba(139,123,106,0.10);color:var(--text-muted)}
+  .iucn-DD{background:rgba(139,123,106,0.10);color:var(--text-dim)}
+
+  /* divider */
+  .divider{max-width:960px;margin:48px auto 22px;text-align:center;font-family:var(--mono);font-size:var(--xs);color:var(--text-dim);letter-spacing:0.10em;text-transform:uppercase}
+  .divider::before,.divider::after{content:'';display:inline-block;width:60px;height:1px;background:var(--border-mid);vertical-align:middle;margin:0 12px}
+
+  /* Modal */
+  .modal-backdrop{background:rgba(28,48,48,0.55);padding:32px 14px;border-radius:14px;max-width:960px;margin:0 auto}
+  .modal{background:var(--surface);border:1px solid var(--border-mid);border-radius:14px;max-width:680px;margin:0 auto;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,0.40)}
+  /* simplified header — name lives in the hero just below */
+  .mh{display:flex;justify-content:flex-end;align-items:center;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border)}
+  .mh .x{font-family:var(--mono);font-size:18px;color:var(--text-muted);cursor:pointer;line-height:1;padding:2px 6px}
+  .mh .x:hover{color:var(--text)}
+
+  /* hero */
+  .hero{padding:20px 22px 16px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:18px;align-items:flex-start}
+  .hero-photo{flex:0 0 140px;width:140px;height:140px;border-radius:10px;background:var(--surface2);overflow:hidden}
+  .hero-photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .hero-meta{flex:1;min-width:0;padding-top:4px}
+  .hero-name{font-size:20px;font-weight:700;letter-spacing:-0.01em}
+  .hero-sci{font-style:italic;font-size:var(--sm);color:var(--text-muted);margin-top:2px}
+  .hero-badges{display:flex;align-items:center;gap:9px;margin-top:10px}
+  .group-tag{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase}
+  .hero-stats{margin-top:12px;font-family:var(--mono);font-size:var(--xs);color:var(--text-muted);letter-spacing:0.03em}
+
+  /* sections */
+  .sec{padding:16px 22px 14px;border-top:1px solid var(--border)}
+  .sec-h{display:flex;align-items:baseline;gap:8px;font-family:var(--mono);font-size:var(--xs);color:var(--accent);font-weight:600;letter-spacing:0.10em;text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .sec-h .n{color:var(--text-dim);font-weight:400;letter-spacing:0.04em;text-transform:none}
+
+  /* map */
+  #map{width:100%;height:240px;border-radius:8px;border:1px solid var(--border);overflow:hidden}
+
+  /* sightings */
+  .sightings{display:flex;flex-direction:column;gap:2px}
+  .dive-block{padding:7px 6px;border-radius:6px}
+  .dive-block:hover{background:var(--surface2)}
+  .sighting-row{display:grid;grid-template-columns:42px 1fr auto auto;gap:10px;align-items:baseline;font-size:var(--sm)}
+  .sighting-row .dn{font-family:var(--mono);font-size:var(--xs);color:var(--text-muted)}
+  .sighting-row .nm{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sighting-row .nm .reg{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim);margin-left:6px}
+  .sighting-row .date{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim);white-space:nowrap}
+  .sighting-row .ab{font-family:var(--mono);font-size:var(--xs);font-weight:700;color:var(--accent);background:var(--accent-dim);border-radius:5px;padding:1px 8px}
+  .video-ref{margin-top:3px;margin-left:52px;display:inline-flex;align-items:center;gap:7px;padding:2px 8px;border-radius:5px;font-size:var(--sm);cursor:pointer}
+  .video-ref:hover{background:var(--accent-dim)}
+  .video-ref .play{font-family:var(--mono);color:var(--accent)}
+  .video-ref .name{font-family:var(--mono);font-size:var(--xs);color:var(--text-muted)}
+  .video-ref .at{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim)}
+  .video-ref .t{font-family:var(--mono);font-size:var(--xs);color:var(--accent);font-weight:600}
+
+  @media (max-width:680px){
+    .modal-backdrop{padding:14px 0;margin:0 -14px;border-radius:0}
+    .modal{border-radius:0;border-left:0;border-right:0;max-width:100%}
+    .hero{flex-direction:column;align-items:center;text-align:center}
+    .hero-photo{flex:0 0 auto;width:170px;height:170px}
+    .thumb{flex:0 0 140px}
+  }
+</style>
+</head>
+<body>
+
+<div class="lead">
+  <b>Mockup — Species Album, L1 (v2).</b> Updates: badge moved off the photo into the whitespace (better contrast); video-count dropped from thumbnails (just dive count); groups now alphabetical (rarity still rules <i>within</i> each row); sort dropdown gone; new sticky <b>category nav strip</b> beneath the search for jumping between groups; modal header simplified (the species name is right beneath it in the hero).
+</div>
+
+<div class="wrap">
+
+  <div class="panel-head">
+    <h1>Species</h1>
+    <div class="sub">47 species recorded across 26 dives</div>
+  </div>
+
+  <div class="bar">
+    <input type="search" placeholder="Search common or scientific name…">
+  </div>
+
+  <!-- Sticky category nav — click to jump to a group section -->
+  <div class="catnav">
+    <a class="cat-pill" href="#cat-cephalopod">🐙 Cephalopod</a>
+    <a class="cat-pill" href="#cat-eel">🐍 Eel</a>
+    <a class="cat-pill" href="#cat-fish">🐠 Fish</a>
+    <a class="cat-pill" href="#cat-mollusc">🐚 Mollusc</a>
+    <a class="cat-pill" href="#cat-ray">🐟 Ray</a>
+    <a class="cat-pill" href="#cat-reptile">🐢 Reptile</a>
+    <a class="cat-pill" href="#cat-shark">🦈 Shark</a>
+  </div>
+
+  <!-- CEPHALOPOD -->
+  <div class="gsec" id="cat-cephalopod">
+    <div class="gsec-h">
+      <span class="emoji">🐙</span><span>Cephalopod</span><span class="n">· 3 species</span>
+      <span class="arrows"><button class="arrow">‹</button><button class="arrow">›</button></span>
+    </div>
+    <div class="strip">
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/166419253/square.jpeg" alt=""></div><div class="meta"><div class="nm">Common octopus</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">3 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><span class="ph">🐙</span></div><div class="meta"><div class="nm">Reef squid</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">2 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/172259460/square.jpeg" alt=""></div><div class="meta"><div class="nm">Broadclub cuttlefish</div><div class="row"><span class="iucn iucn-DD">DD</span><span class="sub">2 dives</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- EEL -->
+  <div class="gsec" id="cat-eel">
+    <div class="gsec-h">
+      <span class="emoji">🐍</span><span>Eel</span><span class="n">· 2 species</span>
+      <span class="arrows"><button class="arrow">‹</button><button class="arrow">›</button></span>
+    </div>
+    <div class="strip">
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/247871410/square.jpg" alt=""></div><div class="meta"><div class="nm">Giant moray</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">4 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><span class="ph">🐍</span></div><div class="meta"><div class="nm">Ribbon eel</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">1 dive</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- FISH (Bumphead VU leads; remaining LC alphabetical) -->
+  <div class="gsec" id="cat-fish">
+    <div class="gsec-h">
+      <span class="emoji">🐠</span><span>Fish</span><span class="n">· 6 species</span>
+      <span class="arrows"><button class="arrow">‹</button><button class="arrow">›</button></span>
+    </div>
+    <div class="strip">
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/709279/square.jpg" alt=""></div><div class="meta"><div class="nm">Bumphead parrotfish</div><div class="row"><span class="iucn iucn-VU">VU</span><span class="sub">1 dive</span></div></div></div>
+      <div class="thumb"><div class="photo"><span class="ph">🐠</span></div><div class="meta"><div class="nm">Cleaner wrasse</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">9 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/5890152/square.jpg" alt=""></div><div class="meta"><div class="nm">Frogfish</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">2 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://static.inaturalist.org/photos/64376618/square.jpeg" alt=""></div><div class="meta"><div class="nm">Great barracuda</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">3 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg" alt=""></div><div class="meta"><div class="nm">Lionfish</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">5 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><span class="ph">🐠</span></div><div class="meta"><div class="nm">Mandarinfish</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">1 dive</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- MOLLUSC -->
+  <div class="gsec" id="cat-mollusc">
+    <div class="gsec-h">
+      <span class="emoji">🐚</span><span>Mollusc</span><span class="n">· 3 species</span>
+      <span class="arrows"><button class="arrow">‹</button><button class="arrow">›</button></span>
+    </div>
+    <div class="strip">
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/11622381/square.jpg" alt=""></div><div class="meta"><div class="nm">Willan's chromodoris</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">3 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/6076081/square.jpg" alt=""></div><div class="meta"><div class="nm">Blue dragon nudibranch</div><div class="row"><span class="iucn iucn-DD">DD</span><span class="sub">2 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://static.inaturalist.org/photos/229212281/square.jpg" alt=""></div><div class="meta"><div class="nm">Spanish dancer</div><div class="row"><span class="iucn iucn-DD">DD</span><span class="sub">1 dive</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- RAY -->
+  <div class="gsec" id="cat-ray">
+    <div class="gsec-h">
+      <span class="emoji">🐟</span><span>Ray</span><span class="n">· 2 species</span>
+      <span class="arrows"><button class="arrow">‹</button><button class="arrow">›</button></span>
+    </div>
+    <div class="strip">
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/33852153/square.jpg" alt=""></div><div class="meta"><div class="nm">Manta ray</div><div class="row"><span class="iucn iucn-EN">EN</span><span class="sub">2 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><span class="ph">🐟</span></div><div class="meta"><div class="nm">Blue-spotted stingray</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">6 dives</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- REPTILE -->
+  <div class="gsec" id="cat-reptile">
+    <div class="gsec-h">
+      <span class="emoji">🐢</span><span>Reptile</span><span class="n">· 2 species</span>
+      <span class="arrows"><button class="arrow">‹</button><button class="arrow">›</button></span>
+    </div>
+    <div class="strip">
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg" alt=""></div><div class="meta"><div class="nm">Hawksbill turtle</div><div class="row"><span class="iucn iucn-CR">CR</span><span class="sub">3 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://static.inaturalist.org/photos/439274319/square.jpeg" alt=""></div><div class="meta"><div class="nm">Green sea turtle</div><div class="row"><span class="iucn iucn-LC">LC</span><span class="sub">7 dives</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- SHARK -->
+  <div class="gsec" id="cat-shark">
+    <div class="gsec-h">
+      <span class="emoji">🦈</span><span>Shark</span><span class="n">· 4 species</span>
+      <span class="arrows"><button class="arrow">‹</button><button class="arrow">›</button></span>
+    </div>
+    <div class="strip">
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/86555463/square.jpeg" alt=""></div><div class="meta"><div class="nm">Hammerhead shark</div><div class="row"><span class="iucn iucn-CR">CR</span><span class="sub">1 dive</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/187831849/square.jpg" alt=""></div><div class="meta"><div class="nm">Grey reef shark</div><div class="row"><span class="iucn iucn-EN">EN</span><span class="sub">4 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/519729370/square.jpg" alt=""></div><div class="meta"><div class="nm">Whale shark</div><div class="row"><span class="iucn iucn-EN">EN</span><span class="sub">2 dives</span></div></div></div>
+      <div class="thumb"><div class="photo"><img loading="lazy" src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg" alt=""></div><div class="meta"><div class="nm">Whitetip reef shark</div><div class="row"><span class="iucn iucn-VU">VU</span><span class="sub">5 dives</span></div></div></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="divider">Tap a thumbnail —</div>
+
+<!-- Profile modal (shown as if open) -->
+<div class="modal-backdrop">
+<div class="modal">
+
+  <div class="mh">
+    <span class="x">✕</span>
+  </div>
+
+  <div>
+
+    <div class="hero">
+      <div class="hero-photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/166419253/medium.jpeg" alt=""></div>
+      <div class="hero-meta">
+        <div class="hero-name">Common octopus</div>
+        <div class="hero-sci">Octopus vulgaris</div>
+        <div class="hero-badges">
+          <span class="iucn iucn-LC">LC</span>
+          <span class="group-tag">🐙 Cephalopod</span>
+        </div>
+        <div class="hero-stats">3 dives  ·  1 video reference  ·  last seen Wed 13 May 2026</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">Where you've seen it <span class="n">3 sites</span></div>
+      <div id="map"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sec-h">Sightings <span class="n">most recent first</span></div>
+      <div class="sightings">
+
+        <div class="dive-block">
+          <div class="sighting-row">
+            <span class="dn">#142</span>
+            <span class="nm">Batu Bolong<span class="reg">· Komodo, ID</span></span>
+            <span class="date">Wed 13 May 2026</span>
+            <span class="ab">R</span>
+          </div>
+          <div class="video-ref">
+            <span class="play">▶</span><span class="name">GX021280.MP4</span><span class="at">@</span><span class="t">11:48</span>
+          </div>
+        </div>
+
+        <div class="dive-block">
+          <div class="sighting-row">
+            <span class="dn">#128</span>
+            <span class="nm">Manta Point<span class="reg">· Komodo, ID</span></span>
+            <span class="date">Sun  4 May 2026</span>
+            <span class="ab">O</span>
+          </div>
+        </div>
+
+        <div class="dive-block">
+          <div class="sighting-row">
+            <span class="dn">#101</span>
+            <span class="nm">Apo Island<span class="reg">· Visayas, PH</span></span>
+            <span class="date">Tue 12 Mar 2026</span>
+            <span class="ab">R</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const map = L.map('map', { scrollWheelZoom:false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© OpenStreetMap', maxZoom:18
+  }).addTo(map);
+  const pts = [
+    { lat:-8.555, lng:119.482, label:'#142 Batu Bolong · Wed 13 May 2026' },
+    { lat:-8.612, lng:119.534, label:'#128 Manta Point · Sun 4 May 2026' },
+    { lat: 9.075, lng:123.262, label:'#101 Apo Island · Tue 12 Mar 2026' }
+  ];
+  const markers = pts.map(p => L.marker([p.lat, p.lng]).addTo(map).bindPopup(p.label));
+  map.fitBounds(markers.map(m => m.getLatLng()), { padding:[40,40] });
+</script>
+</body>
+</html>

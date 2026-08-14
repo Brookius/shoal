@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup A — Trip-grouped timeline (v2)</title>
+<style>
+  :root {
+    --bg: #F5EBD8;
+    --surface: #FAF6F1;
+    --surface2: #EDE5D8;
+    --border: rgba(28,48,48,0.1);
+    --border-mid: rgba(28,48,48,0.18);
+    --text: #1C3030;
+    --text-muted: #8B7B6A;
+    --text-dim: #B5A898;
+    --accent: #4A90B8;
+    --type-boat: #4A90B8;
+    --type-night: #6A4A9A;
+    --type-drift: #a07a10;
+    --type-shore: #3a9450;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans); background: var(--bg); color: var(--text);
+    font-size: 16px; line-height: 1.6; padding: 48px 24px 96px;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; }
+
+  .page-title { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+  .page-sub { font-size: 14px; color: var(--text-muted); font-family: var(--mono); margin-bottom: 32px; }
+  .note {
+    font-size: 13px; color: var(--text-muted); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+    margin-bottom: 28px; line-height: 1.7;
+  }
+  .note b { color: var(--text); }
+
+  /* ── Trip group header ── */
+  .trip {
+    position: sticky; top: 0; background: var(--bg);
+    padding: 22px 0 10px; z-index: 5;
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; border-bottom: 1px solid var(--border-mid); margin-bottom: 2px;
+  }
+  .trip-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .trip-where { font-size: 14px; color: var(--text-muted); font-weight: 400; }
+  .trip-stats {
+    font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    white-space: nowrap; text-align: right; flex-shrink: 0;
+  }
+  .trip-stats b { color: var(--text-muted); font-weight: 600; }
+
+  /* ── Dive row ── */
+  .row {
+    display: grid; grid-template-columns: 40px 1fr auto;
+    align-items: center; gap: 14px;
+    padding: 13px 12px 13px 4px; border-radius: 9px;
+    cursor: pointer; position: relative;
+    transition: background 0.13s;
+  }
+  .row + .row { box-shadow: 0 -1px 0 var(--border); }
+  .row:hover { background: var(--surface); box-shadow: none; }
+  .row:hover + .row { box-shadow: none; }
+
+  .dnum {
+    font-family: var(--mono); font-size: 17px; color: var(--accent);
+    opacity: 0.55; text-align: center; line-height: 1;
+  }
+
+  .site { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .pin { font-size: 12px; opacity: 0.5; margin-left: 6px; }
+
+  .meta {
+    font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+    margin-top: 3px; letter-spacing: 0.01em;
+  }
+  .meta .sep { opacity: 0.35; margin: 0 8px; }
+  .type { font-weight: 700; }
+  .type.boat  { color: var(--type-boat); }
+  .type.night { color: var(--type-night); }
+  .type.drift { color: var(--type-drift); }
+  .type.shore { color: var(--type-shore); }
+
+  .tail {
+    font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    white-space: nowrap; transition: opacity 0.13s;
+  }
+  .actions {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    display: flex; gap: 6px; opacity: 0; pointer-events: none;
+    transition: opacity 0.13s;
+  }
+  .row:hover .tail { opacity: 0; }
+  .row:hover .actions { opacity: 1; pointer-events: auto; }
+  .act {
+    font-family: var(--mono); font-size: 12px; padding: 4px 11px;
+    border-radius: 6px; border: 1px solid var(--border-mid);
+    background: var(--surface); cursor: pointer; color: var(--text-muted);
+  }
+  .act.edit:hover { color: var(--accent); border-color: var(--accent); }
+  .act.del:hover  { color: #d9534f; border-color: rgba(217,83,79,0.4); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-title">Dive history</div>
+  <div class="page-sub">Mockup A v2 — trip-grouped timeline</div>
+
+  <div class="note">
+    <b>Changes from v1:</b> trip stats are now <b>dives · species · days</b>.
+    Dive-type colour moved onto the type word itself (it's its own legend now —
+    no key needed). Emoji metrics are back but borderless. <span class="pin">📍</span>
+    shows after the site name only when GPS is logged (Labuan Haji has none).
+    Raja Ampat spans Oct–Nov to show the cross-month label.
+  </div>
+
+  <!-- Trip 1 -->
+  <div class="trip">
+    <div><span class="trip-name">Naga Biru</span> &nbsp;<span class="trip-where">Komodo, Indonesia · May 2026</span></div>
+    <div class="trip-stats"><b>10</b> dives · <b>47</b> species · <b>4</b> days</div>
+  </div>
+
+  <div class="row">
+    <div class="dnum">149</div>
+    <div><div class="site">Little Angel<span class="pin">📍</span></div>
+      <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 24.4 m<span class="sep">·</span>⏱ 61 min<span class="sep">·</span>👁 20 m<span class="sep">·</span>🐟 3 sp.</div></div>
+    <div class="tail">Tue 13</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">148</div>
+    <div><div class="site">Angel Reef<span class="pin">📍</span></div>
+      <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 22.9 m<span class="sep">·</span>⏱ 65 min<span class="sep">·</span>👁 18 m<span class="sep">·</span>🐟 7 sp.</div></div>
+    <div class="tail">Tue 13</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">147</div>
+    <div><div class="site">Labuan Haji</div>
+      <div class="meta"><span class="type night">Night</span><span class="sep">·</span>↓ 15.5 m<span class="sep">·</span>⏱ 67 min<span class="sep">·</span>👁 12 m<span class="sep">·</span>🐟 12 sp.</div></div>
+    <div class="tail">Mon 12</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">146</div>
+    <div><div class="site">Saleh Bay<span class="pin">📍</span></div>
+      <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 8.8 m<span class="sep">·</span>⏱ 57 min<span class="sep">·</span>👁 8 m<span class="sep">·</span>🐟 1 sp.</div></div>
+    <div class="tail">Mon 12</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">145</div>
+    <div><div class="site">Saleh Bay<span class="pin">📍</span></div>
+      <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 9.3 m<span class="sep">·</span>⏱ 45 min<span class="sep">·</span>👁 10 m<span class="sep">·</span>🐟 1 sp.</div></div>
+    <div class="tail">Mon 12</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">144</div>
+    <div><div class="site">Satonda Bay<span class="pin">📍</span></div>
+      <div class="meta"><span class="type night">Night</span><span class="sep">·</span>↓ 11.7 m<span class="sep">·</span>⏱ 60 min<span class="sep">·</span>👁 15 m<span class="sep">·</span>🐟 8 sp.</div></div>
+    <div class="tail">Sun 11</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">143</div>
+    <div><div class="site">Satondo Reef<span class="pin">📍</span></div>
+      <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 19.9 m<span class="sep">·</span>⏱ 64 min<span class="sep">·</span>👁 18 m<span class="sep">·</span>🐟 3 sp.</div></div>
+    <div class="tail">Sun 11</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">142</div>
+    <div><div class="site">Sumbawa Wall<span class="pin">📍</span></div>
+      <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 22.7 m<span class="sep">·</span>⏱ 64 min<span class="sep">·</span>👁 25 m<span class="sep">·</span>🐟 14 sp.</div></div>
+    <div class="tail">Sun 11</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">141</div>
+    <div><div class="site">Bontoh<span class="pin">📍</span></div>
+      <div class="meta"><span class="type night">Night</span><span class="sep">·</span>↓ 9.9 m<span class="sep">·</span>⏱ 68 min<span class="sep">·</span>👁 8 m<span class="sep">·</span>🐟 5 sp.</div></div>
+    <div class="tail">Sat 10</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">140</div>
+    <div><div class="site">Tinko Reef<span class="pin">📍</span></div>
+      <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 22.0 m<span class="sep">·</span>⏱ 63 min<span class="sep">·</span>👁 20 m<span class="sep">·</span>🐟 10 sp.</div></div>
+    <div class="tail">Sat 10</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+
+  <!-- Trip 2 -->
+  <div class="trip">
+    <div><span class="trip-name">Amed shore diving</span> &nbsp;<span class="trip-where">Bali, Indonesia · Feb 2026</span></div>
+    <div class="trip-stats"><b>3</b> dives · <b>23</b> species · <b>3</b> days</div>
+  </div>
+
+  <div class="row">
+    <div class="dnum">139</div>
+    <div><div class="site">Japanese Wreck<span class="pin">📍</span></div>
+      <div class="meta"><span class="type shore">Shore</span><span class="sep">·</span>↓ 12.0 m<span class="sep">·</span>⏱ 58 min<span class="sep">·</span>👁 14 m<span class="sep">·</span>🐟 9 sp.</div></div>
+    <div class="tail">Wed 18</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">138</div>
+    <div><div class="site">Pyramids<span class="pin">📍</span></div>
+      <div class="meta"><span class="type shore">Shore</span><span class="sep">·</span>↓ 16.4 m<span class="sep">·</span>⏱ 62 min<span class="sep">·</span>👁 20 m<span class="sep">·</span>🐟 6 sp.</div></div>
+    <div class="tail">Tue 17</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">137</div>
+    <div><div class="site">Jemeluk Bay</div>
+      <div class="meta"><span class="type shore">Shore</span><span class="sep">·</span>↓ 14.2 m<span class="sep">·</span>⏱ 71 min<span class="sep">·</span>👁 16 m<span class="sep">·</span>🐟 11 sp.</div></div>
+    <div class="tail">Mon 16</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+
+  <!-- Trip 3 — spans Oct–Nov -->
+  <div class="trip">
+    <div><span class="trip-name">MV Black Manta</span> &nbsp;<span class="trip-where">Raja Ampat, Indonesia · Oct–Nov 2025</span></div>
+    <div class="trip-stats"><b>4</b> dives · <b>58</b> species · <b>4</b> days</div>
+  </div>
+
+  <div class="row">
+    <div class="dnum">136</div>
+    <div><div class="site">Cape Kri<span class="pin">📍</span></div>
+      <div class="meta"><span class="type drift">Drift</span><span class="sep">·</span>↓ 28.3 m<span class="sep">·</span>⏱ 52 min<span class="sep">·</span>👁 30 m<span class="sep">·</span>🐟 22 sp.</div></div>
+    <div class="tail">Sun 02</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">135</div>
+    <div><div class="site">Blue Magic<span class="pin">📍</span></div>
+      <div class="meta"><span class="type drift">Drift</span><span class="sep">·</span>↓ 26.1 m<span class="sep">·</span>⏱ 49 min<span class="sep">·</span>👁 28 m<span class="sep">·</span>🐟 18 sp.</div></div>
+    <div class="tail">Sun 02</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">134</div>
+    <div><div class="site">Sardine Reef<span class="pin">📍</span></div>
+      <div class="meta"><span class="type drift">Drift</span><span class="sep">·</span>↓ 24.0 m<span class="sep">·</span>⏱ 55 min<span class="sep">·</span>👁 25 m<span class="sep">·</span>🐟 16 sp.</div></div>
+    <div class="tail">Sat 01</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+  <div class="row">
+    <div class="dnum">133</div>
+    <div><div class="site">Mioskon<span class="pin">📍</span></div>
+      <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 18.5 m<span class="sep">·</span>⏱ 60 min<span class="sep">·</span>👁 18 m<span class="sep">·</span>🐟 12 sp.</div></div>
+    <div class="tail">Fri 31</div>
+    <div class="actions"><button class="act edit">Edit</button><button class="act del">Delete</button></div>
+  </div>
+</div>
+</body>
+</html>

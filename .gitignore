@@ -1,0 +1,77 @@
+# Created by https://www.toptal.com/developers/gitignore/api/obsidian,macos
+# Edit at https://www.toptal.com/developers/gitignore?templates=obsidian,macos
+
+### macOS ###
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Icon must end with two \r
+Icon
+
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.pdf
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+### macOS Patch ###
+# iCloud generated files
+*.icloud
+
+### Obsidian ###
+# config dir
+.obsidian/
+
+### Claude ###
+.claude/
+
+### SeaSearch reference PDFs — third-party (Seasearch/MCS) documents, not
+### ours to redistribute. Kept locally under research/reference-pdfs/.
+SeaSearch/
+
+
+# End of https://www.toptal.com/developers/gitignore/api/obsidian,macos
+
+### Tauri ###
+webdist/
+src-tauri/icons/icon-1024.png
+
+### Tauri Android (generated via `cargo tauri android init`/build — not versioned) ###
+src-tauri/gen/
+
+### Research (local-only, not versioned) ###
+research/
+
+### Python (enrichment/audit scripts in scripts/) ###
+__pycache__/
+*.pyc
+
+### libdivecomputer WASM spike (downloaded source + build output) ###
+scripts/libdivecomputer-wasm-spike/.build/
+scripts/libdivecomputer-wasm-spike/spike.wasm
+scripts/libdivecomputer-wasm-spike/spike.mjs
+scripts/libdivecomputer-wasm-spike/replay.wasm
+scripts/libdivecomputer-wasm-spike/replay.mjs
+scripts/libdivecomputer-wasm-spike/download.wasm
+scripts/libdivecomputer-wasm-spike/download.mjs
+
+### Google Drive OAuth client secret (src-tauri/build.rs reads this at build
+### time) — deliberately never committed. See DECISIONS.md.
+src-tauri/gdrive-client-secret.txt

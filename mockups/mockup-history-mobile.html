@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History timeline — three mobile directions</title>
+<style>
+  /* ── Tokens (exact match to app — css/styles.css :root) ───────────────────── */
+  :root {
+    --bg:            #F5EBD8;
+    --surface:       #FAF6F1;
+    --surface2:      #EDE5D8;
+    --border:        rgba(28,48,48,0.10);
+    --border-mid:    rgba(28,48,48,0.18);
+    --text:          #1C3030;
+    --text-muted:    #8B7B6A;
+    --text-dim:      #B5A898;
+    --accent:        #4A90B8;
+    --accent-dim:    rgba(74,144,184,0.10);
+    --accent-border: rgba(74,144,184,0.30);
+    --success:       #4F9D6B;
+    --pending:       #E0734F;
+    --violet-deep:   #6A4A9A;
+    --violet-soft:   #9B7EC8;
+    --gold:          #D4A843;
+
+    --type-Boat:#2F7E8C; --type-Shore:#B0894F; --type-Drift:#3FA9A0;
+    --type-Night:#3A4A7A; --type-Cave:#566071; --type-Wreck:#6E4A33;
+    --type-Reef:#C97A4A; --type-Wall:#27567E;  --type-Pinnacle:#5C7355;
+    --type-Muck:#7E7B45;
+
+    --mono: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --text-xs:12px; --text-sm:14px; --text-base:16px;
+  }
+
+  *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #A89E92;
+    font-family: var(--sans);
+    color: var(--text);
+    padding: 36px 18px 64px;
+    min-height: 100vh;
+  }
+
+  /* ── Page header ─────────────────────────────────────────────────────────── */
+  .page-title { text-align: center; color: white; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .page-sub   { text-align: center; color: rgba(255,255,255,0.60); font-size: var(--text-sm); margin-top: 6px; max-width: 720px; margin-left: auto; margin-right: auto; line-height: 1.55; }
+  .page-meta  { text-align: center; color: rgba(255,255,255,0.42); font-size: var(--text-xs); font-family: var(--mono); margin-top: 10px; letter-spacing: 0.04em; }
+
+  /* ── Variant rail ────────────────────────────────────────────────────────── */
+  .rail {
+    display: flex; gap: 32px; justify-content: center; align-items: flex-start;
+    flex-wrap: wrap; margin-top: 36px;
+  }
+  .variant { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .variant-tag {
+    color: white; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.82;
+  }
+  .variant-name {
+    color: white; font-size: 17px; font-weight: 600; text-align: center;
+    margin-top: -8px; max-width: 340px;
+  }
+  .variant-desc {
+    color: rgba(255,255,255,0.58); font-size: var(--text-xs); font-family: var(--mono);
+    text-align: center; max-width: 320px; line-height: 1.7; letter-spacing: 0.01em;
+  }
+
+  /* ── Phone frame ─────────────────────────────────────────────────────────── */
+  .phone {
+    width: 340px; height: 720px;
+    background: var(--bg);
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 28px 72px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column;
+  }
+  .statusbar {
+    height: 22px; background: #000; color: rgba(255,255,255,0.85);
+    font-family: var(--mono); font-size: 11px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 14px; flex-shrink: 0;
+  }
+  .body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .body::-webkit-scrollbar { display: none; }
+  .body { scrollbar-width: none; }
+  .navbar {
+    height: 58px; background: var(--surface); border-top: 1px solid var(--border);
+    display: grid; grid-template-columns: repeat(5, 1fr); flex-shrink: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .nb-item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .nb-item.active { color: var(--accent); }
+  .nb-icon { font-size: 15px; line-height: 1; }
+
+  /* ── Shared: sort row + page title (panel head) ──────────────────────────── */
+  .ph {
+    padding: 14px 16px 4px;
+  }
+  .ph h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .ph .sub { font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted); margin-top: 3px; letter-spacing: 0.04em; }
+  .sort-row {
+    display: flex; gap: 6px; padding: 10px 16px 6px; align-items: center;
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted);
+  }
+  .sort-pill {
+    border: 1px solid var(--border-mid); border-radius: 999px;
+    padding: 4px 10px; background: var(--surface);
+    color: var(--text-muted); cursor: pointer;
+  }
+  .sort-pill.active { color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim); }
+  .sort-pill.map { margin-left: auto; }
+
+  /* IUCN micro-badge (consistent across directions) */
+  .iucn { font-family: var(--mono); font-size: 10px; font-weight: 700;
+          padding: 1px 5px; border-radius: 3px; letter-spacing: 0.04em; line-height: 1.6; flex-shrink: 0; }
+  .iucn.CR { background: rgba(106,74,154,0.15);  color: var(--violet-deep); border: 1px solid rgba(106,74,154,0.30); font-weight: 800; }
+  .iucn.EN { background: rgba(155,126,200,0.15); color: var(--violet-soft); border: 1px solid rgba(155,126,200,0.30); }
+  .iucn.VU { background: rgba(212,168,67,0.15);  color: #a07a10; border: 1px solid rgba(212,168,67,0.30); }
+  .iucn.NT { background: rgba(139,123,106,0.10); color: var(--text-muted); border: 1px solid var(--border); }
+  .iucn.LC { background: rgba(139,123,106,0.10); color: var(--text-muted); border: 1px solid var(--border); }
+
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     DIRECTION A — CINEMA CARDS
+     Each dive is a full-bleed photo card with overlay text. Borrows the
+     cinema-card hero pattern shipped in the species profile (v2.12).
+     Trip header is a simple sticky bar. Lowest density, highest emotion.
+     Best for: "show me the trip, make me feel it."
+  ═══════════════════════════════════════════════════════════════════════════ */
+  .dA .body { padding-bottom: 24px; }
+
+  .dA-trip-bar {
+    background: var(--bg); padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .dA-trip-name { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .dA-trip-meta {
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted);
+    letter-spacing: 0.03em; margin-top: 3px;
+  }
+  .dA-trip-stats {
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-dim);
+    letter-spacing: 0.04em; margin-top: 1px;
+  }
+
+  .dA-card {
+    position: relative; margin: 12px 14px 0; border-radius: 12px;
+    overflow: hidden; aspect-ratio: 16/11;
+    background: #1a2e2c;
+    box-shadow: 0 4px 14px rgba(28,48,48,0.18);
+  }
+  .dA-card img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; display: block;
+  }
+  /* Top-left hero numbers + dive# */
+  .dA-top {
+    position: absolute; top: 12px; left: 14px; right: 14px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    color: rgba(255,255,255,0.94);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.55);
+  }
+  .dA-stats { display: flex; gap: 14px; align-items: baseline; }
+  .dA-stat-num {
+    font-family: var(--sans); font-size: 26px; font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .dA-stat-unit {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    text-transform: uppercase; opacity: 0.75; margin-left: 3px;
+  }
+  .dA-dnum {
+    font-family: var(--mono); font-size: var(--text-xs);
+    letter-spacing: 0.05em; opacity: 0.75;
+  }
+  /* Bottom gradient overlay carrying name + meta */
+  .dA-grad {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom,
+      rgba(12,24,24,0.42) 0%,
+      transparent 28%,
+      transparent 50%,
+      rgba(12,24,24,0.82) 100%);
+    pointer-events: none;
+  }
+  .dA-id {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 14px 14px 13px; color: white;
+  }
+  .dA-site {
+    font-size: 19px; font-weight: 700; letter-spacing: -0.01em;
+    line-height: 1.15;
+  }
+  .dA-bottom-row {
+    display: flex; align-items: center; gap: 9px; margin-top: 5px;
+    font-family: var(--mono); font-size: var(--text-xs);
+    color: rgba(255,255,255,0.72); letter-spacing: 0.03em;
+  }
+  .dA-pill {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    padding: 2px 7px; border-radius: 3px; letter-spacing: 0.06em;
+    text-transform: uppercase; line-height: 1.55;
+    background: rgba(255,255,255,0.16); color: white;
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .dA-pill.t-Boat  { background: rgba(47,126,140,0.62); border-color: rgba(255,255,255,0.20); }
+  .dA-pill.t-Reef  { background: rgba(201,122,74,0.62); border-color: rgba(255,255,255,0.20); }
+  .dA-pill.t-Night { background: rgba(58,74,122,0.72);  border-color: rgba(255,255,255,0.18); }
+  .dA-date {
+    position: absolute; top: 14px; right: 14px; text-align: right;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    color: rgba(255,255,255,0.78); text-shadow: 0 1px 5px rgba(0,0,0,0.5);
+  }
+  .dA-iucn-strip {
+    position: absolute; right: 10px; bottom: 60px;
+    display: flex; gap: 4px;
+  }
+  /* IUCN badge override on photo: pop against dark */
+  .dA-iucn-strip .iucn.CR { background: rgba(255,255,255,0.94); }
+  .dA-iucn-strip .iucn.VU { background: rgba(255,255,255,0.92); }
+  .dA-iucn-strip .iucn.LC { background: rgba(255,255,255,0.16); color: white; border-color: rgba(255,255,255,0.22); }
+
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     DIRECTION B — FIELD NOTEBOOK v2
+     Keeps the timeline-row spirit but generously rebuilt: white card surface,
+     species thumbnail on the right, room to breathe. Trip header gains an
+     ambient Leaflet strip showing the trip's sites. Medium density (4–5 per
+     screen). Preserves the field-notebook character.
+     Best for: "scan many dives, keep familiar logic."
+  ═══════════════════════════════════════════════════════════════════════════ */
+  .dB .body { padding-bottom: 18px; }
+
+  .dB-trip {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .dB-trip-head {
+    padding: 12px 16px 6px;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  }
+  .dB-trip-name { font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; flex-shrink: 1; min-width: 0; }
+  .dB-trip-stats { font-family: var(--mono); font-size: var(--text-xs); color: var(--text-dim); white-space: nowrap; flex-shrink: 0; }
+  .dB-trip-sub { padding: 0 16px 8px; font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted); letter-spacing: 0.03em; }
+  /* Ambient map strip — placeholder fakery for the mockup */
+  .dB-map {
+    height: 54px; position: relative;
+    background:
+      linear-gradient(to bottom, rgba(74,144,184,0.18), rgba(74,144,184,0.08)),
+      repeating-linear-gradient(45deg, rgba(28,48,48,0.04) 0 6px, transparent 6px 14px);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .dB-map::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 23% 60%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 28% 48%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 31% 64%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 38% 52%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 42% 70%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 65% 44%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 72% 58%, var(--accent) 3.5px, transparent 4px);
+    filter: drop-shadow(0 0 6px rgba(74,144,184,0.45));
+  }
+  .dB-map::after {
+    content: 'Komodo region · 7 sites';
+    position: absolute; right: 9px; top: 6px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em;
+    color: var(--text-muted); background: rgba(245,235,216,0.85);
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: 1px 6px;
+  }
+
+  .dB-row {
+    margin: 10px 12px 0; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 12px 11px;
+    display: grid; grid-template-columns: 1fr 56px; gap: 12px;
+    box-shadow: 0 1px 3px rgba(28,48,48,0.04);
+  }
+  .dB-main { min-width: 0; }
+  .dB-top {
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .dB-dnum {
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .dB-site {
+    font-size: 17px; font-weight: 600; color: var(--text);
+    letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1; min-width: 0;
+  }
+  .dB-gps { font-size: var(--text-xs); opacity: 0.45; }
+  .dB-date { font-family: var(--mono); font-size: var(--text-xs); color: var(--text-dim); white-space: nowrap; }
+  .dB-meta {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 0;
+    margin-top: 5px; font-family: var(--mono); font-size: var(--text-xs);
+    color: var(--text-muted); letter-spacing: 0.02em;
+  }
+  .dB-type-pill {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    padding: 2px 7px; border-radius: 3px; line-height: 1.55;
+    margin-right: 6px;
+  }
+  .dB-type-pill.t-Boat  { color: var(--type-Boat);  background: rgba(47,126,140,0.10);  border: 1px solid rgba(47,126,140,0.30); }
+  .dB-type-pill.t-Reef  { color: var(--type-Reef);  background: rgba(201,122,74,0.10);  border: 1px solid rgba(201,122,74,0.30); }
+  .dB-type-pill.t-Night { color: var(--type-Night); background: rgba(58,74,122,0.10);   border: 1px solid rgba(58,74,122,0.30); }
+  .dB-sep { opacity: 0.40; margin: 0 5px; }
+  .dB-foot {
+    margin-top: 6px;
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+  .dB-foot .iucn { font-size: 9px; padding: 0 4px; }
+  .dB-foot .sp-name { color: var(--text-muted); }
+  .dB-thumb {
+    width: 56px; height: 56px; border-radius: 8px; overflow: hidden;
+    background: var(--surface2); border: 1px solid var(--border);
+    grid-row: span 2; align-self: center;
+  }
+  .dB-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     DIRECTION C — STATS-FORWARD DOSSIER
+     Big numbers up front. Coloured dive-type rail on the left edge. No
+     background photo per card — but a horizontal micro-strip of all species
+     thumbs on each dive does the visual work. Trip header is a hero stats
+     band (sans-serif big numbers, mono labels — borrowed from the reference
+     profile page's posture, without the donut).
+     Best for: "data is the story; every dive carries its sightings up front."
+  ═══════════════════════════════════════════════════════════════════════════ */
+  .dC .body { padding-bottom: 20px; }
+
+  /* Trip header — hero stats band */
+  .dC-trip {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 14px 16px 16px;
+    position: sticky; top: 0; z-index: 5;
+  }
+  .dC-trip-name { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .dC-trip-where {
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted);
+    margin-top: 2px; letter-spacing: 0.03em;
+  }
+  .dC-band {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+  }
+  .dC-stat { display: flex; flex-direction: column; align-items: flex-start; }
+  .dC-stat-n {
+    font-size: 22px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .dC-stat-l {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-dim); margin-top: 3px;
+  }
+
+  /* Dive card */
+  .dC-card {
+    margin: 10px 12px 0; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden;
+    display: grid; grid-template-columns: 4px 80px 1fr;
+    box-shadow: 0 1px 3px rgba(28,48,48,0.04);
+  }
+  .dC-rail { background: var(--text-dim); }
+  .dC-rail.t-Boat  { background: var(--type-Boat); }
+  .dC-rail.t-Reef  { background: var(--type-Reef); }
+  .dC-rail.t-Night { background: var(--type-Night); }
+  .dC-nums {
+    padding: 12px 8px; display: flex; flex-direction: column; align-items: center;
+    gap: 10px; justify-content: center;
+    border-right: 1px solid var(--border); background: var(--bg);
+  }
+  .dC-num-block { text-align: center; }
+  .dC-num {
+    font-size: 22px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.02em; line-height: 1;
+  }
+  .dC-num-l {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    color: var(--text-dim); text-transform: uppercase; margin-top: 3px;
+  }
+  .dC-num.deep { color: var(--accent); }
+
+  .dC-detail { padding: 10px 12px 11px; min-width: 0; }
+  .dC-row1 {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 8px;
+  }
+  .dC-site {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    flex: 1; min-width: 0;
+  }
+  .dC-dnum-date {
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.04em; white-space: nowrap; flex-shrink: 0;
+  }
+  .dC-row2 {
+    margin-top: 3px;
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted);
+    letter-spacing: 0.03em;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .dC-type {
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+  }
+  .dC-type.t-Boat  { color: var(--type-Boat); }
+  .dC-type.t-Reef  { color: var(--type-Reef); }
+  .dC-type.t-Night { color: var(--type-Night); }
+  .dC-sep { opacity: 0.40; }
+  /* Species micro-strip */
+  .dC-strip {
+    display: flex; align-items: center; gap: 5px; margin-top: 9px;
+    overflow: hidden;
+  }
+  .dC-sp {
+    width: 32px; height: 32px; border-radius: 6px; overflow: hidden;
+    background: var(--surface2); border: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .dC-sp img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .dC-more {
+    font-family: var(--mono); font-size: 10px; color: var(--text-muted);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 2px 7px; line-height: 1.6;
+    flex-shrink: 0; letter-spacing: 0.04em;
+  }
+  .dC-rare {
+    font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+    margin-left: auto; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .dC-rare .iucn { font-size: 9px; padding: 0 4px; margin-left: 3px; }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     DIRECTION D — NAVIGATION CARD (final — Option B layout)
+     Structure: 26px coloured spine (type word vertical) | content
+     Content:   1fr identity (site/date/dive#) | auto measurements (3-row grid)
+     Below divider: rarest-species photo | sp count + footage (right)
+     Key tweak: measurements use a 3-col CSS grid — icon left, number
+     right-aligned (tabular-nums), unit right — so all numbers share a column.
+  ═══════════════════════════════════════════════════════════════════════════ */
+  .dD .body { padding-bottom: 20px; }
+
+  /* Trip header: name / mono meta / map */
+  .dD-trip {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 5;
+  }
+  .dD-trip-name {
+    padding: 12px 16px 2px;
+    font-size: 17px; font-weight: 700; color: var(--text); letter-spacing: -0.01em;
+  }
+  .dD-trip-meta {
+    padding: 0 16px 9px;
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted);
+    letter-spacing: 0.03em;
+  }
+  .dD-map {
+    height: 54px; position: relative;
+    background:
+      linear-gradient(to bottom, rgba(74,144,184,0.18), rgba(74,144,184,0.08)),
+      repeating-linear-gradient(45deg, rgba(28,48,48,0.04) 0 6px, transparent 6px 14px);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .dD-map::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      radial-gradient(circle at 23% 60%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 28% 48%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 31% 64%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 38% 52%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 42% 70%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 65% 44%, var(--accent) 3.5px, transparent 4px),
+      radial-gradient(circle at 72% 58%, var(--accent) 3.5px, transparent 4px);
+    filter: drop-shadow(0 0 6px rgba(74,144,184,0.45));
+  }
+  .dD-map::after {
+    content: '📍 Indonesia · 7 sites';
+    position: absolute; left: 9px; top: 6px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em;
+    color: var(--text-muted); background: rgba(245,235,216,0.85);
+    border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px;
+  }
+
+  /* ── Card outer shell: spine + content ───────────────────────────────────── */
+  .dD-card {
+    margin: 10px 12px 0; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    display: grid; grid-template-columns: 26px 1fr;
+    box-shadow: 0 1px 3px rgba(28,48,48,0.04);
+  }
+
+  /* Coloured spine carries the dive type as a vertical word */
+  .dD-spine {
+    display: flex; align-items: center; justify-content: center;
+    background: var(--text-dim);
+  }
+  .dD-spine span {
+    writing-mode: vertical-rl;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.20em; text-transform: uppercase;
+    color: rgba(255,255,255,0.95);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.18);
+  }
+  .dD-spine.t-Boat    { background: var(--type-Boat); }
+  .dD-spine.t-Shore   { background: var(--type-Shore); }
+  .dD-spine.t-Drift   { background: var(--type-Drift); }
+  .dD-spine.t-Night   { background: var(--type-Night); }
+  .dD-spine.t-Cave    { background: var(--type-Cave); }
+  .dD-spine.t-Wreck   { background: var(--type-Wreck); }
+  .dD-spine.t-Reef    { background: var(--type-Reef); }
+  .dD-spine.t-Wall    { background: var(--type-Wall); }
+  .dD-spine.t-Pinnacle{ background: var(--type-Pinnacle); }
+  .dD-spine.t-Muck    { background: var(--type-Muck); }
+
+  /* ── Content: identity | measurements, then marine below divider ─────────── */
+  .dD-content {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 14px;
+    padding: 12px 14px 0;
+  }
+
+  /* Identity column: site (hero) / date / dive# */
+  .dD-identity { min-width: 0; }
+  .dD-site {
+    font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.01em;
+    line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .dD-gps { font-size: var(--text-xs); opacity: 0.45; }
+  .dD-date {
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted);
+    letter-spacing: 0.04em; margin-top: 4px;
+  }
+  .dD-dnum {
+    font-family: var(--mono); font-size: var(--text-sm); font-weight: 600;
+    color: var(--text); letter-spacing: 0.04em; margin-top: 2px;
+  }
+
+  /* Measurements column: 3-row CSS grid — icon | number (right-aligned) | unit
+     All numbers share the same column so they align vertically. */
+  .dD-meas {
+    display: grid;
+    grid-template-columns: 14px 1fr auto;
+    column-gap: 5px; row-gap: 5px;
+    align-items: baseline;
+    align-self: start;
+  }
+  .dD-mi { font-size: 12px; opacity: 0.50; text-align: left; }
+  .dD-mn {
+    font-family: var(--sans); font-size: 16px; font-weight: 700;
+    color: var(--text); letter-spacing: -0.01em; line-height: 1;
+    text-align: right; font-variant-numeric: tabular-nums;
+  }
+  .dD-mu {
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.04em; text-align: left;
+  }
+  /* Vis row: same size but muted colour — demoted by colour not size */
+  .dD-mn.vis { color: var(--text-muted); font-size: 14px; }
+  .dD-mi.vis { opacity: 0.35; }
+
+  /* ── Marine row: spans both columns, below divider ───────────────────────── */
+  .dD-marine {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 11px;
+    margin-top: 12px; padding: 11px 0 13px;
+    border-top: 1px solid var(--border);
+  }
+  .dD-thumb {
+    width: 52px; height: 52px; border-radius: 7px; overflow: hidden;
+    background: var(--surface2); border: 1px solid var(--border); flex-shrink: 0;
+  }
+  .dD-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .dD-marine-info {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; justify-content: center; gap: 4px;
+  }
+  .dD-spcount {
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--text-muted);
+    letter-spacing: 0.03em;
+  }
+  .dD-vid {
+    font-family: var(--mono); font-size: var(--text-xs); color: var(--accent);
+    font-weight: 600; letter-spacing: 0.03em;
+  }
+  /* Quick-edit pencil — uses the empty space at the right of the marine row
+     so editing no longer means opening the card + scrolling to the bottom */
+  .dD-edit {
+    flex-shrink: 0; align-self: center; margin-left: auto;
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--border-mid); background: var(--surface2);
+    color: var(--text-muted); font-size: 15px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dD-edit:hover { color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim); }
+
+  /* ── Footer with full-bleed warning when phones don't fit ────────────────── */
+  @media (max-width: 1140px) {
+    .rail { gap: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">History timeline — three mobile directions</div>
+<div class="page-sub">
+  Same five dives + trip header across all three. Each picks a different posture
+  for the same job: scan recent dives, recognise where you were, dip into detail.
+  The IUCN-rarest species seen on each dive carries the visual (using
+  <code style="font-family:var(--mono);color:rgba(255,255,255,0.85);">SP_PHOTO_MAP</code>) — no
+  personal photo layer needed for v3.0.
+</div>
+<div class="page-meta">A — cinema cards  ·  B — field notebook v2  ·  C — stats-forward dossier  ·  D — navigation card (refined)</div>
+
+<div class="rail">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DIRECTION A — CINEMA CARDS
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="variant">
+    <div class="variant-tag">A · Cinema cards</div>
+    <div class="variant-name">Photography drives the page</div>
+    <div class="variant-desc">
+      Full-bleed iNat photo per dive. Big depth + time overlaid. Site name
+      + dive-type pill on the bottom gradient. ~3 cards per screen — high
+      emotion, low density. Reuses the species-profile cinema-card pattern
+      (v2.12 hero).
+    </div>
+
+    <div class="phone dA">
+      <div class="statusbar">
+        <span>14:08</span>
+        <span>77%</span>
+      </div>
+      <div class="body">
+
+        <div class="ph">
+          <h1>History</h1>
+          <div class="sub">149 dives · 105 species · 47 sites</div>
+        </div>
+        <div class="sort-row">
+          <span class="sort-pill active">Dive ↓</span>
+          <span class="sort-pill">Depth</span>
+          <span class="sort-pill">Country</span>
+          <span class="sort-pill map">📍 Map</span>
+        </div>
+
+        <div class="dA-trip-bar">
+          <div class="dA-trip-name">Komodo — Bali</div>
+          <div class="dA-trip-meta">Naga Biru · Indonesia · May 2026</div>
+          <div class="dA-trip-stats">24 dives · 105 sp. · 8 days</div>
+        </div>
+
+        <!-- Dive #149 Little Angel — Boat, whitetip reef shark VU -->
+        <div class="dA-card">
+          <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/medium.jpg" alt="">
+          <div class="dA-grad"></div>
+          <div class="dA-top">
+            <div class="dA-stats">
+              <div><span class="dA-stat-num">24.4</span><span class="dA-stat-unit">m</span></div>
+              <div><span class="dA-stat-num">61</span><span class="dA-stat-unit">min</span></div>
+            </div>
+            <div class="dA-dnum">#149</div>
+          </div>
+          <div class="dA-date">Wed 13 May</div>
+          <div class="dA-iucn-strip"><span class="iucn VU">VU</span></div>
+          <div class="dA-id">
+            <div class="dA-site">Little Angel 📍</div>
+            <div class="dA-bottom-row">
+              <span class="dA-pill t-Boat">Boat</span>
+              <span>3 sp.</span>
+              <span style="opacity:0.45">·</span>
+              <span>vis 20 m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dive #148 Angel Reef — Reef, hawksbill turtle CR -->
+        <div class="dA-card">
+          <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/medium.jpg" alt="">
+          <div class="dA-grad"></div>
+          <div class="dA-top">
+            <div class="dA-stats">
+              <div><span class="dA-stat-num">22.9</span><span class="dA-stat-unit">m</span></div>
+              <div><span class="dA-stat-num">65</span><span class="dA-stat-unit">min</span></div>
+            </div>
+            <div class="dA-dnum">#148</div>
+          </div>
+          <div class="dA-date">Wed 13 May</div>
+          <div class="dA-iucn-strip"><span class="iucn CR">CR</span></div>
+          <div class="dA-id">
+            <div class="dA-site">Angel Reef 📍</div>
+            <div class="dA-bottom-row">
+              <span class="dA-pill t-Reef">Reef</span>
+              <span>7 sp.</span>
+              <span style="opacity:0.45">·</span>
+              <span>vis 20 m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dive #147 Labuan Haji — Night, frogfish LC -->
+        <div class="dA-card">
+          <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/5890152/medium.jpg" alt="">
+          <div class="dA-grad"></div>
+          <div class="dA-top">
+            <div class="dA-stats">
+              <div><span class="dA-stat-num">15.5</span><span class="dA-stat-unit">m</span></div>
+              <div><span class="dA-stat-num">67</span><span class="dA-stat-unit">min</span></div>
+            </div>
+            <div class="dA-dnum">#147</div>
+          </div>
+          <div class="dA-date">Tue 12 May</div>
+          <div class="dA-iucn-strip"><span class="iucn LC">LC</span></div>
+          <div class="dA-id">
+            <div class="dA-site">Labuan Haji</div>
+            <div class="dA-bottom-row">
+              <span class="dA-pill t-Night">Night</span>
+              <span>12 sp.</span>
+              <span style="opacity:0.45">·</span>
+              <span>vis 14 m</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dive #146 Saleh Bay — Boat, octopus LC -->
+        <div class="dA-card">
+          <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/166419253/medium.jpeg" alt="">
+          <div class="dA-grad"></div>
+          <div class="dA-top">
+            <div class="dA-stats">
+              <div><span class="dA-stat-num">8.8</span><span class="dA-stat-unit">m</span></div>
+              <div><span class="dA-stat-num">57</span><span class="dA-stat-unit">min</span></div>
+            </div>
+            <div class="dA-dnum">#146</div>
+          </div>
+          <div class="dA-date">Tue 12 May</div>
+          <div class="dA-iucn-strip"><span class="iucn LC">LC</span></div>
+          <div class="dA-id">
+            <div class="dA-site">Saleh Bay 📍</div>
+            <div class="dA-bottom-row">
+              <span class="dA-pill t-Boat">Boat</span>
+              <span>1 sp.</span>
+              <span style="opacity:0.45">·</span>
+              <span>vis 16 m</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="navbar">
+        <div class="nb-item"><span class="nb-icon">＋</span><span>Log</span></div>
+        <div class="nb-item active"><span class="nb-icon">📋</span><span>History</span></div>
+        <div class="nb-item"><span class="nb-icon">🐠</span><span>Species</span></div>
+        <div class="nb-item"><span class="nb-icon">📊</span><span>Stats</span></div>
+        <div class="nb-item"><span class="nb-icon">⊕</span><span>Data</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DIRECTION B — FIELD NOTEBOOK v2
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="variant">
+    <div class="variant-tag">B · Field notebook v2</div>
+    <div class="variant-name">Familiar logic, room to breathe</div>
+    <div class="variant-desc">
+      Same row pattern, generously rebuilt. Cream card per dive on the sand
+      panel. Small 56 px species thumbnail on the right. Trip header gains
+      a thin ambient map strip. ~4 cards per screen — scannable, durable,
+      least-risky migration from today.
+    </div>
+
+    <div class="phone dB">
+      <div class="statusbar">
+        <span>14:08</span>
+        <span>77%</span>
+      </div>
+      <div class="body">
+
+        <div class="ph">
+          <h1>History</h1>
+          <div class="sub">149 dives · 105 species · 47 sites</div>
+        </div>
+        <div class="sort-row">
+          <span class="sort-pill active">Dive ↓</span>
+          <span class="sort-pill">Depth</span>
+          <span class="sort-pill">Country</span>
+          <span class="sort-pill map">📍 Map</span>
+        </div>
+
+        <div class="dB-trip">
+          <div class="dB-trip-head">
+            <span class="dB-trip-name">Komodo — Bali</span>
+            <span class="dB-trip-stats">24 dives · 105 sp.</span>
+          </div>
+          <div class="dB-trip-sub">Naga Biru · Indonesia · May 2026 · 8 days</div>
+          <div class="dB-map"></div>
+        </div>
+
+        <!-- #149 Little Angel — Boat -->
+        <div class="dB-row">
+          <div class="dB-main">
+            <div class="dB-top">
+              <span class="dB-dnum">149</span>
+              <span class="dB-site">Little Angel <span class="dB-gps">📍</span></span>
+              <span class="dB-date">Wed 13</span>
+            </div>
+            <div class="dB-meta">
+              <span class="dB-type-pill t-Boat">Boat</span>
+              ↓ 24.4 m <span class="dB-sep">·</span> ⏱ 61 min <span class="dB-sep">·</span> 👁 20 m
+            </div>
+            <div class="dB-foot">
+              <span class="iucn VU">VU</span>
+              <span class="sp-name">Whitetip reef shark</span>
+              <span style="opacity:0.4">·</span>
+              <span>+2 sp.</span>
+            </div>
+          </div>
+          <div class="dB-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg" alt=""></div>
+        </div>
+
+        <!-- #148 Angel Reef — Reef -->
+        <div class="dB-row">
+          <div class="dB-main">
+            <div class="dB-top">
+              <span class="dB-dnum">148</span>
+              <span class="dB-site">Angel Reef <span class="dB-gps">📍</span></span>
+              <span class="dB-date">Wed 13</span>
+            </div>
+            <div class="dB-meta">
+              <span class="dB-type-pill t-Reef">Reef</span>
+              ↓ 22.9 m <span class="dB-sep">·</span> ⏱ 65 min <span class="dB-sep">·</span> 👁 20 m
+            </div>
+            <div class="dB-foot">
+              <span class="iucn CR">CR</span>
+              <span class="sp-name">Hawksbill turtle</span>
+              <span style="opacity:0.4">·</span>
+              <span>+6 sp.</span>
+            </div>
+          </div>
+          <div class="dB-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg" alt=""></div>
+        </div>
+
+        <!-- #147 Labuan Haji — Night -->
+        <div class="dB-row">
+          <div class="dB-main">
+            <div class="dB-top">
+              <span class="dB-dnum">147</span>
+              <span class="dB-site">Labuan Haji</span>
+              <span class="dB-date">Tue 12</span>
+            </div>
+            <div class="dB-meta">
+              <span class="dB-type-pill t-Night">Night</span>
+              ↓ 15.5 m <span class="dB-sep">·</span> ⏱ 67 min <span class="dB-sep">·</span> 👁 14 m
+            </div>
+            <div class="dB-foot">
+              <span class="iucn LC">LC</span>
+              <span class="sp-name">Hairy frogfish</span>
+              <span style="opacity:0.4">·</span>
+              <span>+11 sp.</span>
+            </div>
+          </div>
+          <div class="dB-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/5890152/square.jpg" alt=""></div>
+        </div>
+
+        <!-- #146 Saleh Bay — Boat -->
+        <div class="dB-row">
+          <div class="dB-main">
+            <div class="dB-top">
+              <span class="dB-dnum">146</span>
+              <span class="dB-site">Saleh Bay <span class="dB-gps">📍</span></span>
+              <span class="dB-date">Tue 12</span>
+            </div>
+            <div class="dB-meta">
+              <span class="dB-type-pill t-Boat">Boat</span>
+              ↓ 8.8 m <span class="dB-sep">·</span> ⏱ 57 min <span class="dB-sep">·</span> 👁 16 m
+            </div>
+            <div class="dB-foot">
+              <span class="iucn LC">LC</span>
+              <span class="sp-name">Common octopus</span>
+            </div>
+          </div>
+          <div class="dB-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/166419253/square.jpeg" alt=""></div>
+        </div>
+
+        <!-- #145 Saleh Bay — Boat, bumphead -->
+        <div class="dB-row">
+          <div class="dB-main">
+            <div class="dB-top">
+              <span class="dB-dnum">145</span>
+              <span class="dB-site">Saleh Bay <span class="dB-gps">📍</span></span>
+              <span class="dB-date">Tue 12</span>
+            </div>
+            <div class="dB-meta">
+              <span class="dB-type-pill t-Boat">Boat</span>
+              ↓ 9.3 m <span class="dB-sep">·</span> ⏱ 45 min <span class="dB-sep">·</span> 👁 16 m
+            </div>
+            <div class="dB-foot">
+              <span class="iucn VU">VU</span>
+              <span class="sp-name">Bumphead parrotfish</span>
+              <span style="opacity:0.4">·</span>
+              <span style="color:var(--accent)">▶ 4</span>
+            </div>
+          </div>
+          <div class="dB-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/709279/square.jpg" alt=""></div>
+        </div>
+
+      </div>
+      <div class="navbar">
+        <div class="nb-item"><span class="nb-icon">＋</span><span>Log</span></div>
+        <div class="nb-item active"><span class="nb-icon">📋</span><span>History</span></div>
+        <div class="nb-item"><span class="nb-icon">🐠</span><span>Species</span></div>
+        <div class="nb-item"><span class="nb-icon">📊</span><span>Stats</span></div>
+        <div class="nb-item"><span class="nb-icon">⊕</span><span>Data</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DIRECTION C — STATS-FORWARD DOSSIER
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="variant">
+    <div class="variant-tag">C · Stats-forward dossier</div>
+    <div class="variant-name">Numbers and sightings, no background photos</div>
+    <div class="variant-desc">
+      Trip header carries a hero stats band. Each card: a coloured dive-type
+      rail on the left, depth + time as hero numbers, and a strip of
+      species thumbnails (everyone you saw, not just the rarest) as the
+      visual layer. Highest data density, no photography risk on bad-light
+      species photos.
+    </div>
+
+    <div class="phone dC">
+      <div class="statusbar">
+        <span>14:08</span>
+        <span>77%</span>
+      </div>
+      <div class="body">
+
+        <div class="ph">
+          <h1>History</h1>
+          <div class="sub">149 dives · 105 species · 47 sites</div>
+        </div>
+        <div class="sort-row">
+          <span class="sort-pill active">Dive ↓</span>
+          <span class="sort-pill">Depth</span>
+          <span class="sort-pill">Country</span>
+          <span class="sort-pill map">📍 Map</span>
+        </div>
+
+        <div class="dC-trip">
+          <div class="dC-trip-name">Komodo — Bali</div>
+          <div class="dC-trip-where">Naga Biru · Indonesia · May 2026</div>
+          <div class="dC-band">
+            <div class="dC-stat"><div class="dC-stat-n">24</div><div class="dC-stat-l">dives</div></div>
+            <div class="dC-stat"><div class="dC-stat-n">105</div><div class="dC-stat-l">species</div></div>
+            <div class="dC-stat"><div class="dC-stat-n">8</div><div class="dC-stat-l">days</div></div>
+            <div class="dC-stat"><div class="dC-stat-n">7</div><div class="dC-stat-l">sites</div></div>
+          </div>
+        </div>
+
+        <!-- #149 Little Angel -->
+        <div class="dC-card">
+          <div class="dC-rail t-Boat"></div>
+          <div class="dC-nums">
+            <div class="dC-num-block"><div class="dC-num deep">24.4</div><div class="dC-num-l">m</div></div>
+            <div class="dC-num-block"><div class="dC-num">61</div><div class="dC-num-l">min</div></div>
+          </div>
+          <div class="dC-detail">
+            <div class="dC-row1">
+              <span class="dC-site">Little Angel 📍</span>
+              <span class="dC-dnum-date">#149 · Wed 13</span>
+            </div>
+            <div class="dC-row2">
+              <span class="dC-type t-Boat">Boat</span>
+              <span class="dC-sep">·</span>
+              <span>vis 20 m</span>
+            </div>
+            <div class="dC-strip">
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg"></div>
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/166419253/square.jpeg"></div>
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg"></div>
+              <span class="dC-rare">rarest <span class="iucn VU">VU</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- #148 Angel Reef — 7 sp.: show 4 + "+3" -->
+        <div class="dC-card">
+          <div class="dC-rail t-Reef"></div>
+          <div class="dC-nums">
+            <div class="dC-num-block"><div class="dC-num deep">22.9</div><div class="dC-num-l">m</div></div>
+            <div class="dC-num-block"><div class="dC-num">65</div><div class="dC-num-l">min</div></div>
+          </div>
+          <div class="dC-detail">
+            <div class="dC-row1">
+              <span class="dC-site">Angel Reef 📍</span>
+              <span class="dC-dnum-date">#148 · Wed 13</span>
+            </div>
+            <div class="dC-row2">
+              <span class="dC-type t-Reef">Reef</span>
+              <span class="dC-sep">·</span>
+              <span>vis 20 m</span>
+            </div>
+            <div class="dC-strip">
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div>
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/33852153/square.jpg"></div>
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/187831849/square.jpg"></div>
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg"></div>
+              <span class="dC-more">+3</span>
+              <span class="dC-rare">rarest <span class="iucn CR">CR</span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- #147 Labuan Haji — 12 sp.: show 5 + "+7" -->
+        <div class="dC-card">
+          <div class="dC-rail t-Night"></div>
+          <div class="dC-nums">
+            <div class="dC-num-block"><div class="dC-num deep">15.5</div><div class="dC-num-l">m</div></div>
+            <div class="dC-num-block"><div class="dC-num">67</div><div class="dC-num-l">min</div></div>
+          </div>
+          <div class="dC-detail">
+            <div class="dC-row1">
+              <span class="dC-site">Labuan Haji</span>
+              <span class="dC-dnum-date">#147 · Tue 12</span>
+            </div>
+            <div class="dC-row2">
+              <span class="dC-type t-Night">Night</span>
+              <span class="dC-sep">·</span>
+              <span>vis 14 m</span>
+            </div>
+            <div class="dC-strip">
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/5890152/square.jpg"></div>
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/166419253/square.jpeg"></div>
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/6076081/square.jpg"></div>
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg"></div>
+              <div class="dC-sp"><img src="https://static.inaturalist.org/photos/229212281/square.jpg"></div>
+              <span class="dC-more">+7</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- #146 Saleh Bay -->
+        <div class="dC-card">
+          <div class="dC-rail t-Boat"></div>
+          <div class="dC-nums">
+            <div class="dC-num-block"><div class="dC-num">8.8</div><div class="dC-num-l">m</div></div>
+            <div class="dC-num-block"><div class="dC-num">57</div><div class="dC-num-l">min</div></div>
+          </div>
+          <div class="dC-detail">
+            <div class="dC-row1">
+              <span class="dC-site">Saleh Bay 📍</span>
+              <span class="dC-dnum-date">#146 · Tue 12</span>
+            </div>
+            <div class="dC-row2">
+              <span class="dC-type t-Boat">Boat</span>
+              <span class="dC-sep">·</span>
+              <span>vis 16 m</span>
+            </div>
+            <div class="dC-strip">
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/166419253/square.jpeg"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- #145 Saleh Bay -->
+        <div class="dC-card">
+          <div class="dC-rail t-Boat"></div>
+          <div class="dC-nums">
+            <div class="dC-num-block"><div class="dC-num">9.3</div><div class="dC-num-l">m</div></div>
+            <div class="dC-num-block"><div class="dC-num">45</div><div class="dC-num-l">min</div></div>
+          </div>
+          <div class="dC-detail">
+            <div class="dC-row1">
+              <span class="dC-site">Saleh Bay 📍</span>
+              <span class="dC-dnum-date">#145 · Tue 12</span>
+            </div>
+            <div class="dC-row2">
+              <span class="dC-type t-Boat">Boat</span>
+              <span class="dC-sep">·</span>
+              <span>vis 16 m</span>
+              <span class="dC-sep">·</span>
+              <span style="color:var(--accent)">▶ 4</span>
+            </div>
+            <div class="dC-strip">
+              <div class="dC-sp"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/709279/square.jpg"></div>
+              <span class="dC-rare">rarest <span class="iucn VU">VU</span></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="navbar">
+        <div class="nb-item"><span class="nb-icon">＋</span><span>Log</span></div>
+        <div class="nb-item active"><span class="nb-icon">📋</span><span>History</span></div>
+        <div class="nb-item"><span class="nb-icon">🐠</span><span>Species</span></div>
+        <div class="nb-item"><span class="nb-icon">📊</span><span>Stats</span></div>
+        <div class="nb-item"><span class="nb-icon">⊕</span><span>Data</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DIRECTION D — NAVIGATION CARD (refined)
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="variant">
+    <div class="variant-tag">D · Navigation card (final)</div>
+    <div class="variant-name">Option B layout in timeline context</div>
+    <div class="variant-desc">
+      Coloured spine carries the dive type as a vertical word. Identity
+      left: site (hero) / date / dive#. Measurements right: 3-row grid,
+      icon left · number right-aligned (tabular-nums) · unit right — all
+      numbers share a column. Vis muted by colour. Marine row spans full
+      width below the divider: species photo + count + ▶ footage grouped.
+    </div>
+
+    <div class="phone dD">
+      <div class="statusbar">
+        <span>14:08</span>
+        <span>77%</span>
+      </div>
+      <div class="body">
+
+        <div class="ph">
+          <h1>History</h1>
+          <div class="sub">149 dives · 105 species · 47 sites</div>
+        </div>
+        <div class="sort-row">
+          <span class="sort-pill active">Dive ↓</span>
+          <span class="sort-pill">Depth</span>
+          <span class="sort-pill">Country</span>
+          <span class="sort-pill map">📍 Map</span>
+        </div>
+
+        <div class="dD-trip">
+          <div class="dD-trip-name">Komodo — Bali</div>
+          <div class="dD-trip-meta">24 dives · 105 sp. · 8 days · May 2026</div>
+          <div class="dD-map"></div>
+        </div>
+
+        <!-- #149 Little Angel — Boat, 3 species -->
+        <div class="dD-card">
+          <div class="dD-spine t-Boat"><span>Boat</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Little Angel <span class="dD-gps">📍</span></div>
+              <div class="dD-date">Wed 13 May 2026</div>
+              <div class="dD-dnum">#149</div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">24.4</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">61</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">20</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg"></div>
+              <div class="dD-marine-info">
+                <span class="dD-spcount">🐟 3 sp.</span>
+              </div>
+              <button class="dD-edit" title="Edit dive">✎</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- #148 Angel Reef — Reef, 7 species -->
+        <div class="dD-card">
+          <div class="dD-spine t-Reef"><span>Reef</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Angel Reef <span class="dD-gps">📍</span></div>
+              <div class="dD-date">Wed 13 May 2026</div>
+              <div class="dD-dnum">#148</div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">22.9</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">65</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">20</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div>
+              <div class="dD-marine-info">
+                <span class="dD-spcount">🐟 7 sp.</span>
+              </div>
+              <button class="dD-edit" title="Edit dive">✎</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- #147 Labuan Haji — Night, 12 species -->
+        <div class="dD-card">
+          <div class="dD-spine t-Night"><span>Night</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Labuan Haji</div>
+              <div class="dD-date">Tue 12 May 2026</div>
+              <div class="dD-dnum">#147</div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">15.5</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">67</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">14</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/5890152/square.jpg"></div>
+              <div class="dD-marine-info">
+                <span class="dD-spcount">🐟 12 sp.</span>
+              </div>
+              <button class="dD-edit" title="Edit dive">✎</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- #146 Saleh Bay — 1 species, no footage -->
+        <div class="dD-card">
+          <div class="dD-spine t-Boat"><span>Boat</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Saleh Bay <span class="dD-gps">📍</span></div>
+              <div class="dD-date">Tue 12 May 2026</div>
+              <div class="dD-dnum">#146</div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">8.8</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">57</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">16</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/166419253/square.jpeg"></div>
+              <div class="dD-marine-info">
+                <span class="dD-spcount">🐟 1 sp.</span>
+              </div>
+              <button class="dD-edit" title="Edit dive">✎</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- #145 Saleh Bay — footage: ▶ sits below sp count beside the photo -->
+        <div class="dD-card">
+          <div class="dD-spine t-Boat"><span>Boat</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Saleh Bay <span class="dD-gps">📍</span></div>
+              <div class="dD-date">Tue 12 May 2026</div>
+              <div class="dD-dnum">#145</div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">9.3</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">45</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">16</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/709279/square.jpg"></div>
+              <div class="dD-marine-info">
+                <span class="dD-spcount">🐟 1 sp.</span>
+                <span class="dD-vid">▶ 4</span>
+              </div>
+              <button class="dD-edit" title="Edit dive">✎</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="navbar">
+        <div class="nb-item"><span class="nb-icon">＋</span><span>Log</span></div>
+        <div class="nb-item active"><span class="nb-icon">📋</span><span>History</span></div>
+        <div class="nb-item"><span class="nb-icon">🐠</span><span>Species</span></div>
+        <div class="nb-item"><span class="nb-icon">📊</span><span>Stats</span></div>
+        <div class="nb-item"><span class="nb-icon">⊕</span><span>Data</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

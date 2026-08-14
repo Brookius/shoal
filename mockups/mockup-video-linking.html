@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Video linking (dive card, v2.0)</title>
+<style>
+  :root{
+    /* Real tokens from CLAUDE colour UI.md — do not invent new colours */
+    --bg:#F5EBD8; --surface:#FAF6F1; --surface2:#EDE5D8;
+    --border:rgba(28,48,48,0.10); --border-mid:rgba(28,48,48,0.18);
+    --text:#1C3030; --text-muted:#8B7B6A; --text-dim:#B5A898;
+    --accent:#4A90B8;   --accent-dim:rgba(74,144,184,0.10); --accent-border:rgba(74,144,184,0.30);
+    --success:#4F9D6B;  --success-dim:rgba(79,157,107,0.12);
+    --violet-soft:#9B7EC8; --violet-deep:#6A4A9A;
+    --pending:#E0734F;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --xs:12px; --sm:14px; --base:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.45;padding:36px 18px 90px}
+  .wrap{max-width:860px;margin:0 auto}
+  .note{font-size:var(--sm);color:var(--text-muted);margin-bottom:22px}
+  .note b{color:var(--text)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+
+  /* section pattern (matches the live expanded dive card) */
+  .sec{padding:18px 22px 14px;border-top:1px solid var(--border)}
+  .sec:first-of-type{border-top:0}
+  .sec-h{display:flex;align-items:baseline;gap:8px;font-family:var(--mono);font-size:var(--xs);color:var(--accent);
+         font-weight:600;letter-spacing:0.10em;text-transform:uppercase;padding-bottom:8px;
+         border-bottom:1px solid var(--border);margin-bottom:14px}
+  .sec-h .n{color:var(--text-dim);font-weight:400;letter-spacing:0.04em;text-transform:none}
+
+  /* (truncated) sightings list — just enough to show the new ▶ indicator */
+  .sp-row{display:flex;align-items:center;gap:11px;padding:8px;border-radius:9px;border:1px solid transparent}
+  .sp-row.active{background:var(--accent-dim);border-color:var(--accent-border)}
+  .sp-thumb{flex:0 0 36px;width:36px;height:36px;border-radius:7px;background:var(--surface2);
+            display:flex;align-items:center;justify-content:center;font-size:18px;opacity:0.6}
+  .sp-txt{flex:1;min-width:0}
+  .sp-name{font-size:var(--sm);font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sp-sci{font-style:italic;font-size:var(--xs);color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sp-rmeta{display:flex;align-items:center;gap:7px;flex-shrink:0}
+  .iucn{font-family:var(--mono);font-size:var(--xs);font-weight:600;padding:1px 6px;border-radius:4px;border:1px solid var(--border)}
+  .i-EN{background:rgba(155,126,200,0.15);color:#9B7EC8;border-color:rgba(155,126,200,0.30)}
+  .i-VU{background:rgba(212,168,67,0.15);color:#a07a10;border-color:rgba(212,168,67,0.30)}
+  .i-LC{background:rgba(139,123,106,0.10);color:var(--text-muted)}
+  .ab{font-family:var(--mono);font-size:var(--xs);font-weight:700;color:var(--accent);background:var(--accent-dim);border-radius:5px;padding:1px 8px}
+  /* the new indicator — Cerulean (interactive role) ▶ glyph */
+  .vid-mark{font-family:var(--mono);font-size:var(--xs);color:var(--accent);cursor:pointer;line-height:1;
+            padding:2px 5px;border-radius:4px;transition:background .12s}
+  .vid-mark:hover{background:var(--accent-dim)}
+
+  /* NEW: Footage section */
+  .fv{display:flex;flex-direction:column;gap:14px}
+  .vid{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px 10px}
+  .vid-head{display:flex;align-items:center;gap:8px}
+  .vid-icon{font-size:14px;color:var(--text-muted);flex:0 0 16px}
+  .vid-name{font-family:var(--mono);font-size:var(--sm);color:var(--text);font-weight:600;flex:1;min-width:0;
+            overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vid-state{font-family:var(--mono);font-size:var(--xs);letter-spacing:0.04em;flex-shrink:0;display:flex;align-items:center;gap:4px}
+  .vid-state.done{color:var(--success)}
+  .vid-state.pending{color:var(--pending)}
+  .vid-count{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim);margin-top:3px;margin-left:24px}
+  .vid-stamps{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);
+              display:flex;flex-direction:column;gap:3px}
+  .vid-stamp{display:flex;align-items:baseline;gap:10px;font-size:var(--sm);padding:3px 4px;border-radius:5px}
+  .vid-stamp:hover{background:var(--accent-dim)}
+  .vid-stamp .t{font-family:var(--mono);font-size:var(--xs);color:var(--accent);font-weight:600;flex:0 0 46px}
+  .vid-stamp .nm{color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vid-empty{font-size:var(--sm);color:var(--text-dim);font-style:italic;margin-top:6px;margin-left:24px}
+</style>
+</head>
+<body><div class="wrap">
+
+<div class="note">
+  <b>Mockup — Video linking in the expanded dive card (v2.0, no playback yet).</b>
+  Two access paths to the same data: (1) species rows get a subtle <span style="color:var(--accent);font-family:var(--mono)">▶</span> indicator
+  when they have video evidence — nothing else changes; (2) a new <b>Footage</b> section gives a
+  video-centric view (per video: reviewed state, sightings nested by timestamp, "unreviewed" state surfaced).
+  Filenames stay raw (per your call). No new reserved colours.
+</div>
+
+<div class="card">
+
+  <!-- Marine life: truncated to 3 rows — show only the new ▶ glyph addition -->
+  <div class="sec">
+    <div class="sec-h">Marine life <span class="n">(species list unchanged; new "▶" appears only when a sighting has video evidence)</span></div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div class="sp-row active">
+        <div class="sp-thumb">🐟</div>
+        <div class="sp-txt">
+          <div class="sp-name">Leaf frogfish</div>
+          <div class="sp-sci">Antennarius pictus</div>
+        </div>
+        <div class="sp-rmeta">
+          <span class="vid-mark" title="In GX021280.MP4 @ 04:23 — see Footage">▶</span>
+          <span class="iucn i-LC">LC</span>
+          <span class="ab">R</span>
+        </div>
+      </div>
+      <div class="sp-row">
+        <div class="sp-thumb">🦈</div>
+        <div class="sp-txt">
+          <div class="sp-name">Whitetip reef shark</div>
+          <div class="sp-sci">Triaenodon obesus</div>
+        </div>
+        <div class="sp-rmeta">
+          <span class="vid-mark" title="In GX021280.MP4 @ 07:10 — see Footage">▶</span>
+          <span class="iucn i-VU">VU</span>
+          <span class="ab">O</span>
+        </div>
+      </div>
+      <div class="sp-row">
+        <div class="sp-thumb">🐠</div>
+        <div class="sp-txt">
+          <div class="sp-name">Bluestreak cleaner wrasse</div>
+          <div class="sp-sci">Labroides dimidiatus</div>
+        </div>
+        <div class="sp-rmeta">
+          <!-- no ▶ → no video evidence; row unchanged -->
+          <span class="iucn i-LC">LC</span>
+          <span class="ab">C</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW: Footage section -->
+  <div class="sec">
+    <div class="sec-h">Footage <span class="n">3 videos · 4 sightings linked · 1 unreviewed</span></div>
+    <div class="fv">
+
+      <div class="vid">
+        <div class="vid-head">
+          <span class="vid-icon">🎬</span>
+          <span class="vid-name">GX011280.MP4</span>
+          <span class="vid-state done">✓ reviewed</span>
+        </div>
+        <div class="vid-count">2 sightings linked</div>
+        <div class="vid-stamps">
+          <div class="vid-stamp"><span class="t">02:15</span><span class="nm">Schooling barracuda</span></div>
+          <div class="vid-stamp"><span class="t">11:48</span><span class="nm">Manta ray</span></div>
+        </div>
+      </div>
+
+      <div class="vid">
+        <div class="vid-head">
+          <span class="vid-icon">🎬</span>
+          <span class="vid-name">GX021280.MP4</span>
+          <span class="vid-state done">✓ reviewed</span>
+        </div>
+        <div class="vid-count">2 sightings linked</div>
+        <div class="vid-stamps">
+          <div class="vid-stamp"><span class="t">04:23</span><span class="nm">Leaf frogfish</span></div>
+          <div class="vid-stamp"><span class="t">07:10</span><span class="nm">Whitetip reef shark</span></div>
+        </div>
+      </div>
+
+      <div class="vid">
+        <div class="vid-head">
+          <span class="vid-icon">🎬</span>
+          <span class="vid-name">GX031280.MP4</span>
+          <span class="vid-state pending">● unreviewed</span>
+        </div>
+        <div class="vid-empty">No sightings linked yet — review pending.</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</div></body></html>

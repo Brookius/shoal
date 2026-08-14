@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Log Form — Collapsible Sections v3</title>
+<style>
+/* ── Design tokens ───────────────────────────────────────────────────────── */
+:root {
+  --sans:    system-ui, -apple-system, sans-serif;
+  --mono:    'SF Mono', 'Fira Mono', 'Consolas', monospace;
+
+  --bg:        #F5F0E8;
+  --surface:   #FFFDF8;
+  --surface2:  #F0EBE0;
+  --border:    #E0D8CC;
+  --border-mid:#D0C8BC;
+
+  --text:      #2C2825;
+  --text-muted:#7A7268;
+  --text-dim:  #A09890;
+
+  --accent:        #4A90B8;
+  --accent-border: rgba(74,144,184,0.25);
+  --accent-dim:    rgba(74,144,184,0.07);
+  --success:       #4A9870;
+  --pending:       #E0734F;
+
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 16px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  font-size: var(--text-base);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+.layout {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 0 120px;
+}
+
+@media (min-width: 601px) {
+  body { padding: 24px 20px 0; }
+  .layout { padding-bottom: 80px; }
+}
+
+/* ── Annotation banner ───────────────────────────────────────────────────── */
+.annotation {
+  background: #fffbe6;
+  border: 1px solid #f0c040;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: var(--text-xs);
+  color: #6b5800;
+  margin: 0 0 12px;
+  line-height: 1.6;
+}
+.annotation strong { color: #4a3800; }
+.annotation ul { padding-left: 14px; margin-top: 4px; }
+.annotation li { margin-bottom: 2px; }
+
+/* ── Mobile page header — non-sticky (scrolls away to reclaim pixels) ────── */
+.page-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 12px;
+}
+.page-header-title {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+.page-header-sub { font-size: var(--text-sm); color: var(--text-muted); }
+@media (min-width: 601px) { .page-header { display: none; } }
+
+/* ── Desktop title row with back link ───────────────────────────────────── */
+.desktop-title-row {
+  display: none;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+@media (min-width: 601px) { .desktop-title-row { display: flex; } }
+.desktop-back {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+}
+.desktop-back:hover { color: var(--text-muted); }
+.desktop-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+}
+.desktop-sub {
+  display: none;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+@media (min-width: 601px) { .desktop-sub { display: block; } }
+
+/* ── Collapse-all link ───────────────────────────────────────────────────── */
+.collapse-all-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 16px 2px;
+}
+@media (min-width: 601px) { .collapse-all-row { padding: 0 0 6px; } }
+.collapse-all-btn {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.collapse-all-btn:hover { color: var(--text-muted); }
+
+/* ── Collapsible section ─────────────────────────────────────────────────── */
+.cs {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.cs:first-of-type { border-top: none; }
+
+@media (min-width: 601px) {
+  .cs { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
+  .cs:first-of-type { border-top: 1px solid var(--border); }
+}
+
+/* Header row — a11y: role=button, tabindex, aria-expanded via JS */
+.cs-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.12s;
+}
+.cs-head:active, .cs-head:hover { background: var(--surface2); }
+.cs-head:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+@media (min-width: 601px) {
+  .cs-head        { padding: 12px 18px; border-radius: 10px; }
+  .cs.open .cs-head { border-radius: 10px 10px 0 0; }
+}
+
+/* Chevron */
+.cs-chevron {
+  font-size: 10px;
+  color: var(--text-dim);
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.cs.open .cs-chevron { transform: rotate(90deg); }
+
+/* Section title */
+.cs-title {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+  flex: 1;
+}
+.cs.open .cs-title { color: var(--accent); }
+
+/* ── Three summary states ─────────────────────────────────────────────────
+   empty   — dim, italicised hint "Tap to fill"
+   partial — neutral muted, shows whatever's filled so far, no tick
+   complete— success green, ✓ prefix                                     ── */
+.cs-summary {
+  font-size: var(--text-xs);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  /* default = empty — dim italic hint */
+  color: var(--text-dim);
+  font-style: italic;
+}
+.cs-summary.partial  { color: var(--text-muted); font-style: normal; }
+.cs-summary.complete { color: var(--success);    font-style: normal; }
+/* zero — used for Marine life "0 sightings": not italic (it's a fact), not green (nothing logged) */
+.cs-summary.zero     { color: var(--text-dim);   font-style: normal; }
+.cs.open .cs-summary { display: none; }
+
+/* Body */
+.cs-body {
+  display: none;
+  padding: 4px 16px 18px;
+  border-top: 1px solid var(--border);
+}
+.cs.open .cs-body { display: block; }
+@media (min-width: 601px) { .cs-body { padding: 12px 18px 20px; } }
+
+/* ── Field atoms ─────────────────────────────────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+
+.field label {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.label-note {
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--sans);
+  font-style: italic;
+}
+/* "auto" annotation on derived fields */
+.auto-label {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  margin-left: 6px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.field input, .field select, .field textarea {
+  font-family: var(--sans);
+  font-size: var(--text-base);
+  padding: 10px 12px;
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+}
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--accent-border);
+  background: var(--surface);
+}
+.field textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+.field input[readonly] { color: var(--text-dim); background: var(--surface2); }
+
+/* Grid layouts */
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+@media (max-width: 380px) { .row-3 { grid-template-columns: 1fr 1fr; } }
+
+/* Site search input — magnifier icon via background + padding-left */
+.site-search-wrap { position: relative; }
+.site-search-wrap input {
+  padding-left: 36px;
+}
+.site-search-wrap::before {
+  content: '🔍';
+  font-size: 13px;
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  opacity: 0.45;
+  line-height: 1;
+}
+
+/* ── GPS cluster ─────────────────────────────────────────────────────────── */
+.gps-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.gps-btn {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  padding: 8px 12px;
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+.gps-btn:active      { background: var(--surface2); }
+.gps-btn.captured    { color: var(--success); border-color: rgba(74,152,112,0.35);
+                        background: rgba(74,152,112,0.07); }
+.gps-status { font-size: var(--text-xs); color: var(--text-dim); font-family: var(--mono); flex: 1; }
+
+/* ── Stops block (safety + deco) ─────────────────────────────────────────── */
+.stops-group {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-top: 4px;
+}
+.stops-label {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.stop-row {
+  display: grid;
+  grid-template-columns: 52px 1fr 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.stop-row:last-child { margin-bottom: 0; }
+.stop-type {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+/* Deco: italic + one step dimmer than Safety's --text-muted — communicates "optional fact",
+   not an alert. Coral (--pending) is reserved for "needs attention" states. */
+.stop-type.deco { font-style: italic; color: var(--text-dim); }
+.stop-cell { display: flex; gap: 4px; align-items: center; }
+.stop-row input {
+  font-family: var(--mono);
+  font-size: var(--text-sm);
+  padding: 7px 10px;
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  -webkit-appearance: none;
+}
+.stop-row input:focus { border-color: var(--accent-border); }
+.stop-row input.prefilled { color: var(--text-dim); }
+.stop-unit { font-family: var(--mono); font-size: var(--text-xs); color: var(--text-dim); white-space: nowrap; }
+.stops-hint { font-size: var(--text-xs); color: var(--text-dim); margin-top: 6px; line-height: 1.5; }
+
+/* ── Marine life ──────────────────────────────────────────────────────────── */
+.marine-sub-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  margin-top: 4px;
+}
+.marine-sub-title {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  flex: 1;
+}
+.legend-btn {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px 9px;
+  cursor: pointer;
+  line-height: 1.6;
+  flex-shrink: 0;
+}
+.legend-btn:active { background: var(--border); }
+.legend-btn.active { color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim); }
+
+/* Legend panel */
+.legend-panel {
+  display: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  flex-direction: column;
+  gap: 8px;
+}
+.legend-panel.open { display: flex; }
+.legend-section-label {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.iucn-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center; }
+.iucn-badge {
+  display: inline-block; font-size: var(--text-xs); font-family: var(--mono);
+  padding: 1px 5px; border-radius: 3px; font-weight: 600; letter-spacing: 0.02em;
+}
+.iucn-CR { background: rgba(106,74,154,0.15); color: #6A4A9A; border: 1px solid rgba(106,74,154,0.3); font-weight: 700; }
+.iucn-EN { background: rgba(155,126,200,0.15); color: #9B7EC8; border: 1px solid rgba(155,126,200,0.3); }
+.iucn-VU { background: rgba(212,168,67,0.15);  color: #a07a10; border: 1px solid rgba(212,168,67,0.3); }
+.iucn-NT { background: rgba(139,123,106,0.1);  color: var(--text-muted); border: 1px solid var(--border); }
+.iucn-LC { background: rgba(139,123,106,0.1);  color: var(--text-muted); border: 1px solid var(--border); }
+.iucn-DD { background: rgba(139,123,106,0.1);  color: var(--text-dim);   border: 1px solid var(--border); }
+.iucn-label { font-size: var(--text-xs); color: var(--text-muted); line-height: 1.4; }
+.roc-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.roc-item { font-size: var(--text-xs); color: var(--text-muted); }
+.roc-item b { color: var(--text); font-weight: 700; }
+.legend-divider { border: none; border-top: 1px solid var(--border); }
+
+/* Sighting cards */
+.sighting-card {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+  margin-bottom: 6px;
+}
+.sc-icon  { font-size: 18px; flex-shrink: 0; }
+.sc-names { flex: 1; min-width: 0; }
+.sc-common { font-size: var(--text-sm); font-weight: 600; color: var(--text);
+              overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-sci    { font-size: var(--text-xs); color: var(--text-dim); font-style: italic; }
+.sc-right  { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.sc-ab     { font-family: var(--mono); font-size: var(--text-xs); font-weight: 700;
+              color: var(--accent); background: var(--accent-dim);
+              border: 1px solid var(--accent-border); border-radius: 4px; padding: 1px 6px; }
+.sc-iucn   { font-family: var(--mono); font-size: 10px; padding: 1px 4px;
+              border-radius: 3px; font-weight: 600; }
+.sc-del    { color: var(--text-dim); background: none; border: none;
+              font-size: 14px; cursor: pointer; padding: 2px 4px; line-height: 1; }
+
+/* Species search + subordinate free-text link */
+.species-search-wrap { margin-top: 4px; }
+.species-row { display: flex; gap: 0; align-items: stretch; }
+.species-row input {
+  flex: 1; min-width: 0;
+  font-family: var(--sans); font-size: var(--text-base);
+  padding: 10px 12px;
+  border: 1px solid var(--border-mid); border-radius: 8px;
+  background: var(--bg); color: var(--text);
+  outline: none; -webkit-appearance: none; box-sizing: border-box;
+}
+.species-row input:focus { border-color: var(--accent-border); }
+/* Free-text as subordinate escape-hatch link below the search */
+.btn-freetext {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  padding: 5px 0 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  display: block;
+}
+.btn-freetext:hover { color: var(--text-muted); }
+
+/* ── Save bar ────────────────────────────────────────────────────────────── */
+.save-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 40;
+}
+.btn-save {
+  display: block; width: 100%; max-width: 860px; margin: 0 auto;
+  font-family: var(--sans); font-size: var(--text-base); font-weight: 600;
+  padding: 14px; background: var(--accent); color: #fff;
+  border: none; border-radius: 10px; cursor: pointer;
+}
+.btn-save:active { background: #3a7a9e; }
+/* In-flight and success micro-states — cycle on tap in mockup to demo */
+.btn-save.saving { background: var(--text-dim); cursor: not-allowed; letter-spacing: 0.01em; }
+.btn-save.saved  { background: var(--success); }
+</style>
+</head>
+<body>
+
+<!-- Mobile page header — non-sticky, scrolls away -->
+<div class="page-header">
+  <div class="page-header-title">Log a dive</div>
+  <div class="page-header-sub">BSAC format — fill what you have, skip what you don't</div>
+</div>
+
+<div class="layout">
+
+  <!-- Desktop title row with ← back -->
+  <div class="desktop-title-row">
+    <a href="#" class="desktop-back">← History</a>
+    <span class="desktop-title">Log a dive</span>
+  </div>
+  <p class="desktop-sub">BSAC format — fill what you have, skip what you don't</p>
+
+  <div class="annotation">
+    <strong>Mockup v3 — round 2 polish.</strong>
+    <ul>
+      <li><strong>Dive # annotation:</strong> "auto" (was "+1"). Annotation is <em>conditional</em> — shown only while the value is auto-derived. Disappears the moment user manually edits the field. Same rule for Exit time "auto" and Dive type "auto from Dive Vibe".</li>
+      <li><strong>Dive type "auto from Dive Vibe"</strong> — runtime-only annotation; shown when a Dive Vibe site match auto-filled the type. Hidden when user manually selects or no match was used.</li>
+      <li><strong>Collapse all ↔ Expand all</strong> — same button, toggles label based on state. If any section is open: shows "Collapse all". If all collapsed: shows "Expand all". Tap the button to try it.</li>
+      <li><strong>Free text label:</strong> "+ Free text" (was "+ Add free text instead").</li>
+      <li><strong>Trip helper:</strong> shortened to "— groups in history".</li>
+      <li><strong>Marine empty state:</strong> collapsed summary reads "0 sightings" (not "Tap to add"). Marine always shows a count — the number itself is the summary. Matches the complete state "✓ 3 sightings" in vocabulary.</li>
+      <li><strong>Deco label:</strong> italic + --text-dim (one notch dimmer than Safety's --text-muted). Communicates optional without using coral.</li>
+      <li><strong>Save button states:</strong> Tap "Save dive" to cycle Default → Saving… → ✓ Saved → Default. Runtime spec: disable button during in-flight; on success briefly show ✓ Saved then reset form.</li>
+      <li><strong>Save bar / keyboard z-index (runtime spec):</strong> When species search input has focus and the Android soft keyboard is raised, hide the save bar (set visibility:hidden or translate below viewport using visualViewport.height). Restore on blur. Prevents z-index fight between save bar and autocomplete dropdown.</li>
+      <li><strong>After-save reset spec (runtime, not mockup-visible):</strong> On success — (a) Dive # increments by 1; (b) Date stays as logged (don't reset to today — morning-after logging); (c) Trip and region carry forward from last dive; (d) Marine life clears to empty; (e) Dive profile, pressure, notes clear; (f) Dive section reopens, Marine section reopens; (g) scroll to top of form.</li>
+    </ul>
+  </div>
+
+  <!-- Collapse all ↔ Expand all — same button, label reflects current state -->
+  <div class="collapse-all-row">
+    <button class="collapse-all-btn" id="toggle-all-btn" onclick="toggleAll()">Collapse all</button>
+  </div>
+
+  <!-- ── Section A: Dive (open, complete) ──────────────────────────────── -->
+  <div class="cs open" id="sec-dive">
+    <div class="cs-head" role="button" tabindex="0"
+         aria-expanded="true" onclick="toggle('sec-dive')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle('sec-dive')}">
+      <span class="cs-chevron">▶</span>
+      <span class="cs-title">Dive</span>
+      <span class="cs-summary complete">✓ #129 · 28 May 2026 · Manta Alley, Komodo</span>
+    </div>
+    <div class="cs-body">
+      <div class="row-2">
+        <div class="field">
+          <label>Date</label>
+          <input type="date" value="2026-05-28">
+        </div>
+        <div class="field">
+          <label>Dive # <span class="auto-label">auto</span></label>
+          <input type="number" value="129">
+        </div>
+      </div>
+      <!-- Trip lives here — this is where "what trip?" naturally arises -->
+      <div class="field">
+        <label>Trip <span class="label-note">— groups in history</span></label>
+        <input type="text" placeholder="e.g. Naga Biru May 2026" value="Naga Biru May 2026">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Country</label>
+          <select>
+            <option>Indonesia</option>
+            <option>Philippines</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Region / area</label>
+          <input type="text" placeholder="e.g. Komodo, Gili" value="Komodo">
+        </div>
+      </div>
+      <!-- Site: search affordance via icon + placeholder -->
+      <div class="field">
+        <label>Site name</label>
+        <div class="site-search-wrap">
+          <input type="text" placeholder="Search Dive Vibe / OSM…" value="Manta Alley">
+        </div>
+      </div>
+      <!-- GPS: two states shown for demo -->
+      <div class="gps-row" id="gps-row">
+        <button class="gps-btn captured" id="gps-btn" onclick="toggleGPS()">
+          ✓ GPS captured · recapture
+        </button>
+        <span class="gps-status" id="gps-status">−8.537, 119.614</span>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Latitude</label>
+          <input type="number" value="-8.537" step="0.000001">
+        </div>
+        <div class="field">
+          <label>Longitude</label>
+          <input type="number" value="119.614" step="0.000001">
+        </div>
+      </div>
+      <!-- Dive type: auto annotation when Dive Vibe fills it -->
+      <div class="field">
+        <label>Dive type <span class="auto-label">auto from Dive Vibe</span></label>
+        <select>
+          <option value="">—</option>
+          <option>Boat</option>
+          <option selected>Drift</option>
+          <option>Shore</option>
+          <option>Night</option>
+          <option>Cave</option>
+          <option>Wreck</option>
+          <option>Reef</option>
+          <option>Wall</option>
+          <option>Pinnacle</option>
+          <option>Muck</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section B: Conditions (collapsed, complete) ───────────────────── -->
+  <div class="cs" id="sec-conditions">
+    <div class="cs-head" role="button" tabindex="0"
+         aria-expanded="false" onclick="toggle('sec-conditions')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle('sec-conditions')}">
+      <span class="cs-chevron">▶</span>
+      <span class="cs-title">Conditions</span>
+      <span class="cs-summary complete">✓ Salt · 15 m vis · 28°C · Moderate</span>
+    </div>
+    <div class="cs-body">
+      <div class="row-2">
+        <div class="field">
+          <label>Water type</label>
+          <select>
+            <option selected>Salt</option>
+            <option>Fresh</option>
+            <option>Brackish</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Weather / surface</label>
+          <input type="text" placeholder="e.g. Sunny, calm" value="Sunny">
+        </div>
+      </div>
+      <div class="row-3">
+        <div class="field">
+          <label>Vis (m)</label>
+          <input type="number" placeholder="15" value="15">
+        </div>
+        <div class="field">
+          <label>Temp (°C)</label>
+          <input type="number" placeholder="24" value="28">
+        </div>
+        <div class="field">
+          <label>Current</label>
+          <select>
+            <option value="">None</option>
+            <option>Slight</option>
+            <option selected>Moderate</option>
+            <option>Strong</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section C: Dive profile (collapsed, complete) ────────────────── -->
+  <div class="cs" id="sec-profile">
+    <div class="cs-head" role="button" tabindex="0"
+         aria-expanded="false" onclick="toggle('sec-profile')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle('sec-profile')}">
+      <span class="cs-chevron">▶</span>
+      <span class="cs-title">Dive profile</span>
+      <span class="cs-summary complete">✓ 28 m · 16 m avg · 52 min · 09:15→10:07</span>
+    </div>
+    <div class="cs-body">
+      <!-- row-3: compact unit-in-label forms that fit at 1/3 width -->
+      <div class="row-3">
+        <div class="field">
+          <label>Time (min)</label>
+          <input type="number" placeholder="45" value="52">
+        </div>
+        <div class="field">
+          <label>Max (m)</label>
+          <input type="number" placeholder="18" value="28">
+        </div>
+        <div class="field">
+          <label>Avg (m)</label>
+          <input type="number" placeholder="12" value="16">
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Entry time</label>
+          <input type="time" value="09:15">
+        </div>
+        <div class="field">
+          <label>Exit time <span class="auto-label">auto</span></label>
+          <input type="time" value="10:07" readonly>
+        </div>
+      </div>
+      <!-- Stops group -->
+      <div class="stops-group">
+        <div class="stops-label">Stops</div>
+        <div class="stop-row">
+          <span class="stop-type">Safety</span>
+          <div class="stop-cell">
+            <input type="number" value="5" class="prefilled">
+            <span class="stop-unit">m</span>
+          </div>
+          <div class="stop-cell">
+            <input type="number" value="3" class="prefilled">
+            <span class="stop-unit">min</span>
+          </div>
+        </div>
+        <!-- Deco: italic only — a factual field, not an alert -->
+        <div class="stop-row">
+          <span class="stop-type deco">Deco</span>
+          <div class="stop-cell">
+            <input type="number" placeholder="—">
+            <span class="stop-unit">m</span>
+          </div>
+          <div class="stop-cell">
+            <input type="number" placeholder="—">
+            <span class="stop-unit">min</span>
+          </div>
+        </div>
+        <p class="stops-hint">Safety pre-fills at 5 m / 3 min — edit if different. Deco is optional.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section D: Gas & equipment (collapsed, partial) ───────────────── -->
+  <div class="cs" id="sec-equipment">
+    <div class="cs-head" role="button" tabindex="0"
+         aria-expanded="false" onclick="toggle('sec-equipment')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle('sec-equipment')}">
+      <span class="cs-chevron">▶</span>
+      <span class="cs-title">Gas &amp; equipment</span>
+      <!-- Partial: pressure filled but suit/weight empty -->
+      <span class="cs-summary partial">200→50 bar · Air · 12 L Steel</span>
+    </div>
+    <div class="cs-body">
+      <div class="row-2">
+        <div class="field">
+          <label>Start pressure (bar)</label>
+          <input type="number" placeholder="200" value="200">
+        </div>
+        <div class="field">
+          <label>End pressure (bar)</label>
+          <input type="number" placeholder="60" value="50">
+        </div>
+      </div>
+      <div class="field">
+        <label>Gas mix</label>
+        <select>
+          <option selected>Air</option>
+          <option>Nitrox 29</option>
+          <option>Nitrox 30</option>
+          <option>Nitrox 31</option>
+          <option>Nitrox 32</option>
+          <option>Nitrox 33</option>
+          <option>Nitrox 34</option>
+          <option>Nitrox 35</option>
+          <option>Trimix</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Tank type</label>
+          <select>
+            <option>Aluminium</option>
+            <option selected>Steel</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tank size (L)</label>
+          <input type="number" placeholder="12" step="0.5" value="12">
+        </div>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <!-- Empty suit field — shows autocomplete would pre-fill from last dive -->
+          <label>Suit</label>
+          <input type="text" placeholder="e.g. 5 mm wetsuit">
+        </div>
+        <div class="field">
+          <label>Weight (kg)</label>
+          <input type="number" placeholder="6">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section E: Marine life (open, complete) ───────────────────────── -->
+  <div class="cs open" id="sec-marine">
+    <div class="cs-head" role="button" tabindex="0"
+         aria-expanded="true" onclick="toggle('sec-marine')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle('sec-marine')}">
+      <span class="cs-chevron">▶</span>
+      <span class="cs-title">Marine life</span>
+      <!-- complete state → "✓ 3 sightings"; empty state → "0 sightings" (no tick, no italic — just a count) -->
+      <span class="cs-summary complete">✓ 3 sightings</span>
+    </div>
+    <div class="cs-body">
+      <div class="marine-sub-head">
+        <span class="marine-sub-title">Sightings</span>
+        <button class="legend-btn" id="legend-btn" onclick="toggleLegend()">? key</button>
+      </div>
+      <div class="legend-panel" id="legend-panel">
+        <div>
+          <div class="legend-section-label">IUCN red list</div>
+          <div class="iucn-grid">
+            <span class="iucn-badge iucn-CR">CR</span><span class="iucn-label">Critically Endangered</span>
+            <span class="iucn-badge iucn-EN">EN</span><span class="iucn-label">Endangered</span>
+            <span class="iucn-badge iucn-VU">VU</span><span class="iucn-label">Vulnerable</span>
+            <span class="iucn-badge iucn-NT">NT</span><span class="iucn-label">Near Threatened</span>
+            <span class="iucn-badge iucn-LC">LC</span><span class="iucn-label">Least Concern</span>
+            <span class="iucn-badge iucn-DD">DD</span><span class="iucn-label">Data Deficient</span>
+          </div>
+        </div>
+        <hr class="legend-divider">
+        <div>
+          <div class="legend-section-label">Abundance (Seasearch R/O/C)</div>
+          <div class="roc-row">
+            <span class="roc-item"><b>R</b>are — 1 or 2</span>
+            <span class="roc-item"><b>O</b>ccasional — a few</span>
+            <span class="roc-item"><b>C</b>ommon — many</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sighting-card">
+        <span class="sc-icon">🦈</span>
+        <div class="sc-names">
+          <div class="sc-common">Oceanic manta ray</div>
+          <div class="sc-sci">Mobula birostris</div>
+        </div>
+        <div class="sc-right">
+          <span class="sc-ab">O</span>
+          <span class="iucn-badge iucn-EN sc-iucn">EN</span>
+          <button class="sc-del">✕</button>
+        </div>
+      </div>
+      <div class="sighting-card">
+        <span class="sc-icon">🐢</span>
+        <div class="sc-names">
+          <div class="sc-common">Green sea turtle</div>
+          <div class="sc-sci">Chelonia mydas</div>
+        </div>
+        <div class="sc-right">
+          <span class="sc-ab">R</span>
+          <span class="iucn-badge iucn-LC sc-iucn">LC</span>
+          <button class="sc-del">✕</button>
+        </div>
+      </div>
+      <div class="sighting-card">
+        <span class="sc-icon">🐟</span>
+        <div class="sc-names">
+          <div class="sc-common">Bumphead parrotfish</div>
+          <div class="sc-sci">Bolbometopon muricatum</div>
+        </div>
+        <div class="sc-right">
+          <span class="sc-ab">C</span>
+          <span class="iucn-badge iucn-VU sc-iucn">VU</span>
+          <button class="sc-del">✕</button>
+        </div>
+      </div>
+
+      <!-- Search is primary; free text is subordinate escape-hatch below -->
+      <div class="species-search-wrap">
+        <div class="species-row">
+          <input type="text" placeholder="Search species (e.g. grey reef shark)…">
+        </div>
+        <button class="btn-freetext">+ Free text</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section F: Notes (collapsed, empty) ───────────────────────────── -->
+  <div class="cs" id="sec-notes">
+    <div class="cs-head" role="button" tabindex="0"
+         aria-expanded="false" onclick="toggle('sec-notes')"
+         onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggle('sec-notes')}">
+      <span class="cs-chevron">▶</span>
+      <span class="cs-title">Notes &amp; sign-off</span>
+      <!-- Empty state: dim italic hint -->
+      <span class="cs-summary">Tap to add</span>
+    </div>
+    <div class="cs-body">
+      <div class="row-2">
+        <div class="field">
+          <label>Liveaboard operator</label>
+          <input type="text" placeholder="e.g. MV Orion">
+        </div>
+        <div class="field">
+          <label>Buddy</label>
+          <input type="text" placeholder="Name">
+        </div>
+      </div>
+      <div class="field">
+        <label>Dive notes</label>
+        <textarea placeholder="Conditions, highlights, skills practiced, any incidents…"></textarea>
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Instructor / divemaster</label>
+          <input type="text" placeholder="Name">
+        </div>
+        <div class="field">
+          <label>Cert number</label>
+          <input type="text" placeholder="e.g. BSAC-123456">
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /layout -->
+
+<div class="save-bar">
+  <!-- Tap to cycle states: Default → Saving… → ✓ Saved → Default -->
+  <button class="btn-save" id="btn-save" onclick="cycleSave()">Save dive</button>
+</div>
+
+<script>
+  /* ── Accordion — independent toggle per section ── */
+  function toggle(id) {
+    const el     = document.getElementById(id);
+    const isOpen = el.classList.toggle('open');
+    el.querySelector('.cs-head').setAttribute('aria-expanded', isOpen);
+    updateToggleAllLabel();
+  }
+
+  /* Collapse all ↔ Expand all — smart label based on current state */
+  function toggleAll() {
+    const sections = document.querySelectorAll('.cs');
+    const anyOpen  = [...sections].some(el => el.classList.contains('open'));
+    // anyOpen → collapse all; none open → expand all
+    sections.forEach(el => {
+      el.classList.toggle('open', !anyOpen);
+      el.querySelector('.cs-head').setAttribute('aria-expanded', String(!anyOpen));
+    });
+    updateToggleAllLabel();
+  }
+
+  function updateToggleAllLabel() {
+    const anyOpen = [...document.querySelectorAll('.cs')].some(el => el.classList.contains('open'));
+    const btn = document.getElementById('toggle-all-btn');
+    if (btn) btn.textContent = anyOpen ? 'Collapse all' : 'Expand all';
+  }
+
+  /* ── Legend toggle ── */
+  function toggleLegend() {
+    const panel = document.getElementById('legend-panel');
+    const btn   = document.getElementById('legend-btn');
+    const open  = panel.classList.toggle('open');
+    btn.classList.toggle('active', open);
+    btn.textContent = open ? '✕ close' : '? key';
+  }
+
+  /* ── GPS captured state ── */
+  let gpsCapt = true; // starts captured for demo
+  function toggleGPS() {
+    gpsCapt = !gpsCapt;
+    const btn    = document.getElementById('gps-btn');
+    const status = document.getElementById('gps-status');
+    if (gpsCapt) {
+      btn.className = 'gps-btn captured';
+      btn.textContent = '✓ GPS captured · recapture';
+      status.textContent = '−8.537, 119.614';
+    } else {
+      btn.className = 'gps-btn';
+      btn.textContent = '📍 Capture GPS';
+      status.textContent = 'Tap to record current location';
+    }
+  }
+
+  /* ── Save button state cycling (mockup demo) ──
+     Cycles: Default → Saving… → ✓ Saved → Default
+     Runtime spec:
+       - "Saving…" disables button, prevents double-submit
+       - "✓ Saved" shows ~1.5 s then triggers after-save reset
+       - After-save: dive # +1, marine clears, dive/marine sections reopen, scroll top
+       - Date and trip carry forward (don't reset — morning-after logging)         */
+  const saveStates = [
+    { label: 'Save dive', cls: '' },
+    { label: 'Saving…',   cls: 'saving' },
+    { label: '✓ Saved',   cls: 'saved'  },
+  ];
+  let saveIdx = 0;
+  function cycleSave() {
+    saveIdx = (saveIdx + 1) % saveStates.length;
+    const btn = document.getElementById('btn-save');
+    const s   = saveStates[saveIdx];
+    btn.textContent = s.label;
+    btn.className   = 'btn-save ' + s.cls;
+  }
+</script>
+</body>
+</html>

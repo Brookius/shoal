@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark mode — History (trip-grouped timeline)</title>
+<style>
+/* Harbour Night applied to the History panel's real markup. Token set and the
+   reasoning behind every value: mockups/mockup-dark-tokens.html.
+   Structure/positioning copied from css/styles.css — only colour changes. */
+:root{
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --serif:Georgia,serif; --display:Georgia,serif;
+  --font-size-xs:12px; --font-size-sm:14px; --font-size-base:16px;
+  --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-full:999px;
+}
+.theme-harbour{
+  color:var(--text);
+  --surface-lowest:#091010; --surface-low:#182827; --surface-base:#111E1D;
+  --surface-high:#20312F; --surface-highest:#2E3E3B;
+  --bg:var(--surface-base); --surface:var(--surface-low); --surface2:var(--surface-high);
+  --border:rgba(237,230,218,0.08); --border-mid:rgba(237,230,218,0.17); --border-strong:rgba(237,230,218,0.28);
+  --text:#EDE6DA; --text-muted:#BFB3A2; --text-dim:#857D70;
+  --taupe-dim:rgba(191,179,162,0.1); --taupe-border:rgba(191,179,162,0.28);
+  --accent:#74B3D8; --accent-fill:#407DA0;
+  /* the light theme's accent ink/text SPLIT collapses on dark: #74B3D8 already
+     clears 4.91:1 at worst as text, so no second darkened value is needed.
+     Leaving --accent-text at its light #397191 fails on every rung (2.11–3.61). */
+  --accent-text:#74B3D8;
+  --accent-dim:rgba(116,179,216,0.12); --accent-border:rgba(116,179,216,0.36);
+  --accent-on-dark:#97C6E2;
+  --success:#5FB180; --warn:#E98A6A; --danger:#E96E4C; --gold:#D9B45C;
+  --violet-soft:#BCA9DE; --violet-deep:#A98BD6;
+  --on-accent:#FFFFFF; --on-danger:#091010; --on-type:#091010; --on-inverse:var(--surface-low);
+  /* dive-type ramp — 7 lifted, Shore/Drift/Reef inherit their :root values */
+  --type-Boat:#2A8B9C;  --type-Shore:#B0894F;   --type-Drift:#3FA9A0;
+  --type-Night:#6A7EB4; --type-Cave:#748094;    --type-Wreck:#A1765B;
+  --type-Reef:#C97A4A;  --type-Wall:#B36888;    --type-Pinnacle:#5F8A54;
+  --type-Muck:#868150;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);
+     font-size:var(--font-size-base);line-height:1.6;min-height:100vh}
+/* depth-gradient page background, dark */
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0.9;
+  background:linear-gradient(180deg,#182827 0%,#111E1D 42%,#0B1616 100%)}
+
+.note{max-width:1180px;margin:0 auto;padding:20px 20px 0;font-size:var(--font-size-sm);color:var(--text-muted)}
+.note b{color:var(--text)}
+.layout{display:flex;max-width:1180px;margin:0 auto}
+
+/* ── sidebar: already permanently dark in the shipped app, unchanged ─────── */
+.sidebar{width:200px;flex-shrink:0;padding:1.5rem 0.75rem;position:relative;
+  background:linear-gradient(180deg,#2A5257 0%,#1B3A3D 46%,#0E2124 100%);
+  border-right:1px solid var(--border)}
+.logo{padding:0 0.75rem 1.5rem}
+.logo-mark{font-family:var(--display);font-size:20px;color:var(--accent-on-dark);letter-spacing:-0.02em}
+.logo-name{font-family:var(--mono);font-size:10px;letter-spacing:0.14em;text-transform:uppercase;
+  color:rgba(250,246,241,0.55);margin-top:2px}
+.nav-section{position:relative;display:flex;flex-direction:column;gap:2px}
+#nav-current{position:absolute;left:0;width:3px;border-radius:0 2px 2px 0;background:var(--accent-on-dark);
+  top:0;height:38px;transition:top .28s cubic-bezier(.4,0,.2,1)}
+.nav-link{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-md);
+  font-size:var(--font-size-sm);color:#93A4A4;text-decoration:none}
+.nav-link.active{color:var(--accent-on-dark);font-weight:600;background:rgba(151,198,226,0.10)}
+.nav-link svg{width:17px;height:17px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.7}
+
+.main{flex:1;min-width:0;padding:2rem 2.25rem 4rem}
+#history-content{max-width:900px}
+.page-title{font-family:var(--display);font-size:22px;font-weight:500;letter-spacing:-0.02em;color:var(--text)}
+.page-sub{font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:1.5rem;font-family:var(--mono)}
+
+/* ── actions row + sort toolbar ─────────────────────────────────────────── */
+.hist-actions{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.act-btn{font-family:var(--mono);font-size:var(--font-size-xs);padding:6px 13px;border-radius:var(--radius-sm);
+  border:1px solid var(--border-mid);background:var(--surface);color:var(--text-muted);cursor:pointer}
+.act-btn:hover{color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim)}
+.sort-btns{display:flex;gap:6px;margin-bottom:18px}
+.sort-btn{font-family:var(--mono);font-size:var(--font-size-xs);padding:5px 12px;border-radius:var(--radius-xs);
+  border:1px solid var(--border-mid);background:transparent;color:var(--text-muted);cursor:pointer}
+.sort-btn.active{border-color:var(--accent-border);background:var(--accent-dim);color:var(--accent)}
+
+/* ── trip group ─────────────────────────────────────────────────────────── */
+.tl-group{margin-bottom:28px}
+.tl-header{display:flex;align-items:center;padding:10px 0 7px;border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--bg);z-index:5}
+.tl-header-label{display:flex;align-items:baseline;min-width:0;overflow:hidden}
+.tl-trip-name{font-size:var(--font-size-base);font-weight:700;color:var(--text);white-space:nowrap}
+.tl-trip-where{font-size:var(--font-size-xs);color:var(--text-muted);font-family:var(--mono);
+  margin-left:7px;white-space:nowrap}
+.tl-rename{font-size:var(--font-size-xs);color:var(--text-dim);background:none;border:none;
+  cursor:pointer;padding:2px 7px;margin-left:2px;border-radius:5px}
+.tl-rename:hover{color:var(--accent);background:var(--accent-dim)}
+.tl-leaders{flex:1;border-bottom:1px dotted var(--border-mid);min-width:20px;margin:0 10px;align-self:center}
+.tl-trip-stats{font-size:var(--font-size-sm);color:var(--text-muted);font-family:var(--mono);
+  white-space:nowrap;letter-spacing:0.04em}
+
+/* ambient trip map — Leaflet tiles are a raster the theme can't reach, so the
+   frame and its own background carry the theming instead */
+.tl-trip-map{height:110px;margin:8px 12px 14px;position:relative;cursor:pointer;
+  border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface2)}
+.tl-map-fake{position:absolute;inset:0;
+  background:
+    radial-gradient(circle at 26% 44%,rgba(116,179,216,0.30) 0 4px,transparent 5px),
+    radial-gradient(circle at 41% 62%,rgba(116,179,216,0.30) 0 4px,transparent 5px),
+    radial-gradient(circle at 63% 38%,rgba(116,179,216,0.30) 0 4px,transparent 5px),
+    linear-gradient(160deg,#1B2E31 0%,#16262A 55%,#122023 100%)}
+.tl-map-fake::after{content:'';position:absolute;inset:0;opacity:.5;
+  background:repeating-linear-gradient(72deg,transparent 0 26px,rgba(237,230,218,0.05) 26px 27px),
+             repeating-linear-gradient(-18deg,transparent 0 34px,rgba(237,230,218,0.04) 34px 35px)}
+.tl-trip-map-expand{position:absolute;right:8px;bottom:8px;width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;background:rgba(24,40,39,0.9);
+  color:var(--text-muted);font-size:14px;box-shadow:0 1px 3px rgba(0,0,0,0.4);border:1px solid var(--border-mid)}
+
+/* ── Direction-D card ───────────────────────────────────────────────────── */
+.dD-card{margin:10px 0 0;background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;display:grid;grid-template-columns:26px 1fr;box-shadow:0 1px 3px rgba(0,0,0,0.22);cursor:pointer}
+.dD-spine{display:flex;align-items:center;justify-content:center;background:var(--text-dim)}
+.dD-spine span{writing-mode:vertical-rl;font-family:var(--mono);font-size:var(--font-size-xs);font-weight:700;
+  letter-spacing:0.13em;text-transform:uppercase;
+  /* was #fff — the lifted ramp needs the ink↔paper swap here too (--on-type) */
+  color:var(--on-type)}
+.dD-spine.t-Boat{background:var(--type-Boat)}      .dD-spine.t-Shore{background:var(--type-Shore)}
+.dD-spine.t-Drift{background:var(--type-Drift)}    .dD-spine.t-Night{background:var(--type-Night)}
+.dD-spine.t-Cave{background:var(--type-Cave)}      .dD-spine.t-Wreck{background:var(--type-Wreck)}
+.dD-spine.t-Reef{background:var(--type-Reef)}      .dD-spine.t-Wall{background:var(--type-Wall)}
+.dD-spine.t-Pinnacle{background:var(--type-Pinnacle)} .dD-spine.t-Muck{background:var(--type-Muck)}
+.dD-content{display:grid;grid-template-columns:1fr auto;column-gap:14px;padding:12px 14px 0}
+.dD-identity{min-width:0}
+.dD-site{font-size:18px;font-weight:700;color:var(--text);letter-spacing:-0.01em;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dD-date{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted);
+  letter-spacing:0.04em;margin-top:4px}
+.dD-dnum{font-family:var(--mono);font-size:var(--font-size-sm);letter-spacing:0.04em;margin-top:2px}
+.dD-dnum-n{font-weight:700;color:var(--text)} .dD-dnum-c{font-weight:400;color:var(--text-muted)}
+.dD-meas{display:grid;grid-template-columns:14px 1fr auto;column-gap:5px;row-gap:5px;
+  align-items:baseline;align-self:start}
+.dD-mi{font-size:var(--font-size-xs);opacity:.5;text-align:left}
+.dD-mn{font-size:var(--font-size-base);font-weight:700;color:var(--text);letter-spacing:-0.01em;
+  line-height:1;text-align:right;font-variant-numeric:tabular-nums}
+.dD-mu{font-family:var(--mono);font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em}
+.dD-mn.vis{color:var(--text-muted);font-size:14px} .dD-mi.vis{opacity:.35}
+.dD-marine{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin-top:12px;
+  padding:12px 0 14px;border-top:1px solid var(--border)}
+.dD-thumb{width:64px;height:64px;border-radius:var(--radius-md);overflow:hidden;background:var(--surface2);
+  border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.dD-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.dD-marine-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.dD-spcount{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted);letter-spacing:0.03em}
+.dD-vid{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--accent);font-weight:600}
+.dD-glimpse{flex:1;min-width:0;font-size:var(--font-size-sm);line-height:1.4;font-family:var(--serif);
+  font-style:italic;color:var(--text-muted)}
+.dD-edit{flex-shrink:0;align-self:center;margin-left:auto;width:32px;height:32px;border-radius:var(--radius-md);
+  border:1px solid var(--border-mid);background:var(--surface2);color:var(--text-muted);font-size:15px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center}
+.dD-edit:hover{color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim)}
+.dD-del{flex-shrink:0;align-self:center;width:32px;height:32px;border-radius:var(--radius-md);
+  border:1px solid var(--border-mid);background:var(--surface2);color:var(--text-muted);font-size:14px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:6px}
+.dD-del:hover{color:var(--danger);border-color:rgba(233,110,76,0.4);background:rgba(233,110,76,0.10)}
+/* armDelete's confirm state — --on-danger flips to deep ink on this theme */
+.dD-del.is-armed{background:var(--danger);color:var(--on-danger);border-color:var(--danger);font-weight:700}
+.tl-pending{color:var(--warn);font-size:var(--font-size-xs);margin-left:5px}
+.iucn-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 5px;border-radius:var(--radius-xs);
+  border:1px solid transparent;margin-left:6px}
+.iucn-CR{background:rgba(9,16,16,0.55);color:var(--violet-deep);border-color:rgba(169,139,214,0.55);font-weight:800}
+.iucn-EN{background:rgba(188,169,222,0.13);color:var(--violet-soft);border-color:rgba(188,169,222,0.32)}
+.iucn-LC{background:var(--taupe-dim);color:var(--text-muted);border-color:var(--border-mid)}
+/* selection mode (v2.89) */
+.dD-card.selected{border-color:var(--accent);background:var(--accent-dim)}
+.dD-card.selectable{position:relative}
+.dD-select-box{position:absolute;top:10px;left:2px;z-index:2;width:22px;height:22px;border-radius:var(--radius-sm);
+  border:2px solid var(--border-mid);background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,0.35)}
+/* NOTE: fills with --accent-fill, NOT --accent. On dark, --accent lifts to
+   #74B3D8 and the white tick drops to 2.29:1; --accent-fill is the pair that
+   owns white ink (4.51:1) and is constant across themes. See decision 1. */
+.dD-select-box.checked{background:var(--accent-fill);border-color:var(--accent-fill)}
+.dD-select-box.checked::after{content:'';position:absolute;left:6px;top:2px;width:6px;height:11px;
+  border:solid var(--on-accent);border-width:0 2px 2px 0;transform:rotate(45deg)}
+
+.cap{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-dim);
+  letter-spacing:0.06em;text-transform:uppercase;margin:34px 0 10px}
+@media(max-width:820px){.sidebar{display:none}.main{padding:1.25rem 1rem 4rem}}
+</style>
+</head>
+<body class="theme-harbour">
+
+<div class="note"><b>History — Harbour Night, app-wide.</b> Real markup and positioning from
+<code>css/styles.css</code>; only colour changes. The card spine is where the lifted dive-type ramp and the new
+<code>--on-type</code> pair both show up — every spine below is a real ramp member at its dark value, with deep ink
+instead of white. Token reasoning: <code>mockup-dark-tokens.html</code>.</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="logo"><div class="logo-mark">Shoal</div><div class="logo-name">BSAC logbook</div></div>
+    <div class="nav-section">
+      <div id="nav-current" style="top:0"></div>
+      <a class="nav-link active"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h10"/></svg>History</a>
+      <a class="nav-link"><svg viewBox="0 0 24 24"><path d="M3 12c3-5 15-5 18 0-3 5-15 5-18 0z"/><circle cx="9" cy="12" r="1.4"/></svg>Species</a>
+      <a class="nav-link"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Log</a>
+      <a class="nav-link"><svg viewBox="0 0 24 24"><path d="M3 18l6-7 4 4 8-9"/></svg>Plan</a>
+      <a class="nav-link"><svg viewBox="0 0 24 24"><path d="M5 20V9M12 20V4M19 20v-7"/></svg>Stats</a>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div id="history-content">
+      <div class="page-title">Dive history</div>
+      <div class="page-sub">94 dives · 38 sites · 11 countries</div>
+
+      <div class="hist-actions">
+        <button class="act-btn">☑ Select</button>
+        <button class="act-btn">🗺 Map</button>
+      </div>
+      <div class="sort-btns">
+        <button class="sort-btn active">Dive no.</button>
+        <button class="sort-btn">Depth</button>
+        <button class="sort-btn">Country</button>
+      </div>
+
+      <!-- ── trip 1 ───────────────────────────────────────────────────── -->
+      <div class="tl-group">
+        <div class="tl-header">
+          <div class="tl-header-label">
+            <span class="tl-trip-name">Naga Biru May 2026</span>
+            <span class="tl-trip-where">Komodo · May</span>
+          </div>
+          <button class="tl-rename">✎</button>
+          <span class="tl-leaders"></span>
+          <span class="tl-trip-stats">12 dives · 47 sp. · 6 days</span>
+        </div>
+        <div class="tl-trip-map"><div class="tl-map-fake"></div><div class="tl-trip-map-expand">⤢</div></div>
+
+        <div class="dD-card">
+          <div class="dD-spine t-Boat"><span>Boat</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Batu Bolong</div>
+              <div class="dD-date">2026-05-06 · 09:15</div>
+              <div class="dD-dnum"><span class="dD-dnum-n">#128</span> <span class="dD-dnum-c">· Naga Biru</span></div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">24.6</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">52</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">18</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg" alt=""></div>
+              <div class="dD-marine-info">
+                <div class="dD-spcount">14 species <span class="iucn-badge iucn-CR">CR</span></div>
+                <div class="dD-glimpse">Ripping current on the ridge — hooked in and watched the trevally work the wall.</div>
+              </div>
+              <button class="dD-edit">✎</button><button class="dD-del">🗑</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dD-card">
+          <div class="dD-spine t-Drift"><span>Drift</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Cauldron (Shotgun)</div>
+              <div class="dD-date">2026-05-06 · 13:40</div>
+              <div class="dD-dnum"><span class="dD-dnum-n">#129</span> <span class="dD-dnum-c">· Naga Biru</span></div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">21.0</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">44</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">22</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg" alt=""></div>
+              <div class="dD-marine-info">
+                <div class="dD-spcount">9 species <span class="iucn-badge iucn-LC">LC</span> · <span class="dD-vid">▶ 3 clips</span></div>
+                <div class="dD-glimpse">Flew through the shotgun with the mantas stacked up behind us.</div>
+              </div>
+              <button class="dD-edit">✎</button><button class="dD-del">🗑</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dD-card">
+          <div class="dD-spine t-Night"><span>Night</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Wainilu<span class="tl-pending">●</span></div>
+              <div class="dD-date">2026-05-06 · 19:05</div>
+              <div class="dD-dnum"><span class="dD-dnum-n">#130</span> <span class="dD-dnum-c">· Naga Biru</span></div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">14.2</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">58</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">8</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg" alt=""></div>
+              <div class="dD-marine-info">
+                <div class="dD-spcount">21 species <span class="iucn-badge iucn-EN">EN</span></div>
+                <div class="dD-glimpse">Muck crawl under the boat. Bobtail squid, two mimic octopus.</div>
+              </div>
+              <button class="dD-edit">✎</button><button class="dD-del is-armed">Delete?</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── trip 2 — the rest of the ramp ────────────────────────────── -->
+      <div class="tl-group">
+        <div class="tl-header">
+          <div class="tl-header-label">
+            <span class="tl-trip-name">Scapa Flow</span>
+            <span class="tl-trip-where">Orkney · September</span>
+          </div>
+          <button class="tl-rename">✎</button>
+          <span class="tl-leaders"></span>
+          <span class="tl-trip-stats">7 dives · 12 sp. · 4 days</span>
+        </div>
+
+        <div class="dD-card selectable selected">
+          <div class="dD-select-box checked"></div>
+          <div class="dD-spine t-Wreck"><span>Wreck</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">SMS Karlsruhe</div>
+              <div class="dD-date">2025-09-14 · 10:20</div>
+              <div class="dD-dnum"><span class="dD-dnum-n">#118</span> <span class="dD-dnum-c">· Halton</span></div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">26.0</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">38</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">6</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg" alt=""></div>
+              <div class="dD-marine-info">
+                <div class="dD-spcount">4 species</div>
+                <div class="dD-glimpse">Deck guns still trained out. Plumose anemones over everything.</div>
+              </div>
+              <button class="dD-edit">✎</button><button class="dD-del">🗑</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dD-card">
+          <div class="dD-spine t-Wall"><span>Wall</span></div>
+          <div class="dD-content">
+            <div class="dD-identity">
+              <div class="dD-site">Hoxa Head</div>
+              <div class="dD-date">2025-09-15 · 11:05</div>
+              <div class="dD-dnum"><span class="dD-dnum-n">#119</span> <span class="dD-dnum-c">· Halton</span></div>
+            </div>
+            <div class="dD-meas">
+              <span class="dD-mi">↓</span><span class="dD-mn">31.4</span><span class="dD-mu">m</span>
+              <span class="dD-mi">⏱</span><span class="dD-mn">33</span><span class="dD-mu">min</span>
+              <span class="dD-mi vis">👁</span><span class="dD-mn vis">9</span><span class="dD-mu">m</span>
+            </div>
+            <div class="dD-marine">
+              <div class="dD-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg" alt=""></div>
+              <div class="dD-marine-info">
+                <div class="dD-spcount">6 species</div>
+                <div class="dD-glimpse">Dead-vertical drop with dahlia anemones all the way down.</div>
+              </div>
+              <button class="dD-edit">✎</button><button class="dD-del">🗑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cap">Every ramp member, as a spine — dark values + <code>--on-type</code></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Boat" style="height:86px;width:26px"><span>Boat</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Shore" style="height:86px;width:26px"><span>Shore</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Drift" style="height:86px;width:26px"><span>Drift</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Night" style="height:86px;width:26px"><span>Night</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Cave" style="height:86px;width:26px"><span>Cave</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Wreck" style="height:86px;width:26px"><span>Wreck</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Reef" style="height:86px;width:26px"><span>Reef</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Wall" style="height:86px;width:26px"><span>Wall</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Pinnacle" style="height:86px;width:26px"><span>Pinn</span></div><div></div></div>
+        <div class="dD-card" style="grid-template-columns:26px 0;width:auto;margin:0"><div class="dD-spine t-Muck" style="height:86px;width:26px"><span>Muck</span></div><div></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

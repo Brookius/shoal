@@ -1,0 +1,712 @@
+/* Shoal landing page — styles adapted from the app's own colour/type system
+   (css/styles.css, CLAUDE colour UI.md). Journal, not cockpit. */
+
+/* Design tokens — no longer hand-copied. app-tokens.css is a generated file
+   (landing/prepare-shared.sh, run at Cloudflare Pages build time), extracted
+   verbatim from css/styles.css's own :root block — the SAME source the main
+   app reads, not a snapshot that drifts.
+   MUST be the first rule in this file, @font-face included — per the CSS
+   spec, an @import after any other rule is silently ignored, not an error,
+   which makes this exact ordering mistake invisible until you go looking
+   for why a token isn't there (it was briefly wrong here during this same
+   edit — caught by re-reading the CSS spec rule, not by testing in a
+   browser; if this ever needs re-verifying, check DevTools' Sources tab
+   shows app-tokens.css actually loaded, not just check that it renders). */
+@import url('./app-tokens.css');
+
+@font-face { font-family:'Figtree'; src:url('./assets/fonts/Figtree-VariableFont_wght.ttf') format('truetype'); font-weight:300 900; font-style:normal; font-display:swap; }
+@font-face { font-family:'Figtree'; src:url('./assets/fonts/Figtree-Italic-VariableFont_wght.ttf') format('truetype'); font-weight:300 900; font-style:italic; font-display:swap; }
+@font-face { font-family:'Literata'; src:url('./assets/fonts/Literata-VariableFont_opsz,wght.ttf') format('truetype'); font-weight:300 700; font-style:normal; font-display:swap; }
+@font-face { font-family:'Literata'; src:url('./assets/fonts/Literata-Italic-VariableFont_opsz,wght.ttf') format('truetype'); font-weight:300 700; font-style:italic; font-display:swap; }
+@font-face { font-family:'Young Serif'; src:url('./assets/fonts/YoungSerif-Regular.ttf') format('truetype'); font-weight:400; font-style:normal; font-display:swap; }
+
+:root {
+  /* Landing-only aliases — the app names these capitalised
+     (--type-Wreck/--type-Shore/--type-Reef, defined in the imported file);
+     these lowercase ones match this file's own convention but are DERIVED
+     from the real ramp, so they can't silently drift the way the old
+     hardcoded #2F7E8C/#6E4A33 copies already had. Custom properties are
+     case-SENSITIVE, so the two spellings are genuinely different names —
+     that's what makes this alias necessary rather than redundant. */
+  --type-wreck: var(--type-Wreck);
+  --type-shore: var(--type-Shore);
+  --type-reef:  var(--type-Reef);
+  --type-drift: var(--type-Drift);
+
+  /* One rhythm value for the gap between major sections. Each section owns
+     its own TOP gap (padding, not margin — margins between siblings collapse
+     and would silently halve this) so a new section only has to opt in once. */
+  --section-gap: 76px;
+}
+@media (min-width: 900px) {
+  :root { --section-gap: 124px; }
+}
+
+* , *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+a:hover { color: #3B7899; }
+img { max-width: 100%; display: block; }
+
+/* ── Depth-gradient page background — the strongest "feels like Shoal" cue ── */
+.bg-gradient {
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  opacity: 0.9;
+  background: linear-gradient(180deg, rgba(250,246,241,0.85) 0%, rgba(250,246,241,0) 34%, rgba(28,48,48,0) 58%, rgba(28,48,48,0.07) 100%);
+}
+
+/* ── Header ── */
+.site-header {
+  max-width: 1140px; margin: 0 auto; padding: 24px 20px 0;
+  display: flex; align-items: center; gap: 12px;
+}
+.site-logo { width: 38px; height: 38px; border-radius: 50%; mix-blend-mode: multiply; }
+.site-name { font-family: var(--display); font-size: 22px; letter-spacing: -0.01em; }
+
+/* ── Shared type helpers ── */
+.eyebrow {
+  font-size: var(--font-size-xs); font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text-muted); margin: 0;
+}
+.section-intro {
+  max-width: 640px; margin: 0 auto 40px; padding: var(--section-gap) 20px 0; text-align: center;
+}
+.section-title {
+  font-family: var(--display); font-size: clamp(28px, 5vw, 38px); line-height: 1.15;
+  font-weight: 400; margin: 12px 0 0; text-wrap: pretty;
+}
+.section-lede {
+  font-size: var(--font-size-base); color: var(--text-muted); margin: 14px auto 0;
+  max-width: 32em; text-wrap: pretty;
+}
+.demo-caption {
+  max-width: 640px; margin: 22px auto 0; padding: 0 20px; text-align: center;
+  font-size: var(--font-size-sm); color: var(--text-muted);
+}
+/* No bottom margin — the next section's own --section-gap provides the
+   separation, and stacking both produced a visibly bigger gap here than
+   anywhere else on the page. */
+.demo-caption-wide { margin-top: 22px; margin-bottom: 0; }
+
+.cta-row { margin-top: 30px; display: inline-flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.btn-primary {
+  font-family: var(--sans); font-size: var(--font-size-base); font-weight: 600;
+  color: #fff; background: var(--accent-fill); border: none; border-radius: 10px;
+  padding: 14px 28px; text-decoration: none; display: inline-block;
+  box-shadow: 0 2px 12px rgba(74,144,184,0.35);
+}
+.btn-primary:hover { filter: brightness(1.07); color: #fff; }
+.cta-note { font-size: var(--font-size-xs); letter-spacing: 0.04em; color: var(--text-muted); }
+
+.pill {
+  font-size: var(--font-size-xs); padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--border-mid); background: var(--surface);
+  color: var(--text-muted); letter-spacing: 0.02em; white-space: nowrap;
+}
+.pill-active { border-color: var(--accent); background: var(--accent-fill); color: #fff; }
+
+.iucn-badge {
+  display: inline-block; font-size: var(--font-size-xs); font-weight: 600;
+  padding: 1px 5px; border-radius: 4px; letter-spacing: 0.02em;
+}
+.iucn-lc { background: rgba(139,123,106,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+
+.map-attribution {
+  position: absolute; top: 8px; right: 8px; font-size: var(--font-size-xs); color: #fff;
+  background: rgba(28,48,48,0.38); border-radius: 4px; padding: 0 6px;
+}
+.map-attribution-light { color: rgba(28,48,48,0.55); background: rgba(250,246,241,0.75); top: 6px; right: 6px; }
+
+/* ── Sun-on-water static mesh — for prose/informative surfaces ── */
+.df-panel[data-panel="journal"], .contact-card {
+  position: relative; isolation: isolate; overflow: hidden;
+}
+.df-panel[data-panel="journal"]::after, .contact-card::after {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0.6;
+  background-image:
+    radial-gradient(circle at 14% 18%, rgba(250,246,241,0.8), transparent 46%),
+    radial-gradient(circle at 86% 26%, rgba(237,229,216,0.85), transparent 50%),
+    radial-gradient(circle at 46% 90%, rgba(250,246,241,0.65), transparent 55%),
+    radial-gradient(circle at 78% 78%, rgba(139,123,106,0.05), transparent 50%);
+}
+.df-panel[data-panel="journal"] > *, .contact-card > * { position: relative; z-index: 1; }
+
+/* ═══════════════════════ HERO ═══════════════════════ */
+.hero { padding: clamp(40px, 8vh, 84px) 20px 0; }   /* bottom gap comes from
+                                                       the next section's own
+                                                       --section-gap */
+.hero-inner { max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; gap: 52px; }
+.hero-copy {}
+.hero-title {
+  font-family: var(--display); font-size: clamp(34px, 7vw, 54px); line-height: 1.1;
+  font-weight: 400; letter-spacing: -0.01em; margin: 14px 0 0; text-wrap: pretty;
+}
+.lede { font-size: var(--font-size-base); color: var(--text-muted); line-height: 1.6; max-width: 34em; margin: 18px 0 0; text-wrap: pretty; }
+.hero-phone-wrap { margin: 0 auto; max-width: 480px; }
+
+/* ── Phone-frame chrome ──────────────────────────────────────────────────
+   Mobile: NO dark bezel/notch/fake-status-bar — the visitor's own phone
+   already provides those, so a fake phone mockup here would only waste
+   width (this is exactly what was cramped in review). But it still needs
+   to read as a contained preview panel, not blend into the page — a light
+   card (border/shadow/rounded corners) does that without the width cost.
+   The full "this is what it looks like on a phone" mockup treatment is
+   reserved for desktop, where it's actually doing useful work — see the
+   ≥900px block below. */
+.phone-frame { width: 100%; }
+.phone-screen {
+  position: relative; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; box-shadow: 0 2px 8px rgba(28,48,48,0.06); overflow: hidden;
+}
+.phone-notch { display: none; position: absolute; top: 9px; left: 50%; transform: translateX(-50%); width: 72px; height: 19px; background: var(--text); border-radius: 999px; z-index: 3; }
+.status-bar { display: none; justify-content: space-between; align-items: center; padding: 13px 22px 4px; position: relative; z-index: 2; }
+.status-time { font-size: var(--font-size-xs); font-weight: 700; letter-spacing: 0.02em; }
+.status-icons { display: inline-flex; align-items: flex-end; gap: 5px; }
+.signal-bars { display: inline-flex; align-items: flex-end; gap: 1.5px; }
+.signal-bars span { width: 3px; background: var(--text); border-radius: 1px; }
+.signal-bars span:nth-child(1) { height: 4px; }
+.signal-bars span:nth-child(2) { height: 6px; }
+.signal-bars span:nth-child(3) { height: 8px; }
+.signal-bars span:nth-child(4) { height: 10px; background: rgba(28,48,48,0.3); }
+.battery { width: 21px; height: 10px; border: 1.5px solid rgba(28,48,48,0.6); border-radius: 3px; display: inline-flex; align-items: center; padding: 1px; }
+.battery-fill { width: 65%; height: 100%; background: var(--text); border-radius: 1px; }
+
+.phone-content { padding: 14px 14px 0; }
+/* The species profile supplies its own per-block padding and wants a
+   full-bleed hero photo, so the phone's own gutter is cancelled here. */
+.phone-content-flush { padding: 0; }
+.phone-heading { font-family: var(--display); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; margin: 0 0 2px; }
+.phone-subheading { font-size: var(--font-size-xs); color: var(--text-muted); margin: 0 0 10px; }
+
+.sort-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: nowrap; }
+.sort-label { font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.06em; }
+
+.trip-header { padding: 10px 0 7px; border-bottom: 1px solid var(--border); }
+.trip-name-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.trip-name { font-size: var(--font-size-base); font-weight: 700; }
+.trip-edit { font-size: var(--font-size-xs); color: var(--text-dim); }
+.trip-where { font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.03em; }
+.trip-stats { font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.04em; margin-top: 2px; }
+
+.trip-map { height: 104px; margin: 8px 12px 12px; border-radius: 10px; border: 1px solid var(--border); overflow: hidden; background: var(--surface2); position: relative; }
+.trip-map-tiles { position: absolute; left: 50%; top: 50%; display: grid; grid-template-columns: repeat(3, 256px); }
+.trip-map-tiles img { width: 256px; height: 256px; }
+/* Portland at z10. Centred on the peninsula itself (-2.44°, ~50.55°), NOT on
+   the five sites' raw centroid — the offshore M2 wreck drags that centroid far
+   enough west that the land slid off to the right and the frame filled with
+   open water (checked by actually fetching the centre tile, not by trusting
+   the arithmetic). Nudged 14px south so the southernmost pin clears the
+   bottom edge. */
+.trip-map-dorset .trip-map-tiles { margin-left: -271px; margin-top: -470px; }
+.trip-map-pin { position: absolute; width: 11px; height: 11px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transform: translate(-50%,-50%); }
+
+/* Dive-type pin colours, shared by both maps and the legend swatch. The app
+   itself does this with real CSS vars on an L.divIcon for exactly this reason
+   — an SVG marker shape couldn't take the colourblind texture channel. */
+.pin-wreck { background: var(--type-wreck); }
+.pin-shore { background: var(--type-shore); }
+.pin-reef  { background: var(--type-reef); }
+.pin-drift { background: var(--type-drift); }
+.trip-map-expand {
+  position: absolute; right: 8px; bottom: 8px; width: 26px; height: 26px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; background: rgba(250,246,241,0.88);
+  color: var(--text-muted); font-size: var(--font-size-sm); box-shadow: 0 1px 3px rgba(28,48,48,0.2);
+}
+
+.dive-card {
+  margin: 10px 0 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; display: grid; grid-template-columns: 26px 1fr; box-shadow: 0 1px 3px rgba(28,48,48,0.04);
+}
+.dive-spine {
+  display: flex; align-items: center; justify-content: center;
+  writing-mode: vertical-rl; font-size: var(--font-size-xs); font-weight: 700;
+  letter-spacing: 0.13em; text-transform: uppercase; color: rgba(255,255,255,0.95);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.18); padding: 8px 0;
+}
+.dive-spine-shore { background: var(--type-shore); }
+.dive-spine-wreck { background: var(--type-wreck); }
+.dive-spine-drift { background: var(--type-drift); }
+.dive-body { display: grid; grid-template-columns: 1fr auto; column-gap: 14px; padding: 12px 14px 0; }
+.dive-identity { min-width: 0; }
+.dive-site { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dive-date { font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.04em; margin-top: 4px; }
+.dive-num { font-size: var(--font-size-sm); letter-spacing: 0.04em; margin-top: 2px; }
+.dive-num span { color: var(--text-muted); }
+.dive-meas { display: grid; grid-template-columns: 14px 1fr auto; column-gap: 5px; row-gap: 5px; align-items: baseline; align-self: start; }
+.meas-icon { font-size: var(--font-size-xs); opacity: 0.5; }
+.meas-icon-dim { opacity: 0.35; }
+.meas-val { font-size: var(--font-size-base); font-weight: 700; letter-spacing: -0.01em; line-height: 1; text-align: right; font-variant-numeric: tabular-nums; }
+.meas-val-sm { font-size: var(--font-size-sm); font-weight: 400; color: var(--text-muted); }
+.meas-unit { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.dive-marine { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 12px 0 14px; border-top: 1px solid var(--border); }
+.dive-thumb { width: 64px; height: 64px; border-radius: 8px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); flex-shrink: 0; display: flex; }
+.dive-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.dive-glimpse { flex: 1; min-width: 0; font-family: var(--serif); font-style: italic; font-size: var(--font-size-sm); line-height: 1.4; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.dive-edit { flex-shrink: 0; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-mid); background: var(--surface2); color: var(--text-muted); font-size: 15px; display: flex; align-items: center; justify-content: center; }
+
+.phone-nav {
+  position: static; background: var(--text); border-radius: 12px;
+  display: flex; justify-content: space-around; padding: 10px 0 12px; margin-top: 14px; z-index: 4;
+}
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; color: rgba(255,255,255,0.55); font-size: var(--font-size-xs); letter-spacing: 0.04em; padding: 4px 8px; }
+/* --accent-on-dark, not a hardcoded hex — the real app's own bar exists
+   BECAUSE tinting only the text label (which is all the old #74B3D8 value
+   here was doing) measurably under-lit the selected tab; --accent-on-dark
+   is the value that was chosen to fix that (see CLAUDE.md). Recreating the
+   old hardcoded number here would silently reintroduce the same bug this
+   demo is meant to be advertising the fix for. */
+.nav-item-active { color: var(--accent-on-dark); }
+.nav-icon { line-height: 1; }
+.nav-icon svg { width: 20px; height: 20px; display: block; }
+
+/* ═══════════════ DEMO SECTION (dive-file) ═══════════════ */
+/* This section has no .section-intro of its own (its copy sits inside the
+   two-column layout), so it carries the section gap itself. */
+.demo-section { padding: var(--section-gap) 20px 0; }
+/* Copy sits BESIDE the phone on desktop rather than above it — this is the
+   tallest demo on the page, and a centred block of prose over an 800px phone
+   left the two reading as unrelated. Mobile stacks copy-then-phone. */
+.demo-layout { max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+.demo-copy { max-width: 640px; text-align: center; }
+.demo-note { font-size: var(--font-size-sm); color: var(--text-muted); margin: 18px 0 0; }
+.demo-outer { max-width: 480px; margin: 0 auto; }
+.demo-screen { position: relative; }
+.demo-scroll { padding: 0 0 20px; }
+.demo-statusbar, .demo-appbar { display: none; } /* desktop-only phone chrome, see media query below */
+
+.dive-hero-map { height: 200px; border-radius: 12px; overflow: hidden; background: var(--surface2); position: relative; margin-bottom: 14px; }
+.dive-hero-map-tiles { position: absolute; left: 50%; top: 50%; margin-left: -382px; margin-top: -423px; display: grid; grid-template-columns: repeat(3, 256px); }
+.dive-hero-map-tiles img { width: 256px; height: 256px; }
+.dive-hero-pin {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  width: 16px; height: 16px; border-radius: 50%; background: var(--accent);
+  border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+.dive-hero-scrim { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 35%, rgba(28,48,48,0.62) 100%); }
+.dive-hero-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 14px 14px; }
+.type-pill { display: inline-block; font-size: var(--font-size-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #fff; padding: 2px 8px; border-radius: 4px; }
+.type-pill-wreck { background: var(--type-wreck); }
+.dive-hero-site { font-family: var(--display); font-size: 24px; color: #fff; margin-top: 10px; line-height: 1.1; text-shadow: 0 1px 6px rgba(0,0,0,0.4); }
+.dive-hero-meta { font-size: var(--font-size-xs); color: rgba(255,255,255,0.75); margin-top: 6px; letter-spacing: 0.03em; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 3px rgba(28,48,48,0.04); overflow: hidden; }
+.stat-band { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--border); }
+.stat-band-caustics {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: white; mix-blend-mode: multiply; opacity: 0.324;
+}
+.stat-cell { position: relative; z-index: 1; padding: 12px 8px; text-align: center; border-right: 1px solid var(--border); }
+.stat-cell:last-child { border-right: none; }
+.stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+.stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+.vis-bar { position: relative; height: 5px; border-radius: 3px; margin: 7px 4px 0; background: linear-gradient(90deg, #16302F 0%, #275C63 10%, #3C7E9C 20%, var(--accent) 26%, #9ecce7 46%, rgba(74,144,184,0) 100%); }
+.vis-tick { position: absolute; top: -2px; width: 3px; height: 9px; border-radius: 2px; background: var(--text); transform: translateX(-50%); }
+
+.profile-chart { position: relative; margin: 10px 14px 14px; aspect-ratio: 640 / 300; }
+.pc-ytick, .pc-xtick, .pc-evt { position: absolute; font-size: 10px; color: var(--text-muted); white-space: nowrap; pointer-events: none; }
+.pc-evt { font-size: var(--font-size-xs); }
+.pc-evt-r { transform: translate(-100%, -18px); }
+.pc-grid { stroke: var(--border); stroke-width: 1; }
+.pc-dot { fill: var(--surface); stroke: var(--text-muted); stroke-width: 1.5; }
+.pc-dot-max { fill: var(--text-muted); stroke: none; }
+
+.ndl-row { display: flex; align-items: center; gap: 8px; margin: 0 14px 14px; }
+.ndl-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0; }
+.ndl-track-wrap { flex: 1; }
+/* Same four colours _ndlColor's thresholds actually use (js/chart-math.js),
+   as var() refs onto the imported tokens rather than a fifth hardcoded copy.
+   --profile-warn, NOT --warn — this legend is illustrating the CHART's warn
+   zone, which reads its own dedicated token (unconstrained by --warn's
+   text-contrast floor) since v2.99's second pass. An earlier version of this
+   line read var(--warn) directly and briefly went stale when that token got
+   darkened for contrast; --profile-warn existing now is what stops that
+   recurring. Stop positions are illustrative of the legend's shape, not
+   computed from the real 5/10/20/50min thresholds. */
+.ndl-track { height: 6px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.08); background: linear-gradient(to right, var(--profile-deco) 0%, var(--danger) 3%, var(--danger) 10%, var(--profile-warn) 20%, var(--profile-calm) 50%, var(--profile-calm) 100%); }
+.ndl-ticks { position: relative; height: 14px; margin-top: 2px; }
+.ndl-ticks span { position: absolute; top: 0; left: 0; font-size: var(--font-size-xs); color: var(--text-muted); white-space: nowrap; }
+.ndl-tick-r { left: auto !important; right: 0; }
+
+/* ── Marine/Overview/Journal tab strip — ported verbatim from the real app's
+   .df-seg/.df-panel (css/styles.css). Folder-tab construction, not a pill
+   switcher: the trough stays --surface2 holding only the unselected tabs;
+   the active tab keeps --surface white and overlaps the seam into the panel
+   below it, so tab and panel read as one continuous white object. */
+/* Each panel keeps a single folder-tab header instead of the app's live
+   3-up strip: the tab overlaps the seam into its own panel (margin-bottom
+   -1px + the accent underline) so tab and panel still read as one
+   continuous white object — the same construction, just not switchable. */
+.df-panel-head {
+  position: relative; display: flex; width: max-content; align-items: center; gap: 6px;
+  margin: 18px auto 0 0; padding: 9px 18px 10px;
+  background: var(--surface); border: 1px solid var(--border); border-bottom: none;
+  border-radius: 11px 11px 0 0;
+  font-family: var(--sans); font-size: var(--font-size-sm); font-weight: 600;
+  color: var(--text); box-shadow: 0 -1px 3px rgba(28,48,48,0.05);
+}
+.df-panel-head::after {
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: 0;
+  height: 2px; background: var(--accent); border-radius: 1px 1px 0 0;
+}
+/* Each head sits where its tab sits in the app's real 3-up strip — Marine
+   left, Overview centre, Journal right. Unrolled they'd otherwise all stack
+   on the left, misrepresenting where you'd actually reach for them. MUST stay
+   after the base rule: that rule sets `margin` as a shorthand, which at equal
+   specificity would reset these longhands if it came later. */
+.df-panel-head--mid   { margin-left: auto; margin-right: auto; }
+.df-panel-head--right { margin-left: auto; margin-right: 0; }
+.df-seg-badge { font-size: var(--font-size-xs); opacity: 0.7; font-weight: 400; }
+.df-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 0 13px 13px 13px; padding: 14px 14px 16px;
+  box-shadow: 0 2px 6px rgba(28,48,48,0.05);
+}
+
+.marine-heading { font-size: var(--font-size-xs); font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); padding-bottom: 8px; }
+.carousel-wrap { position: relative; }
+.carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; border-radius: 12px; }
+.carousel::-webkit-scrollbar { display: none; }
+.carousel-slide { flex: 0 0 100%; scroll-snap-align: center; }
+.sighting-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 0 2px; }
+.sighting-photo { position: relative; width: 100%; aspect-ratio: 16 / 10; background: linear-gradient(150deg, var(--surface2), var(--bg)); overflow: hidden; }
+.sighting-photo img { width: 100%; height: 100%; object-fit: cover; }
+.sighting-body { padding: 12px 16px 15px; }
+.sighting-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sighting-name { font-size: var(--font-size-base); font-weight: 700; }
+.sighting-sci { font-style: italic; font-size: var(--font-size-sm); color: var(--text-muted); margin-top: 1px; }
+.sighting-group { font-size: var(--font-size-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 9px; }
+.carousel-nav { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 10px 0 4px; }
+.carousel-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-mid); background: var(--bg); color: var(--text-muted); font-size: var(--font-size-base); cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: var(--sans); }
+.carousel-btn:hover { border-color: var(--accent-border); color: var(--accent); }
+.carousel-count { font-size: var(--font-size-xs); color: var(--text-muted); min-width: 74px; text-align: center; letter-spacing: 0.04em; }
+
+.marine-list { list-style: none; margin: 0; padding: 0; }
+.marine-group-head { display: flex; align-items: center; gap: 7px; padding: 10px 8px 6px; font-size: var(--font-size-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); font-weight: 700; }
+.marine-group-head span { font-weight: 400; }
+.marine-row { display: flex; align-items: center; gap: 11px; padding: 8px; border-radius: 9px; }
+.marine-row-thumb { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 7px; overflow: hidden; background: var(--surface2); display: flex; }
+.marine-row-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.marine-row-info { flex: 1; min-width: 0; }
+.marine-row-name { display: block; font-size: var(--font-size-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.marine-row-sci { display: block; font-style: italic; font-size: var(--font-size-xs); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.journal-kicker { font-size: var(--font-size-xs); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+.journal-title { font-family: var(--display); font-size: 22px; font-weight: 400; line-height: 1.25; margin: 0 0 12px; }
+.journal-body { font-family: var(--serif); font-size: var(--font-size-base); line-height: 1.75; margin: 0; }
+
+.overview-tile { background: var(--surface2); border-radius: 13px; padding: 12px 13px 10px; }
+.overview-tile-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+.overview-tile-head span:first-child { font-size: var(--font-size-sm); color: var(--text-muted); }
+.overview-tile-val { font-size: 17px; font-weight: 700; }
+.overview-tile-sub { font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 2px; }
+.temp-gauge { position: relative; height: 16px; border-radius: 9px; border: 1px solid var(--border-mid); background: linear-gradient(90deg, rgba(201,122,74,0) 0%, #cadaea 34%, #e9ba6a 58%, #B0492E 100%); }
+.temp-gauge-ticker { position: absolute; top: 1px; width: 13px; height: 13px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--text); transform: translateX(-50%); }
+.overview-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 9px; }
+.current-chevrons { display: flex; align-items: flex-end; gap: 4px; height: 26px; margin-bottom: 6px; }
+.chev { width: 10px; height: 10px; border-right: 3px solid var(--border-mid); border-bottom: 3px solid var(--border-mid); transform: rotate(-45deg); border-radius: 1px; }
+.chev-active { border-color: var(--accent); width: 14px; height: 14px; }
+.weather-icon { font-size: var(--font-size-xs); color: var(--text-dim); letter-spacing: 0.04em; height: 26px; margin-bottom: 6px; display: flex; align-items: flex-end; }
+.spec-rows { margin: 14px 0 0; }
+.spec-row { display: flex; align-items: center; gap: 11px; padding: 8px 2px; border-bottom: 1px solid var(--border); font-size: var(--font-size-sm); margin: 0; }
+.spec-row:last-child { border-bottom: none; }
+.spec-row dt { flex: 1; font-size: var(--font-size-xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.spec-row dd { margin: 0; text-align: right; }
+
+.appbar-back { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; color: var(--text-muted); text-decoration: none; }
+.appbar-back span { font-size: 22px; line-height: 1; }
+
+/* ═══════════════════ TRIP DEMO ═══════════════════
+   Two surfaces side by side: the History timeline (in the phone shell, which
+   the retired species-browse grid used to occupy) and the trip's full-screen
+   map. In the app these are one panel — the map is a view toggle inside
+   History, and the timeline's own trip banner opens it — so they belong in
+   one section rather than being split into two, which would imply more
+   surfaces than Shoal actually has. */
+.trip-demo { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 40px; padding: 8px 20px 0; }
+.phone-shell {
+  width: 100%; max-width: 480px; border: 1px solid var(--border-mid); border-radius: 18px;
+  overflow: hidden; background: var(--bg); position: relative; box-shadow: 0 10px 30px rgba(28,48,48,0.10);
+}
+.phone-shell-content { padding: 16px 14px 0; }
+
+.profile-hero { position: relative; aspect-ratio: 16 / 9; background: var(--surface2); overflow: hidden; }
+.profile-hero img { width: 100%; height: 100%; object-fit: cover; }
+.profile-hero-scrim { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 40%, rgba(28,48,48,0.6) 100%); }
+.profile-hero-caption { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px; }
+.profile-hero-name { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #fff; text-shadow: 0 1px 5px rgba(0,0,0,0.4); }
+.profile-hero-sci { font-style: italic; font-size: var(--font-size-sm); color: rgba(255,255,255,0.85); margin-top: 2px; text-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+.profile-meta-row { display: flex; align-items: center; gap: 9px; padding: 12px 16px 13px; border-bottom: 1px solid var(--border); }
+.profile-group { font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.profile-facts { display: flex; flex-wrap: wrap; gap: 5px 16px; padding: 12px 16px 13px; font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.03em; }
+.profile-block { padding: 16px 16px 14px; border-top: 1px solid var(--border); }
+.profile-block-head { display: flex; align-items: baseline; gap: 8px; font-size: var(--font-size-xs); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.profile-block-head span { color: var(--text-muted); font-weight: 400; letter-spacing: 0.04em; text-transform: none; }
+
+.mini-map { width: 100%; height: 150px; border-radius: 8px; border: 1px solid var(--border); overflow: hidden; position: relative; background: var(--surface2); isolation: isolate; }
+.mini-map-tiles { position: absolute; left: 50%; top: 50%; display: grid; grid-template-columns: repeat(3, 256px); }
+.mini-map-tiles img { width: 256px; height: 256px; }
+/* UK/NE-Atlantic at z4 — the three curled-octopus sites span Scotland to
+   Dorset, which only fits a 150px-tall map at this zoom. Margins centre
+   their own centroid, not an arbitrary tile corner. */
+.mini-map-uk { height: 136px; }   /* ±68px — the Scotland pin sits at -63, so
+                                     this is the floor before it clips */
+.mini-map-uk .mini-map-tiles { margin-left: -463px; margin-top: -314px; }
+.mini-map-pin { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transform: translate(-50%,-50%); }
+
+.dive-log-list { display: flex; flex-direction: column; gap: 2px; }
+/* Two lines, not four columns: a phone-width row can't give the site name
+   enough of a 1fr share to avoid ellipsis, and the site name is the whole
+   point of the row. Date + region take the second line instead. */
+.dive-log-row {
+  padding: 7px 6px; border-radius: 6px; font-size: var(--font-size-sm);
+  display: grid; gap: 1px 9px; align-items: center;
+  grid-template-columns: 34px 1fr auto;
+  grid-template-areas: "num site badge" "num date badge";
+}
+.dive-log-num  { grid-area: num; align-self: center; }
+.dive-log-site { grid-area: site; }
+.dive-log-date { grid-area: date; }
+.dive-log-row .abundance-badge { grid-area: badge; align-self: center; }
+.dive-log-num { font-size: var(--font-size-xs); color: var(--text-muted); }
+.dive-log-site { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dive-log-site span { font-size: var(--font-size-xs); color: var(--text-muted); margin-left: 6px; }
+.dive-log-date { font-size: var(--font-size-xs); color: var(--text-muted); white-space: nowrap; }
+.abundance-badge { font-size: var(--font-size-xs); font-weight: 700; color: var(--text-muted); background: rgba(139,123,106,0.1); border: 1px solid var(--border); border-radius: 5px; padding: 1px 8px; }
+
+/* ── Trip map card (the full-screen map view) ──────────────────────────── */
+/* width:100% + max-width, NOT a fixed width with max-width:100% — the latter
+   made the whole DOCUMENT 440px wide on a 412px phone, and since every
+   section centres inside the page, the overflow showed up as text clipped on
+   BOTH edges several sections away, not as this card being too wide. */
+.tripmap-card {
+  width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden; box-shadow: 0 18px 44px rgba(28,48,48,0.18);
+}
+.tripmap-head { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); }
+.tripmap-title { font-family: var(--display); font-size: 20px; font-weight: 400; }
+.tripmap-sub { font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.04em; margin-top: 3px; }
+.tripmap { position: relative; height: 300px; overflow: hidden; background: var(--surface2); isolation: isolate; }
+@media (min-width: 900px) {
+  /* Taller on desktop only, where it sits beside the ~1000px phone shell and
+     a 300px map left the column looking stranded. Pin spread is only ~126px
+     vertically, so there's no clipping risk either way. */
+  .tripmap { height: 470px; }
+}
+.tripmap-tiles {
+  position: absolute; left: 50%; top: 50%; display: grid; grid-template-columns: repeat(3, 256px);
+  /* Portland at z11 — same five sites as the in-timeline banner above, one
+     zoom level closer, and centred the same way (on the peninsula, not the
+     site centroid — see .trip-map-dorset above for why). */
+  margin-left: -287px; margin-top: -399px;   /* -143 shifted by one 256px row */
+}
+.tripmap-tiles img { width: 256px; height: 256px; }
+.tripmap-pin {
+  position: absolute; width: 18px; height: 18px; border-radius: 50%;
+  border: 2.5px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.35); transform: translate(-50%,-50%);
+}
+/* Required, not decorative: a pin carries colour and no word, unlike every
+   other --type-* surface in the app (spine, chip, hero pill), so this is the
+   only place the ramp needs a key. Counts sum to the trip's dive total. */
+.tripmap-legend {
+  display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 13px 18px 15px;
+  border-top: 1px solid var(--border);
+}
+.legend-row { display: inline-flex; align-items: center; gap: 7px; font-size: var(--font-size-sm); }
+.legend-swatch { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.25); }
+.legend-count { color: var(--text-muted); font-size: var(--font-size-xs); }
+
+/* ═══════════════════════ CONTACT ═══════════════════════ */
+.contact { padding: var(--section-gap) 20px 44px; }
+.contact-card {
+  max-width: 760px; margin: 0 auto; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: clamp(28px, 6vw, 48px); box-shadow: 0 1px 3px rgba(28,48,48,0.04);
+}
+.contact-title { font-family: var(--display); font-size: clamp(26px, 5vw, 34px); font-weight: 400; line-height: 1.15; margin: 12px 0 0; text-wrap: pretty; }
+.contact-lede { font-size: var(--font-size-base); color: var(--text-muted); max-width: 54ch; margin: 14px 0 0; text-wrap: pretty; }
+.contact-email { font-size: var(--font-size-base); margin: 18px 0 0; }
+.contact-email a { font-weight: 600; }
+.facts-block { margin-top: 30px; padding-top: 22px; border-top: 1px solid var(--border); }
+.facts-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); column-gap: 32px; margin-top: 4px; }
+.fact-row { font-size: var(--font-size-sm); padding: 10px 2px; border-bottom: 1px solid var(--border); }
+
+.site-footer {
+  max-width: 760px; margin: 36px auto 0; padding-top: 18px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  flex-wrap: wrap;
+}
+.footer-brand { display: inline-flex; align-items: center; gap: 10px; }
+.footer-logo { width: 26px; height: 26px; border-radius: 50%; mix-blend-mode: multiply; }
+.footer-name { font-family: var(--display); font-size: var(--font-size-base); }
+.footer-tag { font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.03em; }
+.footer-copyright { font-size: var(--font-size-xs); color: var(--text-dim); letter-spacing: 0.03em; }
+
+/* Privacy link — the footer is space-between, so this sits centred between the
+   brand and the copyright. Styled to match .footer-copyright's weight rather
+   than inheriting the default link colour: it's a legal-boilerplate link, not
+   a call to action. .site-footer wraps so the three items stack cleanly on a
+   narrow phone instead of crushing together. */
+.footer-links a { font-size: var(--font-size-xs); color: var(--text-muted);
+                  letter-spacing: 0.03em; text-decoration: none; }
+.footer-links a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ═══════════════════════ PLATFORM STATUS ═══════════════════════
+   Deliberately NOT three equal columns — that would imply parity between
+   platforms that doesn't exist today. One clearly-marked recommendation,
+   then two honestly-caveated secondary options underneath. */
+.platform-status { max-width: 720px; margin: 0 auto; padding: 8px 20px 0; }
+.platform-name { font-family: var(--display); font-size: 20px; font-weight: 400; margin: 0 0 6px; }
+.platform-desc { font-size: var(--font-size-sm); color: var(--text-muted); line-height: 1.55; margin: 0; }
+
+.platform-featured {
+  background: var(--surface); border: 1px solid var(--accent-border); border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(28,48,48,0.04); padding: 20px 22px;
+}
+.platform-tag {
+  font-size: var(--font-size-xs); font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 4px;
+}
+.platform-secondary-grid {
+  display: grid; grid-template-columns: 1fr; gap: 24px; margin-top: 20px;
+}
+/* Mac gets a card too, so the two platforms read as parallel options rather
+   than one option plus a footnote. Hierarchy is carried by the accent border
+   and "Recommended" tag on Android, not by one of them lacking a container —
+   which is how it looked once the iPhone column was removed and Mac was left
+   stranded in half a two-column grid. */
+.platform-row {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(28,48,48,0.04); padding: 20px 22px;
+}
+.platform-secondary-grid .platform-name { font-size: 18px; }
+.platform-row .platform-desc { max-width: 62ch; }
+/* Sits outside both cards on purpose — it's a caveat about a platform that
+   isn't being offered, not a third option competing with the two that are. */
+.platform-note {
+  margin: 20px auto 0; max-width: 56ch; text-align: center;
+  font-size: var(--font-size-sm); color: var(--text-muted); line-height: 1.55;
+}
+
+/* Deliberately not .btn-primary — that's the hero/contact "Try Shoal" CTA;
+   reusing it here would visually outweigh a Mac download relative to
+   actually trying the product. */
+.platform-download {
+  display: inline-block; margin-top: 12px;
+  font-family: var(--sans); font-size: var(--font-size-sm); font-weight: 600;
+  color: var(--accent); background: transparent; border: 1px solid var(--accent-border);
+  border-radius: 8px; padding: 8px 16px; text-decoration: none;
+}
+.platform-download:hover { background: var(--accent-dim); }
+
+/* ═══════════════════════ WHAT'S NEW ═══════════════════════ */
+.recent-updates { padding: 8px 20px 0; }
+/* Its own scroll container so the list can be long enough to prove ongoing
+   work without pushing the CTA off the page. Focusable (tabindex on the
+   element) because a keyboard user must be able to scroll it too — a
+   scrollable region that can't take focus is unreachable without a mouse. */
+.changelog-scroll {
+  max-width: 660px; margin: 0 auto; max-height: 400px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(28,48,48,0.04);
+}
+.changelog-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.changelog { width: 100%; border-collapse: collapse; text-align: left; }
+.changelog thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface2); border-bottom: 1px solid var(--border);
+  font-size: var(--font-size-xs); font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text-muted); padding: 10px 16px;
+}
+.changelog td { padding: 13px 16px; border-bottom: 1px solid var(--border); vertical-align: baseline; }
+.changelog tr:last-child td { border-bottom: none; }
+.cl-date { white-space: nowrap; font-size: var(--font-size-xs); color: var(--text-muted); letter-spacing: 0.03em; width: 1%; }
+.cl-title { display: block; font-size: var(--font-size-sm); font-weight: 600; }
+.cl-desc { display: block; font-size: var(--font-size-sm); color: var(--text-muted); line-height: 1.5; margin-top: 2px; }
+
+/* ═══════════════════════ DESKTOP (≥900px) ═══════════════════════ */
+@media (min-width: 900px) {
+  .hero-inner { flex-direction: row; align-items: center; justify-content: space-between; gap: 72px; }
+  .hero-copy { max-width: 540px; flex: 1 1 0; }
+  .hero-phone-wrap { flex: 0 0 auto; margin: 0; max-width: none; }
+
+  /* Restore the full phone-mockup illusion — only useful once the visitor
+     ISN'T already holding a real phone (see the mobile-first rules above). */
+  .phone-frame {
+    width: clamp(272px, 78vw, 332px); background: var(--text); border-radius: 46px;
+    padding: 11px; box-shadow: 0 28px 64px rgba(28,48,48,0.32); border: 1px solid rgba(255,255,255,0.08);
+    margin: 0 auto;
+  }
+  .phone-screen {
+    background: var(--bg); border: none; box-shadow: none;
+    /* Tall enough that the Dive log list below the map shows real rows, not
+       just its header — that list IS the answer to the headline's question,
+       so clipping it to a heading defeats the hero. */
+    border-radius: 36px; overflow: hidden; height: 792px;
+  }
+  .phone-notch, .status-bar { display: block; }
+  .status-bar { display: flex; }
+  .phone-content { padding: 8px 14px 0; overflow-y: auto; height: calc(100% - 100px); }
+  .phone-nav {
+    position: absolute; bottom: 0; left: 0; right: 0; border-radius: 0;
+    border-top: 1px solid var(--border-mid); margin-top: 0; padding: 8px 0 12px;
+  }
+
+  /* Fits all three dive cards whole. #66 is the last of them and must clear
+     the nav bar completely — it's the card that ties this section back to
+     the dive file above it, so a half-hidden one breaks the thread. */
+  .phone-shell { width: 400px; height: 1000px; }
+  .phone-shell-content { height: calc(100% - 60px); overflow-y: auto; }
+
+  /* row-reverse, so the phone lands on the LEFT while the copy stays first in
+     the DOM (and so first for a screen reader / on mobile). Alternating
+     against the hero's copy-left/phone-right gives the page a rhythm rather
+     than three identically-arranged blocks. */
+  .demo-layout { flex-direction: row-reverse; align-items: flex-start; justify-content: center; gap: 72px; }
+  /* Sticky, because the phone beside it is deliberately full-height (below)
+     and scrolls past — the copy should stay with it, not disappear at the top. */
+  .demo-copy { flex: 1 1 0; max-width: 470px; text-align: left; position: sticky; top: 18vh; }
+  .demo-copy .section-lede { margin-left: 0; margin-right: 0; }
+  .demo-outer { flex: 0 0 auto; margin: 0; }
+
+  .demo-outer {
+    width: 404px; background: var(--text); border-radius: 46px; padding: 11px;
+    box-shadow: 0 30px 70px rgba(28,48,48,0.30); border: 1px solid rgba(255,255,255,0.08);
+  }
+  /* Full height, NOT a fixed 780px scroll box. That box made sense when the
+     three panels were real tabs and only one rendered at a time; now they're
+     unrolled, it would hide Overview and Journal behind an in-phone scroll
+     nobody performs — which is the exact thing unrolling them was meant to
+     fix. An elongated phone reads as "the whole screen, top to bottom". */
+  .demo-screen {
+    background: var(--bg); border-radius: 35px; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .demo-scroll { padding: 0 13px 96px; }
+  .demo-statusbar {
+    display: block; z-index: 6; background: var(--bg);
+    border-radius: 34px 34px 0 0; flex: none;
+  }
+  .demo-statusbar .phone-notch { top: 9px; }
+  .demo-appbar {
+    display: flex; align-items: center; gap: 8px; position: absolute; bottom: 0; left: 0; right: 0;
+    z-index: 6; padding: 10px 16px 14px; background: var(--bg); border-top: 1px solid var(--border-mid);
+    border-radius: 0 0 34px 34px;
+  }
+  .appbar-btn {
+    width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border-mid);
+    background: var(--surface); color: var(--text-muted); font-size: var(--font-size-base);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .appbar-btn-accent { border-color: var(--accent-border); color: var(--accent); }
+
+  .platform-status { max-width: 720px; }
+}

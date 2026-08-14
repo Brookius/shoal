@@ -1,0 +1,30 @@
+# Cloudflare Pages security headers (2.392)
+#
+# CSP notes — the policy is honest about the app's architecture:
+# · script-src needs 'unsafe-inline': the app deliberately uses classic scripts
+#   with ~130 inline onclick= handlers (DECISIONS.md → modular migration). That
+#   guts CSP's anti-XSS power for scripts, so the FIRST line of defence is the
+#   esc() escaping pass (2.391). CSP still earns its keep via the allowlists:
+#   even if XSS fires, connect-src limits fetch-exfiltration targets and
+#   img-src limits beacon targets.
+# · Leaflet is vendored (vendor/leaflet/, 2.393) so no CDN origins remain in
+#   script/style — the app loads zero third-party code at runtime.
+# · http://127.0.0.1:27123 is the Obsidian Local REST API (HTTP not HTTPS —
+#   Brave blocks self-signed certs; loopback is exempt from mixed-content).
+# · media-src blob: is the local video player (File System Access object URLs).
+# · img-src data: is Leaflet's inline attribution image.
+# · geolocation=(self) — the "Use GPS" capture button needs it.
+# · script-src 'wasm-unsafe-eval' (BRIEF-dive-computer-sync.md) — required
+#   to instantiate vendor/libdivecomputer-wasm/download.wasm; narrower than
+#   'unsafe-eval' (doesn't permit plain string eval, only WASM compilation).
+#   No bluetooth= Permissions-Policy entry needed — same-origin same as any
+#   unlisted feature's default, and the js/computer-sync.js Sync button is
+#   itself the user-gesture Web Bluetooth requires.
+
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://inaturalist-open-data.s3.amazonaws.com https://static.inaturalist.org https://*.tile.openstreetmap.org; media-src 'self' blob:; connect-src 'self' http://127.0.0.1:27123 https://nominatim.openstreetmap.org https://overpass-api.de https://raw.githubusercontent.com https://api.open-meteo.com https://marine-api.open-meteo.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'self'

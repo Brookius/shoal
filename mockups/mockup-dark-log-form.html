@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark mode — Log a dive (form)</title>
+<style>
+/* Harbour Night on the log form's real controls. The form is where the most
+   *kinds* of colour meet: the dive-type chip grid (categorical ramp + the new
+   --on-type pair), segmented toggles (--accent-fill, constant), the vis/temp
+   dials (undocumented baked gradients), section summary chips (--success),
+   and edit mode's accent-tinted card borders.
+   Token reasoning: mockups/mockup-dark-tokens.html. */
+:root{
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --display:Georgia,serif;
+  --font-size-xs:12px; --font-size-sm:14px; --font-size-base:16px;
+  --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-full:999px;
+}
+.theme-harbour{
+  color:var(--text);
+  --surface-lowest:#091010; --surface-low:#182827; --surface-base:#111E1D;
+  --surface-high:#20312F; --surface-highest:#2E3E3B;
+  --bg:var(--surface-base); --surface:var(--surface-low); --surface2:var(--surface-high);
+  --border:rgba(237,230,218,0.08); --border-mid:rgba(237,230,218,0.17); --border-strong:rgba(237,230,218,0.28);
+  --text:#EDE6DA; --text-muted:#BFB3A2; --text-dim:#857D70;
+  --taupe-dim:rgba(191,179,162,0.1); --taupe-border:rgba(191,179,162,0.28);
+  --accent:#74B3D8; --accent-fill:#407DA0;
+  /* the light theme's accent ink/text SPLIT collapses on dark: #74B3D8 already
+     clears 4.91:1 at worst as text, so no second darkened value is needed.
+     Leaving --accent-text at its light #397191 fails on every rung (2.11–3.61). */
+  --accent-text:#74B3D8;
+  --accent-dim:rgba(116,179,216,0.12); --accent-border:rgba(116,179,216,0.36);
+  --success:#5FB180; --warn:#E98A6A; --danger:#E96E4C; --gold:#D9B45C;
+  --on-accent:#FFFFFF; --on-type:#091010; --on-success:#091010;
+  --type-Boat:#2A8B9C;  --type-Shore:#B0894F;  --type-Drift:#3FA9A0;
+  --type-Night:#6A7EB4; --type-Cave:#748094;   --type-Wreck:#A1765B;
+  --type-Reef:#C97A4A;  --type-Wall:#B36888;   --type-Pinnacle:#5F8A54;
+  --type-Muck:#868150;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);
+     font-size:var(--font-size-base);line-height:1.55;padding:28px 20px 110px}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.9;
+  background:linear-gradient(180deg,#182827 0%,#111E1D 42%,#0B1616 100%)}
+.wrap{max-width:780px;margin:0 auto}
+.note{font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:24px;max-width:78ch}
+.note b{color:var(--text)} code{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text)}
+.page-title{font-family:var(--display);font-size:22px;font-weight:500;letter-spacing:-.02em}
+.page-sub{font-size:var(--font-size-sm);color:var(--text-muted);font-family:var(--mono);margin-bottom:1.5rem}
+
+/* ── banners ────────────────────────────────────────────────────────────── */
+.sync-banner{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--radius-md);
+  font-size:var(--font-size-sm);margin-bottom:16px}
+.sync-banner.neutral{background:var(--taupe-dim);border:1px solid var(--taupe-border);color:var(--text)}
+.sync-banner .lnk{color:var(--accent);font-weight:600;cursor:pointer;margin-left:auto;white-space:nowrap}
+#edit-banner{background:var(--accent-dim);border:1px solid var(--accent-border);color:var(--text)}
+#edit-banner strong{color:var(--accent)}
+
+/* ── collapsible sections ───────────────────────────────────────────────── */
+.cs{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.cs.editing{border-color:var(--accent-border)}
+.cs-head{display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;background:transparent;
+  width:100%;border:none;text-align:left}
+.cs-head:hover{background:var(--surface2)}
+.cs-chevron{color:var(--text-dim);font-size:var(--font-size-xs);transition:transform .16s}
+.cs.open .cs-chevron{transform:rotate(90deg)}
+.cs-title{font-family:var(--mono);font-size:var(--font-size-xs);letter-spacing:.1em;text-transform:uppercase;
+  font-weight:600;color:var(--text-muted)}
+.cs.open .cs-title{color:var(--text)}
+.cs-summary{margin-left:auto;font-size:var(--font-size-sm);color:var(--text-dim);font-style:italic}
+.cs-summary.partial{color:var(--text-muted);font-style:normal}
+.cs-summary.complete{color:var(--success);font-style:normal}
+.cs.open .cs-summary{display:none}
+.cs-body{display:none;padding:0 16px 18px}
+.cs.open .cs-body{display:block}
+.lf-lbl{font-family:var(--mono);font-size:var(--font-size-xs);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:8px;display:block}
+.lf-lbl:not(:first-child){margin-top:18px}
+
+/* ── fields ─────────────────────────────────────────────────────────────── */
+input[type=text],input[type=number],select{width:100%;font-family:var(--sans);font-size:var(--font-size-base);
+  color:var(--text);background:var(--surface2);border:1px solid var(--border-mid);
+  border-radius:var(--radius-sm);padding:10px 12px}
+input::placeholder{color:var(--text-dim)}
+input:focus,select:focus{outline:none;border-color:var(--accent-border);
+  box-shadow:0 0 0 3px rgba(116,179,216,0.12)}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-muted) 50%),
+  linear-gradient(135deg,var(--text-muted) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+
+/* ── dive-type chip grid ────────────────────────────────────────────────── */
+.lf-typegrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.lf-type-chip{display:flex;align-items:center;justify-content:center;font-size:var(--font-size-xs);
+  font-weight:600;line-height:1.1;padding:10px 3px;border-radius:var(--radius-md);cursor:pointer;
+  border:1px solid var(--border-mid);border-left:4px solid var(--tc);
+  background:var(--bg);color:var(--text)}
+/* was color:#fff — on the lifted ramp that runs 1.6–2.4:1. --on-type is the pair. */
+.lf-type-chip.sel{background:var(--tc);color:var(--on-type);border-color:var(--tc)}
+
+/* ── segmented toggles ──────────────────────────────────────────────────── */
+.lf-seg{display:flex;border:1px solid var(--border-mid);border-radius:9px;overflow:hidden}
+.lf-seg-opt{flex:1;text-align:center;font-size:var(--font-size-sm);font-weight:600;padding:10px 4px;
+  background:var(--bg);color:var(--text);border:none;border-left:1px solid var(--border-mid);cursor:pointer}
+.lf-seg-opt:first-child{border-left:none}
+/* --accent-fill is constant across themes and keeps white ink (4.51:1) */
+.lf-seg-opt.sel{background:var(--accent-fill);color:var(--on-accent)}
+
+/* ── dials ──────────────────────────────────────────────────────────────── */
+.dialrow{display:grid;grid-template-columns:1fr 96px;gap:12px;align-items:center}
+.dial{height:14px;border-radius:var(--radius-full);position:relative;
+  /* the dial gradients are baked literals in css/styles.css and carry physical
+     meaning (water clarity / temperature), so they do NOT re-theme — but on a
+     dark canvas their dark ends merge with the page, so the track gains a ring */
+  box-shadow:0 0 0 1px var(--border-mid)}
+.dial-vis{background:linear-gradient(90deg,#16302F,#275C63,#3C7E9C,#9ecce7)}
+.dial-temp{background:linear-gradient(90deg,#275C63,#3C7E9C,#9ecce7,#cadaea,#e9ba6a)}
+.dial-knob{position:absolute;top:50%;width:20px;height:20px;border-radius:50%;
+  background:var(--surface);border:2px solid var(--text);transform:translate(-50%,-50%);
+  box-shadow:0 1px 4px rgba(0,0,0,.5)}
+.dial-ends{display:flex;justify-content:space-between;font-family:var(--mono);
+  font-size:var(--font-size-xs);color:var(--text-muted);margin-top:5px}
+.lf-num{display:flex;align-items:center;gap:6px;background:var(--surface2);
+  border:1px solid var(--border-mid);border-radius:var(--radius-sm);padding:8px 10px}
+.lf-num input{background:transparent;border:none;padding:0;text-align:right;font-variant-numeric:tabular-nums}
+.lf-num input:focus{box-shadow:none}
+.lf-num .u{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted)}
+
+/* ── weather icons ──────────────────────────────────────────────────────── */
+.lf-wx{display:flex;gap:8px}
+.lf-wx-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 4px;
+  border:1px solid var(--border-mid);border-radius:var(--radius-md);background:var(--bg);
+  color:var(--text-muted);cursor:pointer;font-family:var(--mono);font-size:var(--font-size-xs)}
+.lf-wx-opt.sel{border-color:var(--accent-border);background:var(--accent-dim);color:var(--accent)}
+.lf-wx-opt svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
+
+/* ── time/depth groups ──────────────────────────────────────────────────── */
+.lf-pgroup{display:grid;grid-template-columns:54px minmax(0,1fr);gap:14px;align-items:center}
+.lf-pgroup+.lf-pgroup{margin-top:14px}
+.lf-pgroup-lbl{font-family:var(--mono);font-size:var(--font-size-xs);letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text-muted)}
+.lf-pfields{display:grid;grid-template-columns:repeat(3,minmax(0,132px));gap:10px;align-items:end}
+.lf-pfields-2{grid-template-columns:repeat(2,minmax(0,132px))}
+.lf-numlbl{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted);
+  letter-spacing:.04em;display:block;margin-bottom:5px}
+.lf-picker-trigger{display:inline-flex;align-items:center;gap:6px;width:100%;
+  background:var(--surface2);border:1px solid var(--border-mid);border-radius:var(--radius-sm);
+  padding:8px 10px;color:var(--text);font-size:var(--font-size-base);cursor:pointer}
+.lf-picker-trigger svg{width:15px;height:15px;stroke:var(--text-muted);fill:none;stroke-width:1.7;flex-shrink:0}
+.lf-num-wheel{width:24px;height:24px;border-radius:var(--radius-xs);border:1px solid var(--border-mid);
+  background:transparent;color:var(--text-muted);font-size:11px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;margin-left:6px}
+.lf-num-wheel:hover{color:var(--accent);border-color:var(--accent-border)}
+
+/* ── map card ───────────────────────────────────────────────────────────── */
+.lf-mapbox{height:150px;border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  position:relative;background:var(--surface2)}
+.lf-map-fake{position:absolute;inset:0;
+  background:linear-gradient(150deg,#1B2E31 0%,#16262A 55%,#122023 100%)}
+.lf-map-fake::after{content:'';position:absolute;inset:0;opacity:.55;
+  background:repeating-linear-gradient(66deg,transparent 0 30px,rgba(237,230,218,0.05) 30px 31px),
+             repeating-linear-gradient(-24deg,transparent 0 38px,rgba(237,230,218,0.04) 38px 39px)}
+.lf-pin{position:absolute;left:46%;top:44%;transform:translate(-50%,-100%);font-size:22px;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.lf-geo-suggest{margin-top:10px;display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:var(--radius-md);background:var(--taupe-dim);border:1px solid var(--taupe-border);
+  font-size:var(--font-size-sm)}
+.lf-geo-suggest .ok{margin-left:auto;background:var(--accent-fill);color:var(--on-accent);border:none;
+  border-radius:var(--radius-sm);padding:6px 14px;font-family:var(--mono);font-size:var(--font-size-xs);cursor:pointer}
+
+/* ── marine life ────────────────────────────────────────────────────────── */
+.sp-search{display:flex;align-items:center;gap:9px;background:var(--surface2);
+  border:1px solid var(--border-mid);border-radius:var(--radius-md);padding:10px 12px}
+.sp-search span{color:var(--accent)}
+.sp-search input{background:transparent;border:none;padding:0}
+.sp-search input:focus{box-shadow:none}
+.sp-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.sp-row:last-child{border-bottom:none}
+.sp-th{width:36px;height:36px;border-radius:var(--radius-sm);overflow:hidden;background:var(--surface2);flex-shrink:0}
+.sp-th img{width:100%;height:100%;object-fit:cover;display:block}
+.sp-nm{flex:1;min-width:0;font-size:var(--font-size-sm)}
+.sp-nm em{display:block;font-style:italic;color:var(--text-muted);font-size:var(--font-size-xs)}
+.roc{display:flex;gap:4px}
+.roc-btn{width:30px;text-align:center;font-family:var(--mono);font-size:var(--font-size-xs);font-weight:700;
+  padding:5px 0;border:1px solid var(--border-mid);border-radius:var(--radius-sm);
+  color:var(--text-muted);background:var(--bg);cursor:pointer}
+.roc-btn.sel{color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim)}
+.iucn{font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 5px;border-radius:var(--radius-xs);
+  border:1px solid transparent;flex-shrink:0}
+.iucn-CR{background:rgba(9,16,16,.55);color:#A98BD6;border-color:rgba(169,139,214,.55);font-weight:800}
+.iucn-LC{background:var(--taupe-dim);color:var(--text-muted);border-color:var(--border-mid)}
+.badge-free{font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 5px;border-radius:var(--radius-xs);
+  background:rgba(233,138,106,.13);color:var(--warn);border:1px solid rgba(233,138,106,.35)}
+
+/* ── save bar ───────────────────────────────────────────────────────────── */
+.savebar{position:fixed;left:0;right:0;bottom:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg,rgba(17,30,29,0) 0%,rgba(17,30,29,.94) 34%);display:flex;justify-content:center}
+.savebar .inner{width:100%;max-width:780px;display:flex;gap:10px}
+.btn-save{flex:1;background:var(--accent-fill);color:var(--on-accent);border:none;border-radius:9px;
+  padding:14px;font-size:var(--font-size-base);font-weight:600;cursor:pointer}
+.btn-ghost{background:var(--surface);color:var(--text-muted);border:1px solid var(--border-mid);
+  border-radius:9px;padding:14px 20px;cursor:pointer}
+.cap{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-dim);
+  letter-spacing:.06em;text-transform:uppercase;margin:30px 0 10px}
+</style>
+</head>
+<body class="theme-harbour">
+<div class="wrap">
+
+<div class="note"><b>Log a dive — Harbour Night, app-wide.</b> The densest screen for colour: every control class in the
+app meets here. Shown in <b>edit mode</b> (accent-tinted card borders) with Dive, Dive profile, Conditions and Marine
+life expanded so all the control types are visible at once — the real form opens one section at a time.</div>
+
+<div class="page-title">Edit a dive</div>
+<div class="page-sub">BSAC format · every field optional</div>
+
+<div class="sync-banner" id="edit-banner">✎ Editing dive <strong>#128 — Batu Bolong</strong><span class="lnk">Cancel</span></div>
+<div class="sync-banner neutral">🖥 Just dove? Import a <code>.uddf</code> from your dive computer<span class="lnk">Choose file →</span></div>
+
+<!-- ── Dive ─────────────────────────────────────────────────────────────── -->
+<div class="cs open editing">
+  <div class="cs-head"><span class="cs-chevron">▶</span><span class="cs-title">Dive</span></div>
+  <div class="cs-body">
+    <label class="lf-lbl">Dive type</label>
+    <div class="lf-typegrid">
+      <button class="lf-type-chip sel" style="--tc:var(--type-Boat)">Boat</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Shore)">Shore</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Drift)">Drift</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Night)">Night</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Cave)">Cave</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Wreck)">Wreck</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Reef)">Reef</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Wall)">Wall</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Pinnacle)">Pinnacle</button>
+      <button class="lf-type-chip" style="--tc:var(--type-Muck)">Muck</button>
+    </div>
+
+    <label class="lf-lbl">Site</label>
+    <input type="text" value="Batu Bolong">
+
+    <label class="lf-lbl">Location</label>
+    <div class="lf-mapbox"><div class="lf-map-fake"></div><div class="lf-pin">📍</div></div>
+    <div class="lf-geo-suggest">Looks like <b>Komodo, Indonesia</b><button class="ok">Confirm</button></div>
+
+    <label class="lf-lbl">Dive number</label>
+    <input type="number" placeholder="95" value="128">
+  </div>
+</div>
+
+<!-- ── Dive profile ─────────────────────────────────────────────────────── -->
+<div class="cs open editing">
+  <div class="cs-head"><span class="cs-chevron">▶</span><span class="cs-title">Dive profile</span></div>
+  <div class="cs-body">
+    <div class="lf-pgroup">
+      <span class="lf-pgroup-lbl">Time</span>
+      <div class="lf-pfields">
+        <div><span class="lf-numlbl">Bottom</span><div class="lf-num"><input type="number" value="52"><span class="u">min</span></div></div>
+        <div><span class="lf-numlbl">Entry</span>
+          <button class="lf-picker-trigger"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>09:15</button></div>
+        <div><span class="lf-numlbl">Exit</span>
+          <button class="lf-picker-trigger"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>10:07</button></div>
+      </div>
+    </div>
+    <div class="lf-pgroup">
+      <span class="lf-pgroup-lbl">Depth</span>
+      <div class="lf-pfields lf-pfields-2">
+        <div><span class="lf-numlbl">Max</span><div class="lf-num"><input type="number" value="24.6"><span class="u">m</span></div></div>
+        <div><span class="lf-numlbl">Average</span><div class="lf-num"><input type="number" value="14.2"><span class="u">m</span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Conditions ───────────────────────────────────────────────────────── -->
+<div class="cs open editing">
+  <div class="cs-head"><span class="cs-chevron">▶</span><span class="cs-title">Conditions</span></div>
+  <div class="cs-body">
+    <label class="lf-lbl">Visibility</label>
+    <div class="dialrow">
+      <div>
+        <div class="dial dial-vis"><div class="dial-knob" style="left:60%"></div></div>
+        <div class="dial-ends"><span>0 m</span><span>30 m</span></div>
+      </div>
+      <div class="lf-num"><input type="number" value="18"><span class="u">m</span></div>
+    </div>
+
+    <label class="lf-lbl">Water temperature</label>
+    <div class="dialrow">
+      <div>
+        <div class="dial dial-temp"><div class="dial-knob" style="left:80%"></div></div>
+        <div class="dial-ends"><span>0 °c</span><span>35 °c</span></div>
+      </div>
+      <div class="lf-num"><input type="number" value="28"><span class="u">°c</span></div>
+    </div>
+
+    <label class="lf-lbl">Water type</label>
+    <div class="lf-seg">
+      <button class="lf-seg-opt sel">Salt</button><button class="lf-seg-opt">Fresh</button><button class="lf-seg-opt">Brackish</button>
+    </div>
+
+    <label class="lf-lbl">Current</label>
+    <div class="lf-seg">
+      <button class="lf-seg-opt">None</button><button class="lf-seg-opt">Slight</button>
+      <button class="lf-seg-opt sel">Moderate</button><button class="lf-seg-opt">Strong</button>
+    </div>
+
+    <label class="lf-lbl">Weather</label>
+    <div class="lf-wx">
+      <button class="lf-wx-opt sel"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/></svg>Sunny</button>
+      <button class="lf-wx-opt"><svg viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .3-8 6 6 0 0 0-11.4 1.6A3.5 3.5 0 0 0 7 18z"/></svg>Cloudy</button>
+      <button class="lf-wx-opt"><svg viewBox="0 0 24 24"><path d="M7 15h10a4 4 0 0 0 .3-8 6 6 0 0 0-11.4 1.6A3.5 3.5 0 0 0 7 15z"/><path d="M9 19l-1 2M13 19l-1 2M17 19l-1 2"/></svg>Rain</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Gas & equipment (collapsed, complete) ────────────────────────────── -->
+<div class="cs editing">
+  <div class="cs-head"><span class="cs-chevron">▶</span><span class="cs-title">Gas &amp; equipment</span>
+    <span class="cs-summary complete">✓ 200→50 bar · Nitrox 32 · 12 L</span></div>
+</div>
+
+<!-- ── Marine life ──────────────────────────────────────────────────────── -->
+<div class="cs open editing">
+  <div class="cs-head"><span class="cs-chevron">▶</span><span class="cs-title">Marine life</span></div>
+  <div class="cs-body">
+    <div class="sp-search"><span>🔍</span><input type="text" placeholder="Search species…"></div>
+    <div style="margin-top:6px">
+      <div class="sp-row">
+        <div class="sp-th"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg" alt=""></div>
+        <div class="sp-nm">Hawksbill turtle<em>Eretmochelys imbricata</em></div>
+        <span class="iucn iucn-CR">CR</span>
+        <div class="roc"><span class="roc-btn sel">R</span><span class="roc-btn">O</span><span class="roc-btn">C</span></div>
+      </div>
+      <div class="sp-row">
+        <div class="sp-th"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg" alt=""></div>
+        <div class="sp-nm">Lionfish<em>Pterois volitans</em></div>
+        <span class="iucn iucn-LC">LC</span>
+        <div class="roc"><span class="roc-btn">R</span><span class="roc-btn sel">O</span><span class="roc-btn">C</span></div>
+      </div>
+      <div class="sp-row">
+        <div class="sp-th"></div>
+        <div class="sp-nm">Blue-ringed thing<em>free text — not matched</em></div>
+        <span class="badge-free">UNVALIDATED</span>
+        <div class="roc"><span class="roc-btn">R</span><span class="roc-btn">O</span><span class="roc-btn sel">C</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── remaining, collapsed ─────────────────────────────────────────────── -->
+<div class="cs editing"><div class="cs-head"><span class="cs-chevron">▶</span><span class="cs-title">Notes</span>
+  <span class="cs-summary partial">Ripping current on the ridge…</span></div></div>
+<div class="cs editing"><div class="cs-head"><span class="cs-chevron">▶</span><span class="cs-title">Buddy &amp; sign-off</span>
+  <span class="cs-summary">Expand</span></div></div>
+
+<div class="cap">Notes on what changed here</div>
+<div class="note">
+<b>The dive-type chips are the clearest case for <code>--on-type</code>.</b> Selected chips fill with the ramp member
+and hardcode <code>#fff</code>; on the lifted ramp that runs 1.6–2.4:1. Deep ink gives 4.80:1 at worst. Unselected chips
+are unaffected — they carry the type only as a 4px left border on a neutral background, which is a graphical boundary,
+not text.<br><br>
+<b>The segmented toggles are the counter-example</b>, and worth having next to the chips: they fill with
+<code>--accent-fill</code>, which is constant across themes, so they keep white ink and look identical in both modes.
+That's the rule working as intended — the two controls sit inches apart and resolve their ink differently for a real
+reason.<br><br>
+<b>The vis/temp dial gradients do not re-theme.</b> Six baked literals (<code>#16302F</code>, <code>#275C63</code>,
+<code>#3C7E9C</code>, <code>#9ecce7</code>, <code>#cadaea</code>, <code>#e9ba6a</code>) encoding physical facts —
+water clarity and temperature — not UI state, so they'd be wrong to shift with the theme. But the vis dial's dark end is
+within a few points of the dark canvas and its edge disappears. Fixed with a <code>box-shadow</code> ring in
+<code>--border-mid</code> rather than by touching the gradient: the track needs a <i>boundary</i> on dark, not different
+colours. These six are separately flagged in the colour doc as undocumented; this is one more reason to register them.
+</div>
+
+</div>
+
+<div class="savebar"><div class="inner">
+  <button class="btn-ghost">Cancel</button>
+  <button class="btn-save">Save changes</button>
+</div></div>
+</body>
+</html>

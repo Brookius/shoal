@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dive card — layout options</title>
+<style>
+  :root {
+    --bg:#F5EBD8; --surface:#FAF6F1; --surface2:#EDE5D8;
+    --border:rgba(28,48,48,0.10); --border-mid:rgba(28,48,48,0.18);
+    --text:#1C3030; --text-muted:#8B7B6A; --text-dim:#B5A898;
+    --accent:#4A90B8;
+    --type-Boat:#2F7E8C; --type-Reef:#C97A4A; --type-Night:#3A4A7A;
+    --mono: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --text-xs:12px; --text-sm:14px; --text-base:16px;
+  }
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+  body {
+    font-family:var(--sans); background:var(--bg); color:var(--text);
+    padding:40px 20px 80px; line-height:1.5;
+  }
+
+  .page-title { text-align:center; font-size:22px; font-weight:700; letter-spacing:-0.01em; }
+  .page-sub {
+    text-align:center; color:var(--text-muted); font-size:var(--text-sm);
+    margin-top:8px; max-width:620px; margin-left:auto; margin-right:auto; line-height:1.6;
+  }
+
+  .options { display:flex; gap:40px; justify-content:center; align-items:flex-start; flex-wrap:wrap; margin-top:44px; }
+  .option { width:380px; }
+  .opt-tag {
+    font-family:var(--mono); font-size:11px; font-weight:700; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--accent); margin-bottom:4px;
+  }
+  .opt-name { font-size:16px; font-weight:600; margin-bottom:8px; }
+  .opt-desc {
+    font-size:var(--text-xs); color:var(--text-muted); font-family:var(--mono);
+    line-height:1.7; margin-bottom:18px; min-height:84px;
+  }
+  .stack { display:flex; flex-direction:column; gap:12px; }
+
+  /* ── Shared card chrome ─────────────────────────────────────────────────── */
+  .card {
+    display:grid; grid-template-columns:26px 1fr;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; overflow:hidden;
+    box-shadow:0 2px 8px rgba(28,48,48,0.07);
+  }
+  /* Coloured spine — dive type as vertical mono caps (binds type ↔ colour) */
+  .spine { display:flex; align-items:center; justify-content:center; padding:10px 0; }
+  .spine span {
+    writing-mode:vertical-rl; font-family:var(--mono); font-size:11px; font-weight:700;
+    letter-spacing:0.20em; text-transform:uppercase; color:rgba(255,255,255,0.96);
+    text-shadow:0 1px 2px rgba(0,0,0,0.18);
+  }
+  .spine.t-Boat  { background:var(--type-Boat); }
+  .spine.t-Reef  { background:var(--type-Reef); }
+  .spine.t-Night { background:var(--type-Night); }
+
+  .photo {
+    width:50px; height:50px; border-radius:8px; overflow:hidden;
+    background:var(--surface2); border:1px solid var(--border); flex-shrink:0;
+  }
+  .photo img { width:100%; height:100%; object-fit:cover; display:block; }
+  .gps { font-size:var(--text-xs); opacity:0.45; }
+
+  /* Shared marine row */
+  .marine { display:flex; align-items:center; gap:11px; margin-top:12px; }
+  .spcount { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); letter-spacing:0.03em; }
+  .vid { font-family:var(--mono); font-size:var(--text-xs); color:var(--accent); font-weight:600; margin-left:auto; letter-spacing:0.03em; }
+
+  /* Shared measure atom (icon + sans number + unit) */
+  .meas { display:inline-flex; align-items:baseline; gap:4px; }
+  .meas .mi { font-size:12px; opacity:0.5; }
+  .meas .mn { font-family:var(--sans); font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.01em; line-height:1; }
+  .meas .mu { font-family:var(--mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; }
+  /* dimmed vis (fork A) */
+  .meas.dim .mn { font-size:13px; font-weight:600; color:var(--text-muted); }
+  .meas.dim .mi { opacity:0.4; }
+  /* muted-only vis (fork B) */
+  .meas.muted .mn { color:var(--text-muted); }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     OPTION A — IDENTITY STACK (site / date / dive#)
+     Date sits between site and number, as you suggested. Measurements on one
+     line below, vis dimmed + appended (fork A). Marine row last.
+  ══════════════════════════════════════════════════════════════════════════ */
+  .oA-body { padding:13px 15px 14px; }
+  .oA-site { font-size:19px; font-weight:700; color:var(--text); letter-spacing:-0.01em; line-height:1.2; }
+  .oA-date { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); margin-top:4px; letter-spacing:0.04em; }
+  .oA-dnum { font-family:var(--mono); font-size:var(--text-sm); color:var(--text); font-weight:600; margin-top:2px; letter-spacing:0.04em; }
+  .oA-meas { display:flex; align-items:baseline; gap:14px; margin-top:12px; flex-wrap:wrap; }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     OPTION B — 3×2 GRID (identity column | measurements column)
+     site/date/dive# stacked left; depth/time/vis stacked right, each row
+     paired. The "3-3-3": three identity lines, three measurements, then the
+     marine trio below. Vis is the quietest grid cell.
+  ══════════════════════════════════════════════════════════════════════════ */
+  .oB-body { padding:13px 15px 14px; }
+  .oB-grid { display:grid; grid-template-columns:1fr auto; gap:7px 16px; align-items:baseline; }
+  .oB-site { font-size:19px; font-weight:700; color:var(--text); letter-spacing:-0.01em; line-height:1; }
+  .oB-date { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); letter-spacing:0.04em; }
+  .oB-dnum { font-family:var(--mono); font-size:var(--text-sm); color:var(--text); font-weight:600; letter-spacing:0.04em; }
+  .oB-m { display:flex; align-items:baseline; justify-content:flex-end; gap:4px; }
+  .oB-m .mn { font-family:var(--sans); font-size:16px; font-weight:700; color:var(--text); letter-spacing:-0.01em; line-height:1; }
+  .oB-m .mu { font-family:var(--mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; }
+  .oB-m.dim .mn { font-size:14px; font-weight:600; color:var(--text-muted); }
+  .oB-marine { display:flex; align-items:center; gap:11px; margin-top:13px; padding-top:12px; border-top:1px solid var(--border); }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     OPTION C — CORNER CLUSTER (site hero + dive#/date top-right)
+     Site name owns the top-left; dive# + date stack in the top-right corner.
+     Measurements on one line, all three equal size, vis muted by colour only
+     (fork B). Marine row last.
+  ══════════════════════════════════════════════════════════════════════════ */
+  .oC-body { padding:13px 15px 14px; }
+  .oC-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .oC-site { font-size:19px; font-weight:700; color:var(--text); letter-spacing:-0.01em; line-height:1.2; flex:1; min-width:0; }
+  .oC-idc { text-align:right; flex-shrink:0; }
+  .oC-dnum { font-family:var(--mono); font-size:var(--text-sm); color:var(--text); font-weight:600; letter-spacing:0.04em; }
+  .oC-date { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); margin-top:2px; letter-spacing:0.04em; }
+  .oC-meas { display:flex; align-items:baseline; gap:16px; margin-top:12px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+
+<div class="page-title">Dive card — three layout options</div>
+<div class="page-sub">
+  Same two dives across all three (Reef + Night, one with footage and one without).
+  Coloured spine carries the dive type. Standout-species photo with no name. Species
+  count welded to the photo; ▶ footage right-aligned. The variable is identity layout
+  + how visibility is handled.
+</div>
+
+<div class="options">
+
+  <!-- ════════════════ OPTION A ════════════════ -->
+  <div class="option">
+    <div class="opt-tag">A · Identity stack</div>
+    <div class="opt-name">Site / date / dive# stacked</div>
+    <div class="opt-desc">
+      Date between site and number, as you suggested. Hierarchy via size/weight,
+      not position: site largest, dive# heavier than the date above it.
+      Measurements on one line; vis dimmed + appended (fork A).
+    </div>
+    <div class="stack">
+
+      <div class="card">
+        <div class="spine t-Reef"><span>Reef</span></div>
+        <div class="oA-body">
+          <div class="oA-site">Angel Reef <span class="gps">📍</span></div>
+          <div class="oA-date">Wed 13 May 2026</div>
+          <div class="oA-dnum">#148</div>
+          <div class="oA-meas">
+            <span class="meas"><span class="mi">↓</span><span class="mn">22.9</span><span class="mu">m</span></span>
+            <span class="meas"><span class="mi">⏱</span><span class="mn">65</span><span class="mu">min</span></span>
+            <span class="meas dim"><span class="mi">👁</span><span class="mn">20</span><span class="mu">m</span></span>
+          </div>
+          <div class="marine">
+            <div class="photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div>
+            <span class="spcount">🐟 12 sp.</span>
+            <span class="vid">▶ 4</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="spine t-Night"><span>Night</span></div>
+        <div class="oA-body">
+          <div class="oA-site">Labuan Haji</div>
+          <div class="oA-date">Tue 12 May 2026</div>
+          <div class="oA-dnum">#147</div>
+          <div class="oA-meas">
+            <span class="meas"><span class="mi">↓</span><span class="mn">15.5</span><span class="mu">m</span></span>
+            <span class="meas"><span class="mi">⏱</span><span class="mn">67</span><span class="mu">min</span></span>
+            <span class="meas dim"><span class="mi">👁</span><span class="mn">14</span><span class="mu">m</span></span>
+          </div>
+          <div class="marine">
+            <div class="photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/5890152/square.jpg"></div>
+            <span class="spcount">🐟 8 sp.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════ OPTION B ════════════════ -->
+  <div class="option">
+    <div class="opt-tag">B · 3×2 grid</div>
+    <div class="opt-name">Identity column · measurements column</div>
+    <div class="opt-desc">
+      The literal 3-3-3: site/date/dive# down the left, depth/time/vis down the
+      right, paired row-for-row. Symmetric and dense. Marine trio sits below a
+      divider. Vis is the quietest grid cell (bottom-right).
+    </div>
+    <div class="stack">
+
+      <div class="card">
+        <div class="spine t-Reef"><span>Reef</span></div>
+        <div class="oB-body">
+          <div class="oB-grid">
+            <div class="oB-site">Angel Reef <span class="gps">📍</span></div>
+            <div class="oB-m"><span class="mn">22.9</span><span class="mu">↓m</span></div>
+            <div class="oB-date">Wed 13 May 2026</div>
+            <div class="oB-m"><span class="mn">65</span><span class="mu">⏱min</span></div>
+            <div class="oB-dnum">#148</div>
+            <div class="oB-m dim"><span class="mn">20</span><span class="mu">👁m</span></div>
+          </div>
+          <div class="oB-marine">
+            <div class="photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div>
+            <span class="spcount">🐟 12 sp.</span>
+            <span class="vid">▶ 4</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="spine t-Night"><span>Night</span></div>
+        <div class="oB-body">
+          <div class="oB-grid">
+            <div class="oB-site">Labuan Haji</div>
+            <div class="oB-m"><span class="mn">15.5</span><span class="mu">↓m</span></div>
+            <div class="oB-date">Tue 12 May 2026</div>
+            <div class="oB-m"><span class="mn">67</span><span class="mu">⏱min</span></div>
+            <div class="oB-dnum">#147</div>
+            <div class="oB-m dim"><span class="mn">14</span><span class="mu">👁m</span></div>
+          </div>
+          <div class="oB-marine">
+            <div class="photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/5890152/square.jpg"></div>
+            <span class="spcount">🐟 8 sp.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════ OPTION C ════════════════ -->
+  <div class="option">
+    <div class="opt-tag">C · Corner cluster</div>
+    <div class="opt-name">Site hero · dive#/date top-right</div>
+    <div class="opt-desc">
+      Site owns the top-left; dive# + date tuck into the top-right corner as a
+      metadata pair. Measurements on one line, all three equal size with vis
+      muted by colour only (fork B). The original sketch, refined.
+    </div>
+    <div class="stack">
+
+      <div class="card">
+        <div class="spine t-Reef"><span>Reef</span></div>
+        <div class="oC-body">
+          <div class="oC-top">
+            <div class="oC-site">Angel Reef <span class="gps">📍</span></div>
+            <div class="oC-idc">
+              <div class="oC-dnum">#148</div>
+              <div class="oC-date">Wed 13 May</div>
+            </div>
+          </div>
+          <div class="oC-meas">
+            <span class="meas"><span class="mi">↓</span><span class="mn">22.9</span><span class="mu">m</span></span>
+            <span class="meas"><span class="mi">⏱</span><span class="mn">65</span><span class="mu">min</span></span>
+            <span class="meas muted"><span class="mi">👁</span><span class="mn">20</span><span class="mu">m</span></span>
+          </div>
+          <div class="marine">
+            <div class="photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div>
+            <span class="spcount">🐟 12 sp.</span>
+            <span class="vid">▶ 4</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="spine t-Night"><span>Night</span></div>
+        <div class="oC-body">
+          <div class="oC-top">
+            <div class="oC-site">Labuan Haji</div>
+            <div class="oC-idc">
+              <div class="oC-dnum">#147</div>
+              <div class="oC-date">Tue 12 May</div>
+            </div>
+          </div>
+          <div class="oC-meas">
+            <span class="meas"><span class="mi">↓</span><span class="mn">15.5</span><span class="mu">m</span></span>
+            <span class="meas"><span class="mi">⏱</span><span class="mn">67</span><span class="mu">min</span></span>
+            <span class="meas muted"><span class="mi">👁</span><span class="mn">14</span><span class="mu">m</span></span>
+          </div>
+          <div class="marine">
+            <div class="photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/5890152/square.jpg"></div>
+            <span class="spcount">🐟 8 sp.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

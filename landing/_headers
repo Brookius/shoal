@@ -1,0 +1,23 @@
+# Cloudflare Pages security headers for the Shoal landing page.
+#
+# This is a separate deployment from the main app (see research/website-brief.md
+# → "Stage 0.5" and the plan this was implemented from) — it needs its own
+# _headers file; Cloudflare Pages headers are per-deployment, not inherited.
+#
+# Tighter than the main app's _headers by design: this page is freshly authored
+# with zero inline onclick= handlers (everything is wired via addEventListener
+# in script.js), so script-src can be 'self' only — no 'unsafe-inline' needed,
+# unlike the main app which carries ~130 legacy inline handlers.
+#
+# img-src allows exactly what this page loads: the iNaturalist open-data S3
+# bucket (species photos, CC-licensed by construction — see CLAUDE.md) and the
+# three sharded OpenStreetMap tile subdomains (matches js/map.js's own
+# {s}.tile.openstreetmap.org convention).
+
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=(), usb=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://inaturalist-open-data.s3.amazonaws.com https://a.tile.openstreetmap.org https://b.tile.openstreetmap.org https://c.tile.openstreetmap.org; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; worker-src 'none'

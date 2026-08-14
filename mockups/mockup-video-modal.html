@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Video modal v7 — full-screen desktop (Tag ⇄ Watch)</title>
+<style>
+  :root {
+    --bg:#F5EBD8; --surface:#FAF6F1; --surface2:#EDE5D8;
+    --border:rgba(28,48,48,0.10); --border-mid:rgba(28,48,48,0.18);
+    --text:#1C3030; --text-muted:#8B7B6A; --text-dim:#B5A898;
+    --accent:#4A90B8; --accent-dim:rgba(74,144,184,0.10); --accent-border:rgba(74,144,184,0.30);
+    --success:#4F9D6B; --pending:#E0734F; --danger:#B0492E;
+    --violet-deep:#6A4A9A; --violet-soft:#9B7EC8; --gold:#D4A843;
+    --mono: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --text-xs:12px; --text-sm:14px; --text-base:16px;
+  }
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#A89E92; font-family:var(--sans); color:var(--text); padding:22px 18px 70px; }
+  .lead { text-align:center; color:white; margin-bottom:6px; }
+  .lead h1 { font-size:23px; font-weight:700; letter-spacing:-0.01em; }
+  .lead p { color:rgba(255,255,255,0.64); font-size:var(--text-sm); margin:8px auto 0; max-width:820px; line-height:1.6; }
+  .caption { color:white; font-size:13px; font-weight:700; letter-spacing:0.10em; text-transform:uppercase; opacity:0.85; margin:42px 0 6px; text-align:center; }
+  .caption-sub { color:rgba(255,255,255,0.55); font-family:var(--mono); font-size:var(--text-xs); text-align:center; margin-bottom:16px; max-width:760px; margin-left:auto; margin-right:auto; line-height:1.6; }
+  .legend { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:0 auto 20px; }
+  .legend span { display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:rgba(255,255,255,0.8); }
+  .ldot { width:11px; height:11px; border-radius:50%; border:2px solid rgba(255,255,255,0.5); }
+
+  /* video surface */
+  .vstage { position:relative; background:#0e2230; overflow:hidden;
+    background-image:radial-gradient(120% 80% at 50% 0%, rgba(74,144,184,0.55), transparent 60%),radial-gradient(90% 70% at 30% 100%, rgba(20,60,70,0.6), transparent 70%),linear-gradient(180deg,#1a4a5e,#0e2230); }
+  .vstage::after { content:''; position:absolute; inset:0; opacity:0.5; background-image:radial-gradient(circle at 20% 30%, rgba(255,255,255,0.18) 1px, transparent 2px),radial-gradient(circle at 70% 50%, rgba(255,255,255,0.12) 1px, transparent 2px),radial-gradient(circle at 45% 70%, rgba(255,255,255,0.15) 1px, transparent 2px); }
+  .vstage .silhouette { position:absolute; right:14%; top:34%; font-size:74px; opacity:0.32; }
+  .vstage .pause-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .vstage .pause-btn { width:66px; height:66px; border-radius:50%; background:rgba(12,24,24,0.55); border:1.5px solid rgba(255,255,255,0.55); display:flex; align-items:center; justify-content:center; color:#fff; font-size:26px; }
+  .vstage .live-time { position:absolute; left:14px; bottom:12px; font-family:var(--mono); font-size:var(--text-sm); color:#fff; background:rgba(12,24,24,0.6); padding:3px 10px; border-radius:4px; }
+  .vstage .vname { position:absolute; left:14px; top:12px; font-family:var(--mono); font-size:var(--text-xs); color:#fff; background:rgba(12,24,24,0.55); border:1px solid rgba(255,255,255,0.22); padding:2px 9px; border-radius:4px; }
+
+  /* scrubber + IUCN markers */
+  .scrub { position:relative; padding:16px 16px 6px; }
+  .scrub-track { position:relative; height:9px; border-radius:5px; background:var(--surface2); border:1px solid var(--border); }
+  .scrub-played { position:absolute; left:0; top:0; bottom:0; border-radius:5px 0 0 5px; background:var(--accent); }
+  .scrub-head { position:absolute; top:50%; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid var(--accent); transform:translate(-50%,-50%); box-shadow:0 1px 3px rgba(0,0,0,0.25); }
+  .marker { position:absolute; top:50%; width:12px; height:12px; border-radius:50%; transform:translate(-50%,-50%); border:2px solid var(--surface); cursor:pointer; }
+  .marker.CR { background:var(--violet-deep); } .marker.EN { background:var(--violet-soft); } .marker.VU { background:var(--gold); }
+  .marker.LC,.marker.NT,.marker.DD { background:var(--text-dim); }
+  .marker.none { background:#fff; border:2px dashed var(--pending); }
+  .marker-flag { position:absolute; bottom:20px; transform:translateX(-50%); font-family:var(--mono); font-size:10px; white-space:nowrap; background:var(--text); color:var(--bg); padding:2px 7px; border-radius:4px; }
+  .marker-flag::after { content:''; position:absolute; left:50%; bottom:-4px; transform:translateX(-50%); border-left:4px solid transparent; border-right:4px solid transparent; border-top:4px solid var(--text); }
+  .scrub-times { display:flex; justify-content:space-between; margin-top:7px; font-family:var(--mono); font-size:10px; color:var(--text-dim); }
+
+  /* transport — timestamp removed (visible on the video itself) */
+  .transport { display:flex; align-items:center; gap:6px; padding:4px 16px 14px; }
+  .tp-btn { width:36px; height:36px; border-radius:8px; border:1px solid var(--border-mid); background:var(--surface); color:var(--text-muted); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .tp-btn.play { background:var(--accent); color:#fff; border-color:var(--accent); width:42px; font-size:15px; }
+  .tp-sep { width:1px; height:22px; background:var(--border-mid); margin:0 4px; }
+  .tp-tag { margin-left:auto; font-family:var(--mono); font-size:var(--text-xs); font-weight:600; color:#fff; background:var(--accent); border:none; border-radius:8px; padding:10px 18px; cursor:pointer; }
+  .tp-tag.busy { background:var(--text-dim); }
+
+  /* reviewed toggle */
+  .rev-toggle { display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:var(--text-xs); padding:8px 14px; border-radius:8px; cursor:pointer; border:1px solid var(--border-mid); background:var(--surface); color:var(--text-muted); }
+  .rev-toggle.on { color:var(--success); border-color:rgba(79,157,107,0.4); background:rgba(79,157,107,0.08); }
+  .rev-toggle .box { width:15px; height:15px; border-radius:4px; border:1.5px solid var(--text-dim); display:flex; align-items:center; justify-content:center; font-size:10px; }
+  .rev-toggle.on .box { background:var(--success); border-color:var(--success); color:#fff; }
+
+  /* chips */
+  .iucn { font-family:var(--mono); font-size:10px; font-weight:700; padding:1px 5px; border-radius:3px; flex-shrink:0; }
+  .iucn.CR { background:rgba(106,74,154,0.15); color:var(--violet-deep); border:1px solid rgba(106,74,154,0.3); font-weight:800; }
+  .iucn.EN { background:rgba(155,126,200,0.15); color:var(--violet-soft); border:1px solid rgba(155,126,200,0.3); }
+  .iucn.VU { background:rgba(212,168,67,0.15); color:#a07a10; border:1px solid rgba(212,168,67,0.3); }
+  .iucn.NT { background:rgba(139,123,106,0.10); color:var(--text-muted); border:1px solid var(--border); }
+  .iucn.LC { background:rgba(139,123,106,0.10); color:var(--text-muted); border:1px solid var(--border); }
+
+  /* moment row (tag context) */
+  .moment { display:flex; align-items:center; gap:10px; padding:9px 16px; border-bottom:1px solid var(--border); }
+  .m-jump { display:flex; flex-direction:column; align-items:center; gap:1px; flex-shrink:0; width:50px; padding:6px 0; border-radius:7px; background:var(--surface2); border:1px solid var(--border); cursor:pointer; }
+  .m-jump:hover { border-color:var(--accent-border); background:var(--accent-dim); }
+  .m-jump .pt { font-family:var(--mono); font-size:var(--text-xs); color:var(--accent); font-weight:700; }
+  .m-jump .pl { font-size:9px; color:var(--text-dim); }
+  .m-thumb { width:38px; height:38px; border-radius:7px; overflow:hidden; background:var(--surface2); border:1px solid var(--border); flex-shrink:0; }
+  .m-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .m-edit { flex:1; min-width:0; cursor:pointer; padding:4px 7px; border-radius:7px; border:1px solid transparent; }
+  .m-edit:hover { border-color:var(--border); background:var(--surface2); }
+  .m-name { font-size:var(--text-sm); font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .m-note { display:flex; align-items:center; gap:5px; font-family:var(--mono); font-size:11px; color:var(--text-muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .m-note .pencil { color:var(--text-dim); font-size:10px; }
+  .m-note.empty { color:var(--text-dim); font-style:italic; }
+
+  .list-sub { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-muted); background:var(--surface2); padding:8px 16px; display:flex; align-items:center; gap:8px; }
+  .list-sub .n { color:var(--text-dim); margin-left:auto; }
+
+  /* already-logged pills — single horizontal-scroll row, sits ABOVE the categories.
+     Distinct from categories via the accent-tinted band background + accent pills. */
+  .ul-band { padding:9px 14px 9px; border-bottom:1px solid var(--border); background:var(--accent-dim); flex-shrink:0; }
+  .ul-band .ul-lbl { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--accent); margin-bottom:8px; display:flex; }
+  .ul-band .ul-lbl .n { color:var(--text-dim); margin-left:auto; }
+  .ul-row { display:flex; gap:7px; overflow-x:auto; scrollbar-width:none; }
+  .ul-row::-webkit-scrollbar { display:none; }
+  .ulchip { display:inline-flex; align-items:center; gap:7px; padding:5px 12px 5px 5px; border:1px solid var(--accent-border); border-radius:999px; background:var(--surface); cursor:pointer; flex-shrink:0; }
+  .ulchip:hover { background:var(--accent-dim); }
+  .ulchip img { width:24px; height:24px; border-radius:50%; object-fit:cover; }
+  .ulchip .ph { width:24px; height:24px; border-radius:50%; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .ulchip .nm { font-size:var(--text-sm); font-weight:600; white-space:nowrap; }
+  .ulchip .plus { font-family:var(--mono); font-size:12px; color:var(--accent); font-weight:700; }
+
+  /* species browse — Option B full-width photos */
+  .browse-tabs { display:flex; gap:5px; padding:9px 14px 8px; overflow-x:auto; border-bottom:1px solid var(--border); background:var(--surface2); flex-shrink:0; }
+  .browse-tabs::-webkit-scrollbar { display:none; }
+  .browse-tab { display:inline-flex; align-items:center; gap:4px; padding:5px 12px; border-radius:14px; font-size:var(--text-sm); white-space:nowrap; background:var(--surface); color:var(--text-muted); border:1px solid var(--border-mid); flex-shrink:0; cursor:pointer; }
+  .browse-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .browse-tab .cnt { font-family:var(--mono); font-size:var(--text-xs); opacity:0.75; }
+  .b1col { display:flex; flex-direction:column; }
+  .bcell { background:var(--surface); border-bottom:1px solid var(--border); cursor:pointer; }
+  .bcell:hover { background:var(--accent-dim); }
+  .bcell.sel { background:var(--accent-dim); outline:2px solid var(--accent); outline-offset:-2px; }
+  .bcell img { width:100%; height:208px; object-fit:cover; display:block; background:var(--surface2); }
+  .bcell .bph { width:100%; height:208px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:56px; }
+  .bcell .binfo { padding:12px 16px 14px; display:flex; align-items:center; gap:10px; }
+  .bcell .btext { flex:1; min-width:0; }
+  .bcell .bname { font-size:var(--text-base); font-weight:600; color:var(--text); }
+  .bcell .bsci { font-size:var(--text-sm); color:var(--text-muted); font-style:italic; margin-top:2px; }
+
+  /* ═══════════ DESKTOP shell — full-screen ═══════════ */
+  .win { max-width:1500px; margin:0 auto; background:var(--bg); border-radius:12px; overflow:hidden; box-shadow:0 28px 72px rgba(0,0,0,0.42); }
+  .win-bar { height:38px; background:#E4DCCE; display:flex; align-items:center; gap:8px; padding:0 14px; border-bottom:1px solid var(--border); }
+  .win-dot { width:11px; height:11px; border-radius:50%; }
+  .win-url { margin-left:14px; font-family:var(--mono); font-size:11px; color:var(--text-muted); background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:3px 12px; }
+  .dmodal { padding:0; }
+  .dmodal-inner { position:relative; background:var(--surface); display:flex; flex-direction:column; }
+  .dm-head { display:flex; align-items:center; gap:14px; padding:14px 20px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .dm-title { font-size:var(--text-base); font-weight:700; }
+  .dm-sub { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); }
+  .dm-x { margin-left:auto; font-size:18px; color:var(--text-muted); background:none; border:none; cursor:pointer; padding:4px 8px; }
+  /* Tag ⇄ Watch mode toggle — sits above the RIGHT pane (header just has title + ✕) */
+  .mode-toggle { display:flex; background:var(--surface2); border:1px solid var(--border); border-radius:9px; padding:3px; gap:2px; }
+  .mode-toggle button { font-family:var(--mono); font-size:var(--text-xs); padding:6px 16px; border:none; background:none; color:var(--text-muted); border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+  .mode-toggle button.active { background:var(--surface); color:var(--text); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+  /* Right-pane header strip that hosts the toggle, aligned over the right column */
+  .dm-right-bar { display:flex; align-items:center; padding:11px 16px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+
+  /* fixed tall body; columns scroll internally */
+  .dm-grid { display:grid; grid-template-columns:210px 1fr 384px; height:760px; }
+  .dm-videos { border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; }
+  .dm-videos-h { font-family:var(--mono); font-size:var(--text-xs); font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--accent); padding:14px 16px 10px; display:flex; flex-shrink:0; }
+  .dm-videos-h .n { color:var(--text-dim); margin-left:auto; }
+  .dm-videos-scroll { overflow-y:auto; flex:1; min-height:0; }
+  .vrow { display:flex; align-items:center; gap:9px; padding:10px 14px; border-bottom:1px solid var(--border); cursor:pointer; }
+  .vrow:hover { background:var(--surface2); }
+  .vrow.active { background:var(--accent-dim); border-left:3px solid var(--accent); padding-left:11px; }
+  .vrow .vdot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .vrow .vdot.done { background:var(--success); } .vrow .vdot.todo { background:var(--pending); }
+  .vrow .vmeta { flex:1; min-width:0; }
+  .vrow .vfn { font-family:var(--mono); font-size:var(--text-xs); color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .vrow .vsub { font-family:var(--mono); font-size:10px; color:var(--text-dim); margin-top:2px; }
+  .dm-videos-foot { margin-top:auto; padding:11px 14px; border-top:1px solid var(--border); flex-shrink:0; }
+  .dm-videos-foot button { width:100%; font-family:var(--mono); font-size:var(--text-xs); color:var(--accent); background:none; border:1px dashed var(--accent-border); border-radius:8px; padding:10px; cursor:pointer; }
+  .dm-center { border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; overflow-y:auto; justify-content:flex-start; }
+  .dm-center .vstage { aspect-ratio:16/9; flex-shrink:0; }
+  .dm-right { display:flex; flex-direction:column; min-height:0; }
+  .dm-right-h { font-family:var(--mono); font-size:var(--text-xs); font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--accent); padding:14px 16px 10px; display:flex; align-items:center; background:var(--surface2); border-bottom:1px solid var(--border); flex-shrink:0; }
+  .dm-right-h .n { color:var(--text-dim); margin-left:auto; font-weight:400; }
+  .dm-right-scroll { overflow-y:auto; flex:1; min-height:0; }
+
+  /* tag-mode bottom zone — all typing clustered here */
+  .tagfoot { border-top:1px solid var(--border-mid); background:var(--surface); padding:13px 16px; flex-shrink:0; }
+  .tf-field { display:flex; align-items:center; gap:8px; border:1px solid var(--border-mid); border-radius:8px; padding:10px 12px; background:var(--bg); margin-bottom:9px; }
+  .tf-field .gl { color:var(--accent); font-size:13px; }
+  .tf-field input { flex:1; border:none; background:none; font-size:var(--text-sm); color:var(--text); }
+  /* compact abundance: label + R/O/C, matching the live add-form */
+  .tf-abrow { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .tf-ablabel { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); letter-spacing:0.04em; text-transform:uppercase; }
+  .tf-abpick { display:flex; gap:5px; }
+  .tf-abpick .abc { width:34px; text-align:center; font-family:var(--mono); font-size:var(--text-sm); font-weight:700; padding:6px 0; border:1px solid var(--border-mid); border-radius:6px; color:var(--text-muted); background:var(--bg); cursor:pointer; }
+  .tf-abpick .abc.sel { color:var(--accent); border-color:var(--accent-border); background:var(--accent-dim); }
+  .tf-acts { display:flex; justify-content:flex-end; gap:8px; }
+  .fm-btn { font-family:var(--mono); font-size:var(--text-xs); padding:8px 18px; border-radius:7px; border:1px solid var(--border-mid); background:var(--surface); color:var(--text-muted); cursor:pointer; }
+  .fm-btn.primary { background:var(--accent); color:#fff; border-color:transparent; }
+
+  /* watch — animal-first */
+  .taxon-h { font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--text-muted); background:var(--surface2); padding:7px 16px; display:flex; gap:8px; }
+  .taxon-h .n { color:var(--text-dim); margin-left:auto; }
+  .arow { display:flex; align-items:center; gap:11px; padding:10px 16px; border-bottom:1px solid var(--border); cursor:pointer; }
+  .arow:hover { background:var(--surface2); }
+  .arow.open { background:var(--accent-dim); }
+  .athumb { width:44px; height:44px; border-radius:8px; overflow:hidden; background:var(--surface2); border:1px solid var(--border); flex-shrink:0; }
+  .athumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .abody { flex:1; min-width:0; }
+  .anm { font-size:var(--text-sm); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .asci { font-family:var(--mono); font-style:italic; font-size:11px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .aclips { font-family:var(--mono); font-size:11px; color:var(--accent); font-weight:600; flex-shrink:0; }
+  .achev { color:var(--text-dim); font-size:11px; flex-shrink:0; }
+  .clip-list { background:var(--bg); border-bottom:1px solid var(--border); }
+  .clip { display:flex; align-items:center; gap:10px; padding:9px 16px 9px 32px; border-bottom:1px solid var(--border); cursor:pointer; }
+  .clip:last-child { border-bottom:none; }
+  .clip:hover { background:var(--surface2); }
+  .clip.playing { background:var(--accent-dim); }
+  .clip .cplay { width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; }
+  .clip .cmeta { flex:1; min-width:0; }
+  .clip .cvid { font-family:var(--mono); font-size:var(--text-xs); color:var(--text); font-weight:600; }
+  .clip .cnote { font-family:var(--mono); font-size:11px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .clip .ctime { font-family:var(--mono); font-size:var(--text-xs); color:var(--accent); font-weight:700; flex-shrink:0; }
+</style>
+</head>
+<body>
+
+<div class="lead">
+  <h1>Video modal — full-screen desktop (v2.3)</h1>
+  <p>The modal fills the screen — no zooming, the player is large, and the picker shows ~1.5 species
+  at a glance. <b>Tag</b> and <b>Watch</b> are two modes of one modal, flipped by the header toggle.
+  Entry from the dive file maps to the locked glyph split: <b>🎬 → Tag</b> (“manage footage”),
+  <b>▶ on a species → Watch</b> (“play”). Desktop-only for v2.3.</p>
+</div>
+<div class="legend">
+  <span><i class="ldot" style="background:#6A4A9A"></i>CR</span><span><i class="ldot" style="background:#9B7EC8"></i>EN</span>
+  <span><i class="ldot" style="background:#D4A843"></i>VU</span><span><i class="ldot" style="background:#B5A898"></i>NT/LC/DD</span>
+  <span><i class="ldot" style="background:#fff;border:2px dashed #E0734F"></i>free text</span>
+</div>
+
+<!-- ═══════════ 1 · TAG — default ═══════════ -->
+<div class="caption">1 · Tag — default (reviewing)</div>
+<div class="caption-sub">Video list · large player with chapter-skip ⏮⏭ + scrub ‹‹5/5›› + frame-step · tagged-in-this-video. Scrub, then [＋ Tag here].</div>
+<div class="win">
+  <div class="win-bar"><span class="win-dot" style="background:#E0734F"></span><span class="win-dot" style="background:#D4A843"></span><span class="win-dot" style="background:#4F9D6B"></span><span class="win-url">dive-log-55i.pages.dev</span></div>
+  <div class="dmodal"><div class="dmodal-inner">
+    <div class="dm-head">
+      <span class="dm-title">🎬 Footage</span><span class="dm-sub">#148 · Angel Reef · 20 videos · 14 reviewed</span>
+      <button class="dm-x">✕</button>
+    </div>
+    <div class="dm-grid">
+      <div class="dm-videos">
+        <div class="dm-videos-h">Videos <span class="n">6 left</span></div>
+        <div class="dm-videos-scroll">
+          <div class="vrow active"><span class="vdot done"></span><div class="vmeta"><div class="vfn">GX010128</div><div class="vsub">11:48 · 4 tagged</div></div></div>
+          <div class="vrow"><span class="vdot done"></span><div class="vmeta"><div class="vfn">GX010129</div><div class="vsub">08:22 · 2 tagged</div></div></div>
+          <div class="vrow"><span class="vdot todo"></span><div class="vmeta"><div class="vfn">GX010130</div><div class="vsub">12:03 · not reviewed</div></div></div>
+          <div class="vrow"><span class="vdot todo"></span><div class="vmeta"><div class="vfn">GX010131</div><div class="vsub">09:55 · not reviewed</div></div></div>
+          <div class="vrow"><span class="vdot done"></span><div class="vmeta"><div class="vfn">GX010132</div><div class="vsub">06:40 · 1 tagged</div></div></div>
+          <div class="vrow"><span class="vdot todo"></span><div class="vmeta"><div class="vfn">GX010133</div><div class="vsub">10:18 · not reviewed</div></div></div>
+          <div class="vrow"><span class="vdot todo"></span><div class="vmeta"><div class="vfn">GX010134</div><div class="vsub">07:31 · not reviewed</div></div></div>
+          <div class="vrow"><span class="vdot done"></span><div class="vmeta"><div class="vfn">GX010135</div><div class="vsub">13:12 · 5 tagged</div></div></div>
+        </div>
+        <div class="dm-videos-foot"><button>＋ Add videos…</button></div>
+      </div>
+      <div class="dm-center">
+        <div class="vstage"><span class="vname">GX010128 · 720p</span><span class="silhouette">🐢</span><div class="pause-overlay"><div class="pause-btn">❚❚</div></div><span class="live-time">06:12 / 11:48</span></div>
+        <div class="scrub"><div class="scrub-track"><div class="scrub-played" style="width:52%"></div><div class="marker LC" style="left:18%"></div><div class="marker CR" style="left:52%"></div><div class="marker-flag" style="left:52%">🐢 Hawksbill · CR · 06:12</div><div class="marker VU" style="left:74%"></div><div class="marker none" style="left:88%"></div><div class="scrub-head" style="left:52%"></div></div><div class="scrub-times"><span>00:00</span><span>11:48</span></div></div>
+        <div class="transport">
+          <button class="tp-btn" title="Previous tag">⏮</button><button class="tp-btn play">❚❚</button><button class="tp-btn" title="Next tag">⏭</button>
+          <span class="tp-sep"></span>
+          <button class="tp-btn" title="−5s">‹‹5</button><button class="tp-btn" title="+5s">5››</button>
+          <button class="tp-btn" title="−1 frame">◀|</button><button class="tp-btn" title="+1 frame">|▶</button>
+          <button class="tp-tag">＋ Tag here</button>
+        </div>
+        <div style="display:flex; justify-content:flex-end; padding:0 16px 16px"><span class="rev-toggle on"><span class="box">✓</span>Reviewed</span></div>
+      </div>
+      <div class="dm-right">
+        <div class="dm-right-bar"><div class="mode-toggle"><button class="active">✎ Tag</button><button>▶ Watch</button></div></div>
+        <div class="dm-right-h">Tagged in this video <span class="n">4</span></div>
+        <div class="dm-right-scroll">
+          <div class="moment"><div class="m-jump"><span class="pt">06:12</span><span class="pl">▶ jump</span></div><div class="m-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div><div class="m-edit"><div class="m-name">Hawksbill turtle</div><div class="m-note"><span class="pencil">✎</span>close pass</div></div><span class="iucn CR">CR</span></div>
+          <div class="moment"><div class="m-jump"><span class="pt">02:08</span><span class="pl">▶ jump</span></div><div class="m-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg"></div><div class="m-edit"><div class="m-name">Lionfish</div><div class="m-note empty"><span class="pencil">✎</span>Add note…</div></div><span class="iucn LC">LC</span></div>
+          <div class="moment"><div class="m-jump"><span class="pt">08:45</span><span class="pl">▶ jump</span></div><div class="m-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/709279/square.jpg"></div><div class="m-edit"><div class="m-name">Bumphead parrotfish</div><div class="m-note"><span class="pencil">✎</span>big school</div></div><span class="iucn VU">VU</span></div>
+          <div class="moment"><div class="m-jump"><span class="pt">10:30</span><span class="pl">▶ jump</span></div><div class="m-thumb"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:18px">🐟</div></div><div class="m-edit"><div class="m-name">Pixie hawkfish</div><div class="m-note empty"><span class="pencil">✎</span>free text · add note…</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ═══════════ 2 · TAG MODE — right column transformed ═══════════ -->
+<div class="caption">2 · [＋ Tag here] transforms the right column</div>
+<div class="caption-sub">Tabs at top, then the bigger already-logged pills (kept with the categories), then Option-B photos (~1.5 in view). All typing at the bottom: search filters the grid, note annotates, then compact R/O/C abundance, then Save.</div>
+<div class="win">
+  <div class="win-bar"><span class="win-dot" style="background:#E0734F"></span><span class="win-dot" style="background:#D4A843"></span><span class="win-dot" style="background:#4F9D6B"></span><span class="win-url">dive-log-55i.pages.dev</span></div>
+  <div class="dmodal"><div class="dmodal-inner">
+    <div class="dm-head">
+      <span class="dm-title">🎬 Footage</span><span class="dm-sub">#148 · Angel Reef · 20 videos · 14 reviewed</span>
+      <button class="dm-x">✕</button>
+    </div>
+    <div class="dm-grid">
+      <div class="dm-videos">
+        <div class="dm-videos-h">Videos <span class="n">6 left</span></div>
+        <div class="dm-videos-scroll">
+          <div class="vrow active"><span class="vdot done"></span><div class="vmeta"><div class="vfn">GX010128</div><div class="vsub">11:48 · 4 tagged</div></div></div>
+          <div class="vrow"><span class="vdot done"></span><div class="vmeta"><div class="vfn">GX010129</div><div class="vsub">08:22 · 2 tagged</div></div></div>
+          <div class="vrow"><span class="vdot todo"></span><div class="vmeta"><div class="vfn">GX010130</div><div class="vsub">12:03 · not reviewed</div></div></div>
+          <div class="vrow"><span class="vdot todo"></span><div class="vmeta"><div class="vfn">GX010131</div><div class="vsub">09:55 · not reviewed</div></div></div>
+          <div class="vrow"><span class="vdot done"></span><div class="vmeta"><div class="vfn">GX010132</div><div class="vsub">06:40 · 1 tagged</div></div></div>
+        </div>
+        <div class="dm-videos-foot"><button>＋ Add videos…</button></div>
+      </div>
+      <div class="dm-center">
+        <div class="vstage"><span class="vname">GX010128 · 720p</span><span class="silhouette">🦈</span><div class="pause-overlay"><div class="pause-btn">❚❚</div></div><span class="live-time">08:45 / 11:48</span></div>
+        <div class="scrub"><div class="scrub-track"><div class="scrub-played" style="width:74%"></div><div class="marker CR" style="left:52%"></div><div class="marker VU" style="left:74%"></div><div class="scrub-head" style="left:74%"></div></div><div class="scrub-times"><span>00:00</span><span>11:48</span></div></div>
+        <div class="transport">
+          <button class="tp-btn">⏮</button><button class="tp-btn play">❚❚</button><button class="tp-btn">⏭</button>
+          <span class="tp-sep"></span>
+          <button class="tp-btn">‹‹5</button><button class="tp-btn">5››</button>
+          <button class="tp-btn">◀|</button><button class="tp-btn">|▶</button>
+          <button class="tp-tag busy">Tagging…</button>
+        </div>
+        <div style="display:flex; justify-content:flex-end; padding:0 16px 16px"><span class="rev-toggle on"><span class="box">✓</span>Reviewed</span></div>
+      </div>
+      <div class="dm-right">
+        <div class="dm-right-bar"><div class="mode-toggle"><button class="active">✎ Tag</button><button>▶ Watch</button></div></div>
+        <!-- already-logged FIRST (accent band, single horizontal scroll) -->
+        <div class="ul-band">
+          <div class="ul-lbl">Already logged · tap to link <span class="n">3</span></div>
+          <div class="ul-row">
+            <span class="ulchip"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/33852153/square.jpg"><span class="nm">Manta ray</span><span class="plus">＋</span></span>
+            <span class="ulchip"><span class="ph">🐙</span><span class="nm">Octopus</span><span class="plus">＋</span></span>
+            <span class="ulchip"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg"><span class="nm">Whitetip shark</span><span class="plus">＋</span></span>
+          </div>
+        </div>
+        <!-- categories BELOW -->
+        <div class="browse-tabs">
+          <div class="browse-tab">🐠 Fish <span class="cnt">543</span></div>
+          <div class="browse-tab active">🦈 Shark <span class="cnt">40</span></div>
+          <div class="browse-tab">🦅 Ray <span class="cnt">28</span></div>
+          <div class="browse-tab">🐢 Reptile <span class="cnt">6</span></div>
+          <div class="browse-tab">🐙 Ceph <span class="cnt">18</span></div>
+        </div>
+        <div class="b1col dm-right-scroll">
+          <div class="bcell sel"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/187831849/small.jpg"><div class="binfo"><div class="btext"><div class="bname">Grey reef shark</div><div class="bsci">Carcharhinus amblyrhynchos</div></div><span class="iucn NT">NT</span></div></div>
+          <div class="bcell"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/small.jpg"><div class="binfo"><div class="btext"><div class="bname">Whitetip reef shark</div><div class="bsci">Triaenodon obesus</div></div><span class="iucn VU">VU</span></div></div>
+          <div class="bcell"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/608947383/small.jpg"><div class="binfo"><div class="btext"><div class="bname">Blacktip reef shark</div><div class="bsci">Carcharhinus melanopterus</div></div><span class="iucn VU">VU</span></div></div>
+        </div>
+        <div class="tagfoot">
+          <div class="tf-field"><span class="gl">🔍</span><input placeholder="Search species…" value="shark"></div>
+          <div class="tf-field"><span class="gl">✎</span><input placeholder="Add a note (optional)…"></div>
+          <div class="tf-abrow"><span class="tf-ablabel">Abundance</span><div class="tf-abpick"><span class="abc">R</span><span class="abc sel">O</span><span class="abc">C</span></div></div>
+          <div class="tf-acts"><button class="fm-btn">Cancel</button><button class="fm-btn primary">Save sighting</button></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+<!-- ═══════════ 3 · WATCH — animal-first ═══════════ -->
+<div class="caption">3 · Watch — animal-first</div>
+<div class="caption-sub">Same player + scrubber as 1/2, but transport is just chapter-skip + play + scrub (no tagging, no reviewed). Right column leads with the animal; tap a species → its clips across every video; tap a clip → player loads + seeks. Toggle back to Tag any time.</div>
+<div class="win">
+  <div class="win-bar"><span class="win-dot" style="background:#E0734F"></span><span class="win-dot" style="background:#D4A843"></span><span class="win-dot" style="background:#4F9D6B"></span><span class="win-url">dive-log-55i.pages.dev</span></div>
+  <div class="dmodal"><div class="dmodal-inner">
+    <div class="dm-head">
+      <span class="dm-title">🎬 Footage</span><span class="dm-sub">#148 · Angel Reef · Komodo · 12 species across 20 videos</span>
+      <button class="dm-x">✕</button>
+    </div>
+    <div class="dm-grid" style="grid-template-columns:1fr 400px">
+      <div class="dm-center">
+        <div class="vstage"><span class="vname">GX010129</span><span class="silhouette">🐢</span><div class="pause-overlay"><div class="pause-btn">❚❚</div></div><span class="live-time">02:14 / 08:22</span></div>
+        <div class="scrub"><div class="scrub-track"><div class="scrub-played" style="width:27%"></div><div class="marker CR" style="left:27%"></div><div class="marker VU" style="left:60%"></div><div class="scrub-head" style="left:27%"></div></div><div class="scrub-times"><span>00:00</span><span>08:22</span></div></div>
+        <div class="transport">
+          <button class="tp-btn" title="Previous moment">⏮</button><button class="tp-btn play">❚❚</button><button class="tp-btn" title="Next moment">⏭</button>
+          <span class="tp-sep"></span>
+          <button class="tp-btn" title="−5s">‹‹5</button><button class="tp-btn" title="+5s">5››</button>
+          <span style="margin-left:auto; font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted)">🐢 Hawksbill turtle · cleaning station</span>
+        </div>
+      </div>
+      <div class="dm-right">
+        <div class="dm-right-bar"><div class="mode-toggle"><button>✎ Tag</button><button class="active">▶ Watch</button></div></div>
+        <div class="dm-right-h">Wildlife on this dive <span class="n">12 species</span></div>
+        <div class="dm-right-scroll">
+          <div class="taxon-h">🐢 Reptile <span class="n">1</span></div>
+          <div class="arow open"><div class="athumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div><div class="abody"><div class="anm">Hawksbill turtle</div><div class="asci">Eretmochelys imbricata</div></div><span class="iucn CR">CR</span><span class="aclips">▶ 3</span><span class="achev">▾</span></div>
+          <div class="clip-list">
+            <div class="clip"><div class="cplay">▶</div><div class="cmeta"><div class="cvid">GX010128</div><div class="cnote">close pass</div></div><span class="ctime">06:12</span></div>
+            <div class="clip playing"><div class="cplay">❚❚</div><div class="cmeta"><div class="cvid">GX010129</div><div class="cnote">cleaning station</div></div><span class="ctime">02:14</span></div>
+            <div class="clip"><div class="cplay">▶</div><div class="cmeta"><div class="cvid">GX010135</div><div class="cnote">resting under ledge</div></div><span class="ctime">09:40</span></div>
+          </div>
+          <div class="taxon-h">🦈 Shark · Ray <span class="n">3</span></div>
+          <div class="arow"><div class="athumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/33852153/square.jpg"></div><div class="abody"><div class="anm">Manta ray</div><div class="asci">Mobula birostris</div></div><span class="iucn EN">EN</span><span class="aclips">▶ 2</span><span class="achev">▸</span></div>
+          <div class="arow"><div class="athumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg"></div><div class="abody"><div class="anm">Whitetip reef shark</div><div class="asci">Triaenodon obesus</div></div><span class="iucn VU">VU</span><span class="aclips">▶ 1</span><span class="achev">▸</span></div>
+          <div class="arow"><div class="athumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/608947383/square.jpg"></div><div class="abody"><div class="anm">Blacktip reef shark</div><div class="asci">Carcharhinus melanopterus</div></div><span class="iucn VU">VU</span><span class="aclips">▶ 1</span><span class="achev">▸</span></div>
+          <div class="taxon-h">🐠 Fish <span class="n">8</span></div>
+          <div class="arow"><div class="athumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/709279/square.jpg"></div><div class="abody"><div class="anm">Bumphead parrotfish</div><div class="asci">Bolbometopon muricatum</div></div><span class="iucn VU">VU</span><span class="aclips">▶ 1</span><span class="achev">▸</span></div>
+          <div class="arow"><div class="athumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg"></div><div class="abody"><div class="anm">Lionfish</div><div class="asci">Pterois volitans</div></div><span class="iucn LC">LC</span><span class="aclips">▶ 1</span><span class="achev">▸</span></div>
+        </div>
+      </div>
+    </div>
+  </div></div>
+</div>
+
+</body>
+</html>
+</content>

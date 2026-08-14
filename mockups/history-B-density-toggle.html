@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup B — Density toggle</title>
+<style>
+  :root {
+    --bg: #F5EBD8;
+    --surface: #FAF6F1;
+    --surface2: #EDE5D8;
+    --border: rgba(28,48,48,0.1);
+    --border-mid: rgba(28,48,48,0.18);
+    --text: #1C3030;
+    --text-muted: #8B7B6A;
+    --text-dim: #B5A898;
+    --accent: #4A90B8;
+    --accent-dim: rgba(74,144,184,0.1);
+    --success: #3a9450;
+    --gold: #D4A843;
+    --violet-deep: #6A4A9A;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans); background: var(--bg); color: var(--text);
+    font-size: 16px; line-height: 1.6; padding: 48px 24px 96px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .page-title { font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+  .page-sub { font-size: 14px; color: var(--text-muted); font-family: var(--mono); margin-bottom: 28px; }
+
+  /* Segmented toggle */
+  .seg {
+    display: inline-flex; background: var(--surface2); border-radius: 8px;
+    padding: 3px; border: 1px solid var(--border); flex-shrink: 0;
+  }
+  .seg button {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em;
+    padding: 7px 14px; border: none; background: transparent;
+    color: var(--text-muted); cursor: pointer; border-radius: 6px;
+    transition: all 0.13s;
+  }
+  .seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(28,48,48,0.08); }
+
+  .note {
+    font-size: 13px; color: var(--text-muted); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px;
+    margin-bottom: 28px; line-height: 1.7;
+  }
+  .note b { color: var(--text); }
+
+  .hidden { display: none !important; }
+
+  /* ─────────── COMPACT (Subsurface-style table) ─────────── */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-dim); font-weight: 600;
+    text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border-mid);
+    position: sticky; top: 0; background: var(--bg);
+  }
+  thead th.num { text-align: right; }
+  tbody td {
+    font-size: 14px; padding: 9px 10px; border-bottom: 1px solid var(--border);
+    color: var(--text); white-space: nowrap;
+  }
+  tbody td.num { font-family: var(--mono); text-align: right; color: var(--text-muted); }
+  tbody td.dn  { font-family: var(--mono); color: var(--accent); opacity: 0.7; text-align: right; }
+  tbody td.site { font-weight: 600; }
+  tbody td.dim { color: var(--text-muted); font-family: var(--mono); font-size: 12px; }
+  tbody tr { cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover td { background: var(--surface); }
+  .tag {
+    font-family: var(--mono); font-size: 11px; padding: 1px 7px;
+    border-radius: 4px; color: var(--text-muted); background: var(--surface2);
+  }
+  .tag.night { color: var(--violet-deep); background: rgba(106,74,154,0.1); }
+  .tag.drift { color: #a07a10; background: rgba(212,168,67,0.15); }
+  .tag.shore { color: var(--success); background: rgba(58,148,80,0.12); }
+
+  /* ─────────── COMFORTABLE (cleaned calm card) ─────────── */
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px; cursor: pointer;
+    display: grid; grid-template-columns: 44px 1fr auto; gap: 16px;
+    align-items: center; position: relative;
+    transition: border-color 0.13s, box-shadow 0.13s;
+    box-shadow: 0 1px 3px rgba(28,48,48,0.05);
+  }
+  .card:hover { border-color: var(--border-mid); box-shadow: 0 3px 10px rgba(28,48,48,0.09); }
+  .cnum {
+    font-family: var(--mono); font-size: 19px; color: var(--accent);
+    opacity: 0.5; text-align: center;
+  }
+  .cdot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:8px; vertical-align:1px; }
+  .cdot.boat{background:var(--accent)} .cdot.night{background:var(--violet-deep)}
+  .cdot.drift{background:var(--gold)} .cdot.shore{background:var(--success)}
+  .csite { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .cwhere { font-size: 14px; color: var(--text-muted); font-weight: 400; }
+  .cmeta {
+    font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+    margin-top: 5px;
+  }
+  .cmeta .sep { opacity: 0.4; margin: 0 7px; }
+  .cdate { font-family: var(--mono); font-size: 12px; color: var(--text-dim); white-space: nowrap; transition: opacity 0.13s; }
+  .cact {
+    position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+    display: flex; gap: 6px; opacity: 0; pointer-events: none; transition: opacity 0.13s;
+  }
+  .card:hover .cdate { opacity: 0; }
+  .card:hover .cact { opacity: 1; pointer-events: auto; }
+  .cbtn {
+    font-family: var(--mono); font-size: 12px; padding: 4px 11px; border-radius: 6px;
+    border: 1px solid var(--border-mid); background: var(--bg); cursor: pointer; color: var(--text-muted);
+  }
+  .cbtn.edit:hover { color: var(--accent); border-color: var(--accent); }
+  .cbtn.del:hover  { color: #d9534f; border-color: rgba(217,83,79,0.4); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div>
+      <div class="page-title">Dive history</div>
+      <div class="page-sub">Mockup B — density toggle</div>
+    </div>
+    <div class="seg">
+      <button id="b-compact" class="on" onclick="setView('compact')">≣ Compact</button>
+      <button id="b-comfort" onclick="setView('comfort')">▦ Comfortable</button>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>The idea:</b> one switch serves two jobs. <b>Compact</b> is a Subsurface-style
+    aligned table — numeric columns right-aligned and mono, built for scanning
+    hundreds and spotting outliers down a column. <b>Comfortable</b> is a calm
+    single card for browsing, with no always-on action bar and no chip borders.
+    Toggle it above; the choice would persist per device.
+  </div>
+
+  <!-- COMPACT -->
+  <div id="view-compact">
+    <table>
+      <thead>
+        <tr>
+          <th class="num">#</th><th>Site</th><th>Region</th><th>Type</th>
+          <th class="num">Depth</th><th class="num">Time</th><th class="num">Sp.</th><th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="dn">149</td><td class="site">Little Angel</td><td class="dim">Komodo</td><td><span class="tag">Boat</span></td><td class="num">24.4 m</td><td class="num">61 min</td><td class="num">3</td><td class="dim">13 May 26</td></tr>
+        <tr><td class="dn">148</td><td class="site">Angel Reef</td><td class="dim">Komodo</td><td><span class="tag">Boat</span></td><td class="num">22.9 m</td><td class="num">65 min</td><td class="num">7</td><td class="dim">13 May 26</td></tr>
+        <tr><td class="dn">147</td><td class="site">Labuan Haji</td><td class="dim">Komodo</td><td><span class="tag night">Night</span></td><td class="num">15.5 m</td><td class="num">67 min</td><td class="num">12</td><td class="dim">12 May 26</td></tr>
+        <tr><td class="dn">146</td><td class="site">Saleh Bay</td><td class="dim">Komodo</td><td><span class="tag">Boat</span></td><td class="num">8.8 m</td><td class="num">57 min</td><td class="num">1</td><td class="dim">12 May 26</td></tr>
+        <tr><td class="dn">145</td><td class="site">Saleh Bay</td><td class="dim">Komodo</td><td><span class="tag">Boat</span></td><td class="num">9.3 m</td><td class="num">45 min</td><td class="num">1</td><td class="dim">12 May 26</td></tr>
+        <tr><td class="dn">144</td><td class="site">Satonda Bay</td><td class="dim">Komodo</td><td><span class="tag night">Night</span></td><td class="num">11.7 m</td><td class="num">60 min</td><td class="num">8</td><td class="dim">11 May 26</td></tr>
+        <tr><td class="dn">143</td><td class="site">Satondo Reef</td><td class="dim">Komodo</td><td><span class="tag">Boat</span></td><td class="num">19.9 m</td><td class="num">64 min</td><td class="num">3</td><td class="dim">11 May 26</td></tr>
+        <tr><td class="dn">142</td><td class="site">Sumbawa Wall</td><td class="dim">Komodo</td><td><span class="tag">Boat</span></td><td class="num">22.7 m</td><td class="num">64 min</td><td class="num">14</td><td class="dim">11 May 26</td></tr>
+        <tr><td class="dn">141</td><td class="site">Bontoh</td><td class="dim">Komodo</td><td><span class="tag night">Night</span></td><td class="num">9.9 m</td><td class="num">68 min</td><td class="num">5</td><td class="dim">10 May 26</td></tr>
+        <tr><td class="dn">140</td><td class="site">Tinko Reef</td><td class="dim">Komodo</td><td><span class="tag">Boat</span></td><td class="num">22.0 m</td><td class="num">63 min</td><td class="num">10</td><td class="dim">10 May 26</td></tr>
+        <tr><td class="dn">139</td><td class="site">Japanese Wreck</td><td class="dim">Amed</td><td><span class="tag shore">Shore</span></td><td class="num">12.0 m</td><td class="num">58 min</td><td class="num">9</td><td class="dim">18 Feb 26</td></tr>
+        <tr><td class="dn">138</td><td class="site">Pyramids</td><td class="dim">Amed</td><td><span class="tag shore">Shore</span></td><td class="num">16.4 m</td><td class="num">62 min</td><td class="num">6</td><td class="dim">17 Feb 26</td></tr>
+        <tr><td class="dn">137</td><td class="site">Jemeluk Bay</td><td class="dim">Amed</td><td><span class="tag shore">Shore</span></td><td class="num">14.2 m</td><td class="num">71 min</td><td class="num">11</td><td class="dim">16 Feb 26</td></tr>
+        <tr><td class="dn">136</td><td class="site">Cape Kri</td><td class="dim">Raja Ampat</td><td><span class="tag drift">Drift</span></td><td class="num">28.3 m</td><td class="num">52 min</td><td class="num">22</td><td class="dim">09 Nov 25</td></tr>
+        <tr><td class="dn">135</td><td class="site">Blue Magic</td><td class="dim">Raja Ampat</td><td><span class="tag drift">Drift</span></td><td class="num">26.1 m</td><td class="num">49 min</td><td class="num">18</td><td class="dim">09 Nov 25</td></tr>
+        <tr><td class="dn">134</td><td class="site">Sardine Reef</td><td class="dim">Raja Ampat</td><td><span class="tag drift">Drift</span></td><td class="num">24.0 m</td><td class="num">55 min</td><td class="num">16</td><td class="dim">08 Nov 25</td></tr>
+        <tr><td class="dn">133</td><td class="site">Mioskon</td><td class="dim">Raja Ampat</td><td><span class="tag">Boat</span></td><td class="num">18.5 m</td><td class="num">60 min</td><td class="num">12</td><td class="dim">08 Nov 25</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- COMFORTABLE -->
+  <div id="view-comfort" class="hidden">
+    <div class="cards">
+      <div class="card">
+        <div class="cnum">149</div>
+        <div><div class="csite"><span class="cdot boat"></span>Little Angel <span class="cwhere">— Komodo, Indonesia</span></div>
+          <div class="cmeta">Boat<span class="sep">·</span>24.4 m<span class="sep">·</span>61 min<span class="sep">·</span>3 species<span class="sep">·</span>Naga Biru</div></div>
+        <div class="cdate">13 May 2026</div>
+        <div class="cact"><button class="cbtn edit">Edit</button><button class="cbtn del">Delete</button></div>
+      </div>
+      <div class="card">
+        <div class="cnum">148</div>
+        <div><div class="csite"><span class="cdot boat"></span>Angel Reef <span class="cwhere">— Komodo, Indonesia</span></div>
+          <div class="cmeta">Boat<span class="sep">·</span>22.9 m<span class="sep">·</span>65 min<span class="sep">·</span>7 species<span class="sep">·</span>Naga Biru</div></div>
+        <div class="cdate">13 May 2026</div>
+        <div class="cact"><button class="cbtn edit">Edit</button><button class="cbtn del">Delete</button></div>
+      </div>
+      <div class="card">
+        <div class="cnum">147</div>
+        <div><div class="csite"><span class="cdot night"></span>Labuan Haji <span class="cwhere">— Komodo, Indonesia</span></div>
+          <div class="cmeta">Night<span class="sep">·</span>15.5 m<span class="sep">·</span>67 min<span class="sep">·</span>12 species<span class="sep">·</span>Naga Biru</div></div>
+        <div class="cdate">12 May 2026</div>
+        <div class="cact"><button class="cbtn edit">Edit</button><button class="cbtn del">Delete</button></div>
+      </div>
+      <div class="card">
+        <div class="cnum">146</div>
+        <div><div class="csite"><span class="cdot boat"></span>Saleh Bay <span class="cwhere">— Komodo, Indonesia</span></div>
+          <div class="cmeta">Boat<span class="sep">·</span>8.8 m<span class="sep">·</span>57 min<span class="sep">·</span>1 species<span class="sep">·</span>Naga Biru</div></div>
+        <div class="cdate">12 May 2026</div>
+        <div class="cact"><button class="cbtn edit">Edit</button><button class="cbtn del">Delete</button></div>
+      </div>
+      <div class="card">
+        <div class="cnum">144</div>
+        <div><div class="csite"><span class="cdot night"></span>Satonda Bay <span class="cwhere">— Komodo, Indonesia</span></div>
+          <div class="cmeta">Night<span class="sep">·</span>11.7 m<span class="sep">·</span>60 min<span class="sep">·</span>8 species<span class="sep">·</span>Naga Biru</div></div>
+        <div class="cdate">11 May 2026</div>
+        <div class="cact"><button class="cbtn edit">Edit</button><button class="cbtn del">Delete</button></div>
+      </div>
+      <div class="card">
+        <div class="cnum">136</div>
+        <div><div class="csite"><span class="cdot drift"></span>Cape Kri <span class="cwhere">— Raja Ampat, Indonesia</span></div>
+          <div class="cmeta">Drift<span class="sep">·</span>28.3 m<span class="sep">·</span>52 min<span class="sep">·</span>22 species<span class="sep">·</span>MV Black Manta</div></div>
+        <div class="cdate">09 Nov 2025</div>
+        <div class="cact"><button class="cbtn edit">Edit</button><button class="cbtn del">Delete</button></div>
+      </div>
+      <div class="card">
+        <div class="cnum">139</div>
+        <div><div class="csite"><span class="cdot shore"></span>Japanese Wreck <span class="cwhere">— Amed, Indonesia</span></div>
+          <div class="cmeta">Shore<span class="sep">·</span>12.0 m<span class="sep">·</span>58 min<span class="sep">·</span>9 species</div></div>
+        <div class="cdate">18 Feb 2026</div>
+        <div class="cact"><button class="cbtn edit">Edit</button><button class="cbtn del">Delete</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setView(v) {
+    var compact = v === 'compact';
+    document.getElementById('view-compact').classList.toggle('hidden', !compact);
+    document.getElementById('view-comfort').classList.toggle('hidden', compact);
+    document.getElementById('b-compact').classList.toggle('on', compact);
+    document.getElementById('b-comfort').classList.toggle('on', !compact);
+  }
+</script>
+</body>
+</html>

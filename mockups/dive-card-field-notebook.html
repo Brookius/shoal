@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup v5 — Expanded dive card</title>
+<style>
+  :root {
+    --bg: #F5EBD8;
+    --surface: #FAF6F1;
+    --surface2: #EDE5D8;
+    --border: rgba(28,48,48,0.1);
+    --border-mid: rgba(28,48,48,0.18);
+    --text: #1C3030;
+    --text-muted: #8B7B6A;
+    --text-dim: #B5A898;
+    --accent: #4A90B8;
+    --accent-dim: rgba(74,144,184,0.1);
+    --success: #3a9450;
+    --type-boat: #4A90B8;
+    --type-night: #6A4A9A;
+    --type-drift: #a07a10;
+    --type-shore: #3a9450;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.6; padding: 40px 20px 100px; }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .page-sub { font-size: 14px; color: var(--text-muted); font-family: var(--mono); margin-bottom: 18px; }
+  .note { font-size: 13px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; margin-bottom: 24px; line-height: 1.7; }
+  .note b { color: var(--text); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(28,48,48,0.06); }
+
+  /* Header = timeline row verbatim (now includes visibility) */
+  .row { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 14px; padding: 16px 24px; border-bottom: 1px solid var(--border); }
+  .dnum { font-family: var(--mono); font-size: 17px; color: var(--accent); opacity: 0.55; text-align: center; line-height: 1; }
+  .site { font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  .pin { font-size: 12px; opacity: 0.5; margin-left: 6px; }
+  .meta { font-family: var(--mono); font-size: 12px; color: var(--text-muted); margin-top: 3px; letter-spacing: 0.01em; }
+  .meta .sep { opacity: 0.35; margin: 0 8px; }
+  .type { font-weight: 700; }
+  .type.boat { color: var(--type-boat); } .type.night { color: var(--type-night); }
+  .type.drift { color: var(--type-drift); } .type.shore { color: var(--type-shore); }
+  .tail { font-family: var(--mono); font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+
+  /* Marine life */
+  .m-h { padding: 20px 24px 0; }
+  .m-title { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+
+  /* The two keys — a mirrored, matched pair bracketing the gallery (no boxes) */
+  .key { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; padding: 11px 24px; font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+  .key-top { margin-top: 12px; border-top: 1px solid var(--border); border-bottom: 1px dashed var(--border); }
+  .key-bot { border-top: 1px dashed var(--border); }
+  .key .lbl { font-size: 11px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted); font-weight: 700; min-width: 96px; }
+  .key b { color: var(--text-muted); }
+  .key .d { opacity: 0.4; margin: 0 5px; }
+  .key .iucn { margin-right: 3px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 16px 24px; min-height: 248px; align-content: start; }
+  .sp { background: var(--bg); border: 1px solid var(--border); border-radius: 11px; overflow: hidden; align-self: start; }
+  .sp-photo { height: 130px; display: flex; align-items: center; justify-content: center; font-size: 44px; background: linear-gradient(150deg,#cfe0e6,#a6c3cf); }
+  .sp-photo.p2 { background: linear-gradient(150deg,#d8d0e4,#c3b4d6); }
+  .sp-photo.p3 { background: linear-gradient(150deg,#cdd9dd,#aebfc4); }
+  .sp-photo.p4 { background: linear-gradient(150deg,#e5dcc6,#d4c79f); }
+  .sp-body { padding: 10px 12px 12px; }
+  .sp-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+  .sp-common { font-size: 14px; font-weight: 600; }
+  .sp-sci { font-style: italic; font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .sp-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .sp-group { font-family: var(--mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+  .sp-ab { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--accent); background: var(--accent-dim); border-radius: 5px; padding: 1px 8px; }
+  .iucn { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 4px; font-weight: 600; }
+  .iucn-CR { background: rgba(106,74,154,0.15); color: var(--type-night); border: 1px solid rgba(106,74,154,0.35); }
+  .iucn-EN { background: rgba(155,126,200,0.15); color: #9B7EC8; border: 1px solid rgba(155,126,200,0.35); }
+  .iucn-VU { background: rgba(212,168,67,0.15); color: #a07a10; border: 1px solid rgba(212,168,67,0.35); }
+  .iucn-NT { background: rgba(139,123,106,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+  .iucn-LC { background: rgba(139,123,106,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+  .iucn-DD { background: rgba(139,123,106,0.1); color: var(--text-dim); border: 1px solid var(--border); }
+
+  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 0 24px 14px; }
+  .pg { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border-mid); background: var(--bg); color: var(--text-muted); font-size: 15px; cursor: pointer; }
+  .pg:disabled { opacity: 0.3; cursor: default; }
+  .pg-c { font-family: var(--mono); font-size: 12px; color: var(--text-dim); min-width: 96px; text-align: center; }
+
+  .sec-title { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  .notes { border-top: 1px solid var(--border); padding: 18px 24px 20px; }
+  .notes-body { margin-top: 8px; font-size: 15px; line-height: 1.7; }
+  .notes-body .quiet { color: var(--text-muted); }
+
+  .data { border-top: 1px solid var(--border); padding: 18px 24px 22px; }
+  .data-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 40px; margin-top: 10px; }
+  .grp { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin: 16px 0 4px; }
+  .gblock:first-child .grp, .gblock:nth-child(2) .grp { margin-top: 6px; }
+  .dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 14px; }
+  .dl dt { font-family: var(--mono); font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+  .dl dd { color: var(--text); }
+  .sac-good { color: var(--success); font-weight: 600; }
+  @media (max-width: 560px) { .data-cols { grid-template-columns: 1fr; } }
+
+  .acts { display: flex; gap: 8px; justify-content: flex-end; padding: 16px 24px; background: var(--surface2); }
+  .btn { font-family: var(--mono); font-size: 13px; padding: 7px 16px; border-radius: 7px; border: 1px solid var(--border-mid); background: var(--surface); cursor: pointer; color: var(--text-muted); }
+  .btn.edit:hover { color: var(--accent); border-color: var(--accent); }
+  .btn.del:hover { color: #d9534f; border-color: rgba(217,83,79,0.4); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="page-sub">Mockup v5 — expanded dive card</div>
+  <div class="note">
+    Visibility now in the header row (<b>👁 18 m</b>) and removed from Conditions
+    (no duplication). Marine life is <b>3 on one row</b>, fixed height — no jumps,
+    no empty block. Keys now <b>bracket the gallery</b>: Red List on top (where the
+    badges are), Abundance below (where the pills are). Dive data: Conditions
+    before Profile.
+  </div>
+
+  <div class="card">
+
+    <div class="row">
+      <div class="dnum">148</div>
+      <div>
+        <div class="site">Angel Reef<span class="pin">📍</span></div>
+        <div class="meta"><span class="type boat">Boat</span><span class="sep">·</span>↓ 22.9 m<span class="sep">·</span>⏱ 65 min<span class="sep">·</span>👁 18 m<span class="sep">·</span>🐟 7 sp.</div>
+      </div>
+      <div class="tail">Wed 13</div>
+    </div>
+
+    <div class="m-h"><div class="m-title">Marine life</div></div>
+
+    <div class="key key-top">
+      <span class="lbl">IUCN Red List</span>
+      <span id="iucn-legend"></span>
+    </div>
+
+    <div class="grid" id="sp-grid"></div>
+
+    <div class="pager" id="pager">
+      <button class="pg" id="pg-prev">‹</button>
+      <span class="pg-c" id="pg-c">1–3 of 7</span>
+      <button class="pg" id="pg-next">›</button>
+    </div>
+
+    <div class="key key-bot">
+      <span class="lbl">Abundance</span>
+      <span><b>R</b> rare<span class="d">·</span><b>O</b> occasional<span class="d">·</span><b>C</b> common</span>
+    </div>
+
+    <div class="notes">
+      <div class="sec-title">Notes</div>
+      <div class="notes-body">
+        Dropped onto the mooring at 09:15, drifted the wall north. Manta cruised
+        the cleaning station for ~5 min around 18 m — stayed wide, didn't spook.
+        Turtle asleep under a ledge near the end. Mild thermocline at 16 m.
+        <span class="quiet">Sign-off: M. Sukarno (DM), cert #IDC-44213.</span>
+      </div>
+    </div>
+
+    <div class="data">
+      <div class="sec-title">Dive data</div>
+      <div class="data-cols">
+        <div class="gblock">
+          <div class="grp">Conditions</div>
+          <dl class="dl">
+            <dt>Water</dt><dd>Salt</dd>
+            <dt>Temp</dt><dd>28 °C (26 below 16 m)</dd>
+            <dt>Current</dt><dd>Mild</dd>
+            <dt>Weather</dt><dd>Sunny</dd>
+          </dl>
+        </div>
+        <div class="gblock">
+          <div class="grp">Profile</div>
+          <dl class="dl">
+            <dt>Avg depth</dt><dd>14 m</dd>
+            <dt>Entry</dt><dd>09:15</dd>
+            <dt>Exit</dt><dd>10:20</dd>
+          </dl>
+        </div>
+        <div class="gblock">
+          <div class="grp">Gas &amp; Equipment</div>
+          <dl class="dl">
+            <dt>Gas</dt><dd>Nitrox 32</dd>
+            <dt>Pressure</dt><dd>210 → 55 bar</dd>
+            <dt>SAC rate</dt><dd><span class="sac-good">11.9 L/min</span></dd>
+            <dt>Cylinder</dt><dd>12 L aluminium</dd>
+            <dt>Suit</dt><dd>3 mm shorty</dd>
+            <dt>Weight</dt><dd>5 kg</dd>
+          </dl>
+        </div>
+        <div class="gblock">
+          <div class="grp">Verification</div>
+          <dl class="dl">
+            <dt>Buddy</dt><dd>Yasmine</dd>
+            <dt>Operator</dt><dd>Naga Biru</dd>
+            <dt>Sign-off</dt><dd>M. Sukarno — DM</dd>
+            <dt>Cert no.</dt><dd>IDC-44213</dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="acts">
+      <button class="btn edit">Edit</button>
+      <button class="btn del">Delete</button>
+      <button class="btn" title="Download .md">↓ .md</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var species = [
+    {c:"Green sea turtle", s:"Chelonia mydas", g:"Reptile", i:"EN", a:"O", e:"🐢", p:""},
+    {c:"Reef manta ray", s:"Mobula alfredi", g:"Ray", i:"VU", a:"R", e:"🐠", p:"p2"},
+    {c:"Whitetip reef shark", s:"Triaenodon obesus", g:"Shark", i:"VU", a:"O", e:"🦈", p:"p3"},
+    {c:"Bluestreak cleaner wrasse", s:"Labroides dimidiatus", g:"Fish", i:"LC", a:"C", e:"🐟", p:""},
+    {c:"Giant clam", s:"Tridacna gigas", g:"Mollusc", i:"VU", a:"R", e:"🐚", p:"p4"},
+    {c:"Clark's anemonefish", s:"Amphiprion clarkii", g:"Fish", i:"LC", a:"C", e:"🐠", p:"p2"},
+    {c:"Bluespotted ribbontail ray", s:"Taeniura lymma", g:"Ray", i:"NT", a:"O", e:"🐟", p:"p3"}
+  ];
+  var PER = 3, page = 0;
+  var IUCN_NAME = { CR:"Critically endangered", EN:"Endangered", VU:"Vulnerable", NT:"Near threatened", LC:"Least concern", DD:"Data deficient" };
+
+  (function(){
+    var order = ["CR","EN","VU","NT","LC","DD"];
+    var present = order.filter(function(k){ return species.some(function(x){ return x.i===k; }); });
+    document.getElementById('iucn-legend').innerHTML = present.map(function(k){
+      return '<span class="iucn iucn-'+k+'">'+k+'</span> '+IUCN_NAME[k];
+    }).join('<span class="d">·</span>');
+  })();
+
+  function render(){
+    var pages = Math.ceil(species.length / PER);
+    var start = page * PER;
+    var slice = species.slice(start, start + PER);
+    document.getElementById('sp-grid').innerHTML = slice.map(function(x){
+      return '<div class="sp"><div class="sp-photo '+x.p+'">'+x.e+'</div>'
+        + '<div class="sp-body"><div class="sp-head"><span class="sp-common">'+x.c+'</span>'
+        + '<span class="iucn iucn-'+x.i+'">'+x.i+'</span></div>'
+        + '<div class="sp-sci">'+x.s+'</div>'
+        + '<div class="sp-foot"><span class="sp-group">'+x.g+'</span>'
+        + '<span class="sp-ab">'+x.a+'</span></div></div></div>';
+    }).join('');
+    var show = pages > 1;
+    document.getElementById('pager').style.display = show ? 'flex' : 'none';
+    document.getElementById('pg-c').textContent = (start+1)+'–'+Math.min(start+PER, species.length)+' of '+species.length;
+    document.getElementById('pg-prev').disabled = page === 0;
+    document.getElementById('pg-next').disabled = page >= pages - 1;
+  }
+  document.getElementById('pg-prev').onclick = function(){ if(page>0){page--;render();} };
+  document.getElementById('pg-next').onclick = function(){ page++; render(); };
+  render();
+</script>
+</body>
+</html>

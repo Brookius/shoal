@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dive file (opened dive) — three mobile directions</title>
+<style>
+  :root {
+    --bg:#F5EBD8; --surface:#FAF6F1; --surface2:#EDE5D8;
+    --border:rgba(28,48,48,0.10); --border-mid:rgba(28,48,48,0.18);
+    --text:#1C3030; --text-muted:#8B7B6A; --text-dim:#B5A898;
+    --accent:#4A90B8; --accent-dim:rgba(74,144,184,0.10); --accent-border:rgba(74,144,184,0.30);
+    --success:#4F9D6B; --pending:#E0734F;
+    --violet-deep:#6A4A9A; --violet-soft:#9B7EC8;
+    --type-Reef:#C97A4A; --type-Boat:#2F7E8C; --type-Night:#3A4A7A;
+    --mono: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --text-xs:12px; --text-sm:14px; --text-base:16px;
+  }
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#A89E92; font-family:var(--sans); color:var(--text); padding:34px 18px 70px; }
+
+  .page-title { text-align:center; color:white; font-size:22px; font-weight:700; letter-spacing:-0.01em; }
+  .page-sub { text-align:center; color:rgba(255,255,255,0.62); font-size:var(--text-sm); margin-top:8px; max-width:680px; margin:8px auto 0; line-height:1.6; }
+
+  .rail { display:flex; gap:34px; justify-content:center; align-items:flex-start; flex-wrap:wrap; margin-top:40px; }
+  .col { display:flex; flex-direction:column; align-items:center; gap:13px; }
+  .col-tag { color:white; font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; opacity:0.85; }
+  .col-name { color:white; font-size:16px; font-weight:600; text-align:center; margin-top:-7px; }
+  .col-desc { color:rgba(255,255,255,0.56); font-size:var(--text-xs); font-family:var(--mono); text-align:center; max-width:330px; line-height:1.7; min-height:92px; }
+
+  /* ── Phone ─────────────────────────────────────────────────────────────── */
+  .phone { width:360px; height:800px; background:var(--bg); border-radius:24px; overflow:hidden;
+           box-shadow:0 28px 72px rgba(0,0,0,0.45),0 2px 8px rgba(0,0,0,0.2); display:flex; flex-direction:column; }
+  .statusbar { height:22px; background:#000; color:rgba(255,255,255,0.85); font-family:var(--mono); font-size:11px;
+               display:flex; align-items:center; justify-content:space-between; padding:0 14px; flex-shrink:0; }
+  .screen { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .screen::-webkit-scrollbar { display:none; } .screen { scrollbar-width:none; }
+
+  /* ── App bar (shared) — back + actions; edit always reachable ───────────── */
+  .appbar { display:flex; align-items:center; gap:6px; padding:10px 12px; background:var(--bg);
+            position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); }
+  .ab-back { font-family:var(--mono); font-size:18px; color:var(--text-muted); cursor:pointer; padding:2px 6px; line-height:1; }
+  .ab-title { flex:1; font-family:var(--mono); font-size:var(--text-xs); color:var(--text-dim); letter-spacing:0.05em;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ab-btn { width:32px; height:32px; border-radius:8px; border:1px solid var(--border-mid); background:var(--surface);
+            color:var(--text-muted); font-size:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .ab-btn.footage { color:var(--accent); border-color:var(--accent-border); }
+  .ab-btn:hover { color:var(--text); }
+
+  /* ── Shared section pattern (mono label + hairline) ─────────────────────── */
+  .sec-h { font-family:var(--mono); font-size:var(--text-xs); font-weight:700; color:var(--accent);
+           letter-spacing:0.10em; text-transform:uppercase; display:flex; gap:8px; align-items:baseline; }
+  .sec-h .n { color:var(--text-dim); font-weight:400; }
+
+  /* ── Shared species album (carousel hero + taxon list) ──────────────────── */
+  .alb-car { position:relative; }
+  .alb-hero { position:relative; height:200px; background:#1a2e2c; overflow:hidden; }
+  .alb-hero img { width:100%; height:100%; object-fit:cover; display:block; }
+  .alb-hero-grad { position:absolute; inset:0; background:linear-gradient(to bottom,transparent 38%,rgba(12,24,24,0.82) 100%); }
+  .alb-hero-id { position:absolute; left:0; right:0; bottom:0; padding:12px 14px 13px; color:white; }
+  .alb-hero-badges { display:flex; align-items:center; gap:7px; margin-bottom:4px; }
+  .alb-hero-group { font-family:var(--mono); font-size:var(--text-xs); color:rgba(255,255,255,0.6); letter-spacing:0.07em; text-transform:uppercase; }
+  .alb-hero-name { font-size:19px; font-weight:700; letter-spacing:-0.01em; line-height:1.15; }
+  .alb-hero-sci { font-style:italic; font-size:var(--text-xs); color:rgba(255,255,255,0.6); margin-top:2px; }
+  .alb-nav { display:flex; align-items:center; justify-content:center; gap:14px; padding:8px 0;
+             font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); border-bottom:1px solid var(--border); }
+  .alb-nav button { width:28px; height:28px; border-radius:6px; border:1px solid var(--border-mid); background:var(--surface);
+                    color:var(--text-muted); cursor:pointer; font-family:var(--mono); }
+  .alb-list { }
+  .alb-gh { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); letter-spacing:0.07em;
+            text-transform:uppercase; background:var(--surface2); padding:6px 14px; display:flex; gap:8px; align-items:center; }
+  .alb-gh .gn { color:var(--text-dim); margin-left:auto; }
+  .alb-row { display:flex; align-items:center; gap:11px; padding:8px 14px; border-bottom:1px solid var(--border); }
+  .alb-thumb { width:42px; height:42px; border-radius:7px; overflow:hidden; background:var(--surface2); border:1px solid var(--border); flex-shrink:0; }
+  .alb-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .alb-row-txt { flex:1; min-width:0; }
+  .alb-row-nm { font-size:var(--text-sm); font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .alb-row-sci { font-size:var(--text-xs); font-style:italic; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .alb-row-ab { font-family:var(--mono); font-size:10px; font-weight:700; color:var(--accent); background:var(--accent-dim);
+                border:1px solid var(--accent-border); border-radius:4px; padding:1px 6px; flex-shrink:0; }
+  .alb-vid { color:var(--accent); font-family:var(--mono); font-size:var(--text-xs); flex-shrink:0; }
+
+  /* IUCN badge */
+  .iucn { font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 6px; border-radius:3px; letter-spacing:0.04em; flex-shrink:0; }
+  .iucn.CR { background:rgba(106,74,154,0.15); color:var(--violet-deep); border:1px solid rgba(106,74,154,0.3); font-weight:800; }
+  .iucn.VU { background:rgba(212,168,67,0.15); color:#a07a10; border:1px solid rgba(212,168,67,0.3); }
+  .iucn.EN { background:rgba(155,126,200,0.15); color:var(--violet-soft); border:1px solid rgba(155,126,200,0.3); }
+  .iucn.LC { background:rgba(139,123,106,0.10); color:var(--text-muted); border:1px solid var(--border); }
+  /* on-photo IUCN */
+  .alb-hero-badges .iucn.CR { background:rgba(255,255,255,0.92); }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     DIRECTION A — FIELD LOG (editorial single column)
+     Hero identity + big stat band, then data as clean mono-labelled
+     hairline sections flowing down. Most aligned with current design language.
+  ════════════════════════════════════════════════════════════════════════ */
+  .fA-hero { padding:16px 16px 4px; }
+  .fA-type { display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:0.08em;
+             text-transform:uppercase; color:#fff; background:var(--type-Reef); padding:2px 8px; border-radius:4px; }
+  .fA-site { font-size:24px; font-weight:700; letter-spacing:-0.02em; margin-top:9px; line-height:1.1; }
+  .fA-meta { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); margin-top:5px; letter-spacing:0.03em; }
+  .fA-band { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin:14px 16px 0;
+             background:var(--border); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .fA-cell { background:var(--surface); padding:12px 8px; text-align:center; }
+  .fA-cell-n { font-size:22px; font-weight:700; letter-spacing:-0.02em; }
+  .fA-cell-l { font-family:var(--mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; margin-top:3px; }
+  .fA-sec { padding:18px 16px 4px; }
+  .fA-dl { display:grid; grid-template-columns:max-content 1fr; gap:7px 18px; margin-top:11px; }
+  .fA-dt { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; }
+  .fA-dd { font-size:var(--text-sm); color:var(--text); }
+  .fA-dd .good { color:var(--success); font-weight:600; }
+  .fA-divider { height:1px; background:var(--border); margin:16px 16px 0; }
+  .fA-notes { padding:18px 16px; }
+  .fA-notes-body { font-size:var(--text-sm); line-height:1.7; color:var(--text); margin-top:10px; }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     DIRECTION B — STAT TILES (dashboard)
+     Key stats as a 2×2 hero grid, then dive data as titled tile-cards in a
+     2-col grid. Visual, sectioned, uses the full width.
+  ════════════════════════════════════════════════════════════════════════ */
+  .fB-hero { padding:16px 16px 0; }
+  .fB-type { display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:0.08em;
+             text-transform:uppercase; color:#fff; background:var(--type-Reef); padding:2px 8px; border-radius:4px; }
+  .fB-site { font-size:24px; font-weight:700; letter-spacing:-0.02em; margin-top:9px; line-height:1.1; }
+  .fB-meta { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); margin-top:5px; letter-spacing:0.03em; }
+  .fB-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 16px 0; }
+  .fB-stat { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px;
+             display:flex; flex-direction:column; gap:3px; box-shadow:0 1px 3px rgba(28,48,48,0.04); }
+  .fB-stat-l { font-family:var(--mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.06em; }
+  .fB-stat-n { font-size:26px; font-weight:700; letter-spacing:-0.02em; line-height:1; }
+  .fB-stat-n .u { font-size:13px; font-weight:600; color:var(--text-muted); margin-left:3px; }
+  .fB-stat-n.good { color:var(--success); }
+  .fB-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px 16px 0; }
+  .fB-tile { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 13px;
+             box-shadow:0 1px 3px rgba(28,48,48,0.04); }
+  .fB-tile.wide { grid-column:1 / -1; }
+  .fB-tile-h { font-family:var(--mono); font-size:10px; font-weight:700; color:var(--accent); letter-spacing:0.08em;
+               text-transform:uppercase; margin-bottom:9px; }
+  .fB-trow { display:flex; justify-content:space-between; gap:8px; font-size:var(--text-sm); padding:3px 0; }
+  .fB-trow .k { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-dim); text-transform:uppercase; letter-spacing:0.03em; }
+  .fB-trow .v { color:var(--text); text-align:right; }
+  .fB-trow .v.good { color:var(--success); font-weight:600; }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     DIRECTION C — SEGMENTED (tabbed full-screen)
+     Hero + compact stat band, then a segmented control. Each tab owns the
+     full screen — Marine gets all the width, Data stops competing with it.
+     Shown here on the OVERVIEW (data) tab for comparison.
+  ════════════════════════════════════════════════════════════════════════ */
+  .fC-hero { padding:16px 16px 0; }
+  .fC-type { display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:0.08em;
+             text-transform:uppercase; color:#fff; background:var(--type-Reef); padding:2px 8px; border-radius:4px; }
+  .fC-site { font-size:23px; font-weight:700; letter-spacing:-0.02em; margin-top:9px; line-height:1.1; }
+  .fC-meta { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); margin-top:5px; letter-spacing:0.03em; }
+  .fC-band { display:flex; gap:16px; padding:12px 16px 0; }
+  .fC-bcell { display:flex; align-items:baseline; gap:4px; }
+  .fC-bn { font-size:18px; font-weight:700; letter-spacing:-0.02em; }
+  .fC-bl { font-family:var(--mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; }
+  .fC-seg { display:flex; gap:0; margin:14px 16px 0; background:var(--surface2); border:1px solid var(--border);
+            border-radius:9px; padding:3px; }
+  .fC-seg button { flex:1; font-family:var(--mono); font-size:var(--text-xs); letter-spacing:0.04em; padding:7px 0;
+                   border:none; background:none; color:var(--text-muted); border-radius:7px; cursor:pointer; }
+  .fC-seg button.active { background:var(--surface); color:var(--text); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+  .fC-sec { padding:16px 16px 4px; }
+  .fC-dl { display:grid; grid-template-columns:max-content 1fr; gap:7px 18px; margin-top:11px; }
+  .fC-dt { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; }
+  .fC-dd { font-size:var(--text-sm); color:var(--text); }
+  .fC-dd .good { color:var(--success); font-weight:600; }
+  .fC-divider { height:1px; background:var(--border); margin:14px 16px 0; }
+  .fC-tabnote { margin:16px; padding:12px 14px; border:1px dashed var(--border-mid); border-radius:10px;
+                font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); line-height:1.6; background:var(--surface); }
+</style>
+</head>
+<body>
+
+<div class="page-title">Dive file (opened dive) — three mobile directions</div>
+<div class="page-sub">
+  Same dive (#148 Angel Reef) opened full-screen — the trip is replaced by a back
+  button, edit lives in the top bar (no more scroll-to-bottom). The species album
+  is kept and given full width. The directions differ in navigation model and how
+  the dive data is presented.
+</div>
+
+<div class="rail">
+
+  <!-- ═══════════════ A — FIELD LOG ═══════════════ -->
+  <div class="col">
+    <div class="col-tag">A · Field log</div>
+    <div class="col-name">Editorial single column</div>
+    <div class="col-desc">
+      Hero identity + a 3-up stat band, then data as clean mono-labelled
+      hairline sections flowing down. Closest to today's design language —
+      lowest-risk, most familiar. One long scroll.
+    </div>
+
+    <div class="phone">
+      <div class="statusbar"><span>14:09</span><span>77%</span></div>
+      <div class="screen">
+        <div class="appbar">
+          <span class="ab-back">‹</span>
+          <span class="ab-title">Komodo — Bali</span>
+          <span class="ab-btn footage" title="Footage">▶</span>
+          <span class="ab-btn" title="Edit">✎</span>
+          <span class="ab-btn" title="More">⋯</span>
+        </div>
+
+        <div class="fA-hero">
+          <span class="fA-type">Reef</span>
+          <div class="fA-site">Angel Reef 📍</div>
+          <div class="fA-meta">#148 · Komodo, Indonesia · Wed 13 May 2026</div>
+        </div>
+
+        <div class="fA-band">
+          <div class="fA-cell"><div class="fA-cell-n">22.9</div><div class="fA-cell-l">↓ max m</div></div>
+          <div class="fA-cell"><div class="fA-cell-n">65</div><div class="fA-cell-l">⏱ min</div></div>
+          <div class="fA-cell"><div class="fA-cell-n">20</div><div class="fA-cell-l">👁 vis m</div></div>
+        </div>
+
+        <!-- Marine album -->
+        <div class="fA-sec"><div class="sec-h">Marine life <span class="n">12 species</span></div></div>
+        <div class="alb-car">
+          <div class="alb-hero">
+            <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/medium.jpg">
+            <div class="alb-hero-grad"></div>
+            <div class="alb-hero-id">
+              <div class="alb-hero-badges"><span class="iucn CR">CR</span><span class="alb-hero-group">🐢 Reptile</span></div>
+              <div class="alb-hero-name">Hawksbill turtle</div>
+              <div class="alb-hero-sci">Eretmochelys imbricata</div>
+            </div>
+          </div>
+          <div class="alb-nav"><button>‹</button><span>1 / 12</span><button>›</button></div>
+        </div>
+        <div class="alb-list">
+          <div class="alb-gh">🐢 Reptile <span class="gn">1</span></div>
+          <div class="alb-row">
+            <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div>
+            <div class="alb-row-txt"><div class="alb-row-nm">Hawksbill turtle</div><div class="alb-row-sci">Eretmochelys imbricata</div></div>
+            <span class="iucn CR">CR</span><span class="alb-row-ab">R</span>
+          </div>
+          <div class="alb-gh">🦈 Shark · Ray <span class="gn">2</span></div>
+          <div class="alb-row">
+            <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/33852153/square.jpg"></div>
+            <div class="alb-row-txt"><div class="alb-row-nm">Manta ray</div><div class="alb-row-sci">Mobula birostris</div></div>
+            <span class="alb-vid">▶</span><span class="iucn EN">EN</span><span class="alb-row-ab">O</span>
+          </div>
+          <div class="alb-row">
+            <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg"></div>
+            <div class="alb-row-txt"><div class="alb-row-nm">Whitetip reef shark</div><div class="alb-row-sci">Triaenodon obesus</div></div>
+            <span class="iucn VU">VU</span><span class="alb-row-ab">R</span>
+          </div>
+          <div class="alb-gh">🐠 Fish <span class="gn">9</span></div>
+          <div class="alb-row">
+            <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/709279/square.jpg"></div>
+            <div class="alb-row-txt"><div class="alb-row-nm">Bumphead parrotfish</div><div class="alb-row-sci">Bolbometopon muricatum</div></div>
+            <span class="alb-vid">▶</span><span class="iucn VU">VU</span><span class="alb-row-ab">C</span>
+          </div>
+          <div class="alb-row">
+            <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg"></div>
+            <div class="alb-row-txt"><div class="alb-row-nm">Lionfish</div><div class="alb-row-sci">Pterois volitans</div></div>
+            <span class="iucn LC">LC</span><span class="alb-row-ab">O</span>
+          </div>
+        </div>
+
+        <!-- Data sections -->
+        <div class="fA-divider"></div>
+        <div class="fA-sec">
+          <div class="sec-h">Conditions</div>
+          <div class="fA-dl">
+            <div class="fA-dt">Water</div><div class="fA-dd">Salt</div>
+            <div class="fA-dt">Temp</div><div class="fA-dd">28 °C</div>
+            <div class="fA-dt">Current</div><div class="fA-dd">Moderate</div>
+            <div class="fA-dt">Weather</div><div class="fA-dd">Sunny</div>
+          </div>
+        </div>
+        <div class="fA-sec">
+          <div class="sec-h">Profile</div>
+          <div class="fA-dl">
+            <div class="fA-dt">Avg depth</div><div class="fA-dd">14 m</div>
+            <div class="fA-dt">Entry</div><div class="fA-dd">09:15</div>
+            <div class="fA-dt">Exit</div><div class="fA-dd">10:20</div>
+            <div class="fA-dt">Safety</div><div class="fA-dd">5 m / 3 min</div>
+          </div>
+        </div>
+        <div class="fA-sec">
+          <div class="sec-h">Gas &amp; equipment</div>
+          <div class="fA-dl">
+            <div class="fA-dt">Gas</div><div class="fA-dd">Nitrox 32</div>
+            <div class="fA-dt">Pressure</div><div class="fA-dd">200 → 50 bar</div>
+            <div class="fA-dt">SAC</div><div class="fA-dd"><span class="good">14.2 L/min</span></div>
+            <div class="fA-dt">Cylinder</div><div class="fA-dd">Steel 12 L</div>
+            <div class="fA-dt">Suit</div><div class="fA-dd">3 mm</div>
+            <div class="fA-dt">Weight</div><div class="fA-dd">5 kg</div>
+          </div>
+        </div>
+        <div class="fA-sec">
+          <div class="sec-h">Verification</div>
+          <div class="fA-dl">
+            <div class="fA-dt">Buddy</div><div class="fA-dd">Yasmine</div>
+            <div class="fA-dt">Operator</div><div class="fA-dd">Naga Biru</div>
+          </div>
+        </div>
+        <div class="fA-notes">
+          <div class="sec-h">Notes</div>
+          <div class="fA-notes-body">Drift along the wall, manta cleaning station at 18 m. Big bumphead school on the descent. Viz dropped on the safety stop.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ B — STAT TILES ═══════════════ -->
+  <div class="col">
+    <div class="col-tag">B · Stat tiles</div>
+    <div class="col-name">Dashboard of cards</div>
+    <div class="col-desc">
+      Key numbers as a 2×2 hero grid, dive data as titled tile-cards in a
+      2-col layout. Most visual; fills the width; each group is a glanceable
+      card. Furthest from today's look.
+    </div>
+
+    <div class="phone">
+      <div class="statusbar"><span>14:09</span><span>77%</span></div>
+      <div class="screen">
+        <div class="appbar">
+          <span class="ab-back">‹</span>
+          <span class="ab-title">Komodo — Bali</span>
+          <span class="ab-btn footage" title="Footage">▶</span>
+          <span class="ab-btn" title="Edit">✎</span>
+          <span class="ab-btn" title="More">⋯</span>
+        </div>
+
+        <div class="fB-hero">
+          <span class="fB-type">Reef</span>
+          <div class="fB-site">Angel Reef 📍</div>
+          <div class="fB-meta">#148 · Komodo, Indonesia · Wed 13 May 2026</div>
+        </div>
+
+        <div class="fB-stats">
+          <div class="fB-stat"><span class="fB-stat-l">↓ Max depth</span><span class="fB-stat-n">22.9<span class="u">m</span></span></div>
+          <div class="fB-stat"><span class="fB-stat-l">⏱ Bottom time</span><span class="fB-stat-n">65<span class="u">min</span></span></div>
+          <div class="fB-stat"><span class="fB-stat-l">👁 Visibility</span><span class="fB-stat-n">20<span class="u">m</span></span></div>
+          <div class="fB-stat"><span class="fB-stat-l">SAC rate</span><span class="fB-stat-n good">14.2<span class="u">L/min</span></span></div>
+        </div>
+
+        <div class="fB-grid">
+          <div class="fB-tile">
+            <div class="fB-tile-h">Conditions</div>
+            <div class="fB-trow"><span class="k">Water</span><span class="v">Salt</span></div>
+            <div class="fB-trow"><span class="k">Temp</span><span class="v">28 °C</span></div>
+            <div class="fB-trow"><span class="k">Current</span><span class="v">Moderate</span></div>
+            <div class="fB-trow"><span class="k">Weather</span><span class="v">Sunny</span></div>
+          </div>
+          <div class="fB-tile">
+            <div class="fB-tile-h">Profile</div>
+            <div class="fB-trow"><span class="k">Avg</span><span class="v">14 m</span></div>
+            <div class="fB-trow"><span class="k">Entry</span><span class="v">09:15</span></div>
+            <div class="fB-trow"><span class="k">Exit</span><span class="v">10:20</span></div>
+            <div class="fB-trow"><span class="k">Safety</span><span class="v">5m/3min</span></div>
+          </div>
+          <div class="fB-tile">
+            <div class="fB-tile-h">Gas &amp; kit</div>
+            <div class="fB-trow"><span class="k">Gas</span><span class="v">Nitrox 32</span></div>
+            <div class="fB-trow"><span class="k">Press</span><span class="v">200→50</span></div>
+            <div class="fB-trow"><span class="k">Cyl</span><span class="v">Steel 12L</span></div>
+            <div class="fB-trow"><span class="k">Suit</span><span class="v">3 mm · 5 kg</span></div>
+          </div>
+          <div class="fB-tile">
+            <div class="fB-tile-h">Crew</div>
+            <div class="fB-trow"><span class="k">Buddy</span><span class="v">Yasmine</span></div>
+            <div class="fB-trow"><span class="k">Op</span><span class="v">Naga Biru</span></div>
+          </div>
+          <div class="fB-tile wide">
+            <div class="fB-tile-h">Notes</div>
+            <div style="font-size:var(--text-sm); line-height:1.6; color:var(--text);">Drift along the wall, manta cleaning station at 18 m. Big bumphead school on the descent.</div>
+          </div>
+        </div>
+
+        <!-- Marine album full width -->
+        <div class="fB-grid" style="grid-template-columns:1fr;">
+          <div style="padding-top:4px;"><div class="fB-tile-h" style="color:var(--accent);">Marine life · 12 species</div></div>
+        </div>
+        <div class="alb-car">
+          <div class="alb-hero">
+            <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/medium.jpg">
+            <div class="alb-hero-grad"></div>
+            <div class="alb-hero-id">
+              <div class="alb-hero-badges"><span class="iucn CR">CR</span><span class="alb-hero-group">🐢 Reptile</span></div>
+              <div class="alb-hero-name">Hawksbill turtle</div>
+              <div class="alb-hero-sci">Eretmochelys imbricata</div>
+            </div>
+          </div>
+          <div class="alb-nav"><button>‹</button><span>1 / 12</span><button>›</button></div>
+        </div>
+        <div class="alb-list">
+          <div class="alb-gh">🦈 Shark · Ray <span class="gn">2</span></div>
+          <div class="alb-row">
+            <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/33852153/square.jpg"></div>
+            <div class="alb-row-txt"><div class="alb-row-nm">Manta ray</div><div class="alb-row-sci">Mobula birostris</div></div>
+            <span class="alb-vid">▶</span><span class="iucn EN">EN</span><span class="alb-row-ab">O</span>
+          </div>
+          <div class="alb-row">
+            <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg"></div>
+            <div class="alb-row-txt"><div class="alb-row-nm">Whitetip reef shark</div><div class="alb-row-sci">Triaenodon obesus</div></div>
+            <span class="iucn VU">VU</span><span class="alb-row-ab">R</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ C — SEGMENTED ═══════════════ -->
+  <div class="col">
+    <div class="col-tag">C · Segmented</div>
+    <div class="col-name">Tabbed full-screen</div>
+    <div class="col-desc">
+      Hero + compact stats, then a segmented control. Each tab owns the whole
+      screen — Marine gets all the width, Data stops competing with it. No
+      endless scroll. Shown on the Overview (data) tab.
+    </div>
+
+    <div class="phone">
+      <div class="statusbar"><span>14:09</span><span>77%</span></div>
+      <div class="screen">
+        <div class="appbar">
+          <span class="ab-back">‹</span>
+          <span class="ab-title">Komodo — Bali</span>
+          <span class="ab-btn footage" title="Footage">▶</span>
+          <span class="ab-btn" title="Edit">✎</span>
+          <span class="ab-btn" title="More">⋯</span>
+        </div>
+
+        <div class="fC-hero">
+          <span class="fC-type">Reef</span>
+          <div class="fC-site">Angel Reef 📍</div>
+          <div class="fC-meta">#148 · Komodo, Indonesia · Wed 13 May 2026</div>
+        </div>
+
+        <div class="fC-band">
+          <div class="fC-bcell"><span class="fC-bn">22.9</span><span class="fC-bl">↓m</span></div>
+          <div class="fC-bcell"><span class="fC-bn">65</span><span class="fC-bl">⏱min</span></div>
+          <div class="fC-bcell"><span class="fC-bn">20</span><span class="fC-bl">👁m</span></div>
+        </div>
+
+        <div class="fC-seg">
+          <button class="active">Overview</button>
+          <button>Marine 12</button>
+          <button>Notes</button>
+        </div>
+
+        <div class="fC-sec">
+          <div class="sec-h">Conditions</div>
+          <div class="fC-dl">
+            <div class="fC-dt">Water</div><div class="fC-dd">Salt</div>
+            <div class="fC-dt">Temp</div><div class="fC-dd">28 °C</div>
+            <div class="fC-dt">Current</div><div class="fC-dd">Moderate</div>
+            <div class="fC-dt">Weather</div><div class="fC-dd">Sunny</div>
+          </div>
+        </div>
+        <div class="fC-divider"></div>
+        <div class="fC-sec">
+          <div class="sec-h">Profile</div>
+          <div class="fC-dl">
+            <div class="fC-dt">Avg depth</div><div class="fC-dd">14 m</div>
+            <div class="fC-dt">Entry → Exit</div><div class="fC-dd">09:15 → 10:20</div>
+            <div class="fC-dt">Safety</div><div class="fC-dd">5 m / 3 min</div>
+          </div>
+        </div>
+        <div class="fC-divider"></div>
+        <div class="fC-sec">
+          <div class="sec-h">Gas &amp; equipment</div>
+          <div class="fC-dl">
+            <div class="fC-dt">Gas</div><div class="fC-dd">Nitrox 32</div>
+            <div class="fC-dt">Pressure</div><div class="fC-dd">200 → 50 bar</div>
+            <div class="fC-dt">SAC</div><div class="fC-dd"><span class="good">14.2 L/min</span></div>
+            <div class="fC-dt">Cylinder</div><div class="fC-dd">Steel 12 L</div>
+            <div class="fC-dt">Suit · weight</div><div class="fC-dd">3 mm · 5 kg</div>
+          </div>
+        </div>
+        <div class="fC-divider"></div>
+        <div class="fC-sec">
+          <div class="sec-h">Verification</div>
+          <div class="fC-dl">
+            <div class="fC-dt">Buddy</div><div class="fC-dd">Yasmine</div>
+            <div class="fC-dt">Operator</div><div class="fC-dd">Naga Biru</div>
+          </div>
+        </div>
+
+        <div class="fC-tabnote">
+          ▸ Tapping <b>Marine 12</b> swaps this area for the full-width species
+          album (carousel + taxon list). <b>Notes</b> shows the write-up. Each
+          tab owns the screen — no scrolling past data to reach species.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

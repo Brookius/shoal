@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dive file — tabbed hybrid (A+C)</title>
+<style>
+  :root {
+    --bg:#F5EBD8; --surface:#FAF6F1; --surface2:#EDE5D8;
+    --border:rgba(28,48,48,0.10); --border-mid:rgba(28,48,48,0.18);
+    --text:#1C3030; --text-muted:#8B7B6A; --text-dim:#B5A898;
+    --accent:#4A90B8; --accent-dim:rgba(74,144,184,0.10); --accent-border:rgba(74,144,184,0.30);
+    --success:#4F9D6B; --pending:#E0734F;
+    --violet-deep:#6A4A9A; --violet-soft:#9B7EC8;
+    --type-Reef:#C97A4A;
+    --mono: ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --text-xs:12px; --text-sm:14px; --text-base:16px;
+  }
+  *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#A89E92; font-family:var(--sans); color:var(--text); padding:34px 18px 70px; }
+
+  .page-title { text-align:center; color:white; font-size:22px; font-weight:700; letter-spacing:-0.01em; }
+  .page-sub { text-align:center; color:rgba(255,255,255,0.62); font-size:var(--text-sm); margin:8px auto 0; max-width:680px; line-height:1.6; }
+
+  .rail { display:flex; gap:34px; justify-content:center; align-items:flex-start; flex-wrap:wrap; margin-top:40px; }
+  .col { display:flex; flex-direction:column; align-items:center; gap:13px; }
+  .col-tag { color:white; font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; opacity:0.85; }
+  .col-name { color:white; font-size:16px; font-weight:600; text-align:center; margin-top:-7px; }
+
+  /* Phone */
+  .phone { width:360px; height:760px; background:var(--bg); border-radius:24px; overflow:hidden;
+           box-shadow:0 28px 72px rgba(0,0,0,0.45),0 2px 8px rgba(0,0,0,0.2); display:flex; flex-direction:column; }
+  .statusbar { height:22px; background:#000; color:rgba(255,255,255,0.85); font-family:var(--mono); font-size:11px;
+               display:flex; align-items:center; justify-content:space-between; padding:0 14px; flex-shrink:0; }
+  .screen { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding-bottom:18px; }
+  .screen::-webkit-scrollbar { display:none; } .screen { scrollbar-width:none; }
+
+  /* App bar */
+  .appbar { display:flex; align-items:center; gap:6px; padding:10px 12px; background:var(--bg);
+            position:sticky; top:0; z-index:10; border-bottom:1px solid var(--border); }
+  .ab-back { font-family:var(--mono); font-size:18px; color:var(--text-muted); cursor:pointer; padding:2px 6px; line-height:1; }
+  .ab-title { flex:1; font-family:var(--mono); font-size:var(--text-xs); color:var(--text-dim); letter-spacing:0.05em;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ab-btn { width:32px; height:32px; border-radius:8px; border:1px solid var(--border-mid); background:var(--surface);
+            color:var(--text-muted); font-size:15px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; }
+  .ab-btn.footage { color:var(--accent); border-color:var(--accent-border); }
+
+  /* Hero */
+  .hero { padding:14px 16px 0; }
+  .hero-type { display:inline-block; font-family:var(--mono); font-size:10px; font-weight:700; letter-spacing:0.08em;
+               text-transform:uppercase; color:#fff; background:var(--type-Reef); padding:2px 8px; border-radius:4px; }
+  .hero-site { font-size:23px; font-weight:700; letter-spacing:-0.02em; margin-top:9px; line-height:1.1; }
+  .hero-meta { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); margin-top:5px; letter-spacing:0.03em; }
+
+  /* Persistent stat band (white container, 3-up) */
+  .band { display:grid; grid-template-columns:repeat(3,1fr); margin:13px 16px 0;
+          background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden;
+          box-shadow:0 1px 3px rgba(28,48,48,0.04); }
+  .band-cell { padding:11px 6px; text-align:center; border-right:1px solid var(--border); }
+  .band-cell:last-child { border-right:none; }
+  .band-n { font-size:21px; font-weight:700; letter-spacing:-0.02em; line-height:1; }
+  .band-l { font-family:var(--mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-top:4px; }
+
+  /* Segmented control */
+  .seg { display:flex; margin:13px 16px 4px; background:var(--surface2); border:1px solid var(--border); border-radius:9px; padding:3px; }
+  .seg button { flex:1; font-family:var(--mono); font-size:var(--text-xs); letter-spacing:0.03em; padding:7px 0;
+                border:none; background:none; color:var(--text-muted); border-radius:7px; cursor:pointer; white-space:nowrap; }
+  .seg button.active { background:var(--surface); color:var(--text); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,0.08); }
+  .seg .badge { font-size:10px; opacity:0.7; }
+
+  /* White container card (full width, stacked — no grid asymmetry) */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px;
+          padding:13px 15px; box-shadow:0 1px 3px rgba(28,48,48,0.04); margin:10px 16px 0; }
+  .card-h { font-family:var(--mono); font-size:10px; font-weight:700; color:var(--accent);
+            letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px; }
+  .dl { display:grid; grid-template-columns:max-content 1fr; gap:8px 18px; }
+  .dt { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; align-self:baseline; }
+  .dd { font-size:var(--text-sm); color:var(--text); }
+  .dd .good { color:var(--success); font-weight:600; }
+  .notes-body { font-size:var(--text-sm); line-height:1.7; color:var(--text); }
+
+  /* Tab section label (for marine) */
+  .tab-pad { padding-top:6px; }
+
+  /* ── Species album (carousel hero + taxon list) ─────────────────────────── */
+  .alb-hero { position:relative; height:210px; background:#1a2e2c; overflow:hidden; margin:10px 0 0; }
+  .alb-hero img { width:100%; height:100%; object-fit:cover; display:block; }
+  .alb-hero-grad { position:absolute; inset:0; background:linear-gradient(to bottom,transparent 38%,rgba(12,24,24,0.82) 100%); }
+  .alb-hero-id { position:absolute; left:0; right:0; bottom:0; padding:12px 16px 13px; color:white; }
+  .alb-hero-badges { display:flex; align-items:center; gap:7px; margin-bottom:4px; }
+  .alb-hero-group { font-family:var(--mono); font-size:var(--text-xs); color:rgba(255,255,255,0.6); letter-spacing:0.07em; text-transform:uppercase; }
+  .alb-hero-name { font-size:20px; font-weight:700; letter-spacing:-0.01em; line-height:1.15; }
+  .alb-hero-sci { font-style:italic; font-size:var(--text-xs); color:rgba(255,255,255,0.6); margin-top:2px; }
+  .alb-nav { display:flex; align-items:center; justify-content:center; gap:14px; padding:9px 0;
+             font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); border-bottom:1px solid var(--border); }
+  .alb-nav button { width:28px; height:28px; border-radius:6px; border:1px solid var(--border-mid); background:var(--surface); color:var(--text-muted); cursor:pointer; }
+  .alb-gh { font-family:var(--mono); font-size:var(--text-xs); color:var(--text-muted); letter-spacing:0.07em;
+            text-transform:uppercase; background:var(--surface2); padding:6px 16px; display:flex; gap:8px; align-items:center; }
+  .alb-gh .gn { color:var(--text-dim); margin-left:auto; }
+  .alb-row { display:flex; align-items:center; gap:11px; padding:8px 16px; border-bottom:1px solid var(--border); }
+  .alb-thumb { width:44px; height:44px; border-radius:7px; overflow:hidden; background:var(--surface2); border:1px solid var(--border); flex-shrink:0; }
+  .alb-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  .alb-row-txt { flex:1; min-width:0; }
+  .alb-row-nm { font-size:var(--text-sm); font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .alb-row-sci { font-size:var(--text-xs); font-style:italic; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .alb-row-ab { font-family:var(--mono); font-size:10px; font-weight:700; color:var(--accent); background:var(--accent-dim);
+                border:1px solid var(--accent-border); border-radius:4px; padding:1px 6px; flex-shrink:0; }
+  .alb-vid { color:var(--accent); font-family:var(--mono); font-size:var(--text-xs); flex-shrink:0; }
+
+  .iucn { font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 6px; border-radius:3px; letter-spacing:0.04em; flex-shrink:0; }
+  .iucn.CR { background:rgba(106,74,154,0.15); color:var(--violet-deep); border:1px solid rgba(106,74,154,0.3); font-weight:800; }
+  .iucn.VU { background:rgba(212,168,67,0.15); color:#a07a10; border:1px solid rgba(212,168,67,0.3); }
+  .iucn.EN { background:rgba(155,126,200,0.15); color:var(--violet-soft); border:1px solid rgba(155,126,200,0.3); }
+  .iucn.LC { background:rgba(139,123,106,0.10); color:var(--text-muted); border:1px solid var(--border); }
+  .alb-hero-badges .iucn.CR { background:rgba(255,255,255,0.92); }
+</style>
+</head>
+<body>
+
+<div class="page-title">Dive file — tabbed hybrid (A + C)</div>
+<div class="page-sub">
+  Tabbed full-screen, opening on <b>Marine life</b> (left), then <b>Overview</b> (middle),
+  then <b>Notes</b> (right). B's white containers kept — but as full-width stacked cards,
+  so uneven field counts never break the balance. Hero + stat band + edit stay fixed
+  above the tabs.
+</div>
+
+<div class="rail">
+
+  <!-- ═══════════ TAB 1: MARINE (default on open) ═══════════ -->
+  <div class="col">
+    <div class="col-tag">Tab 1 · default</div>
+    <div class="col-name">Marine life</div>
+    <div class="phone">
+      <div class="statusbar"><span>14:09</span><span>77%</span></div>
+      <div class="screen">
+        <div class="appbar">
+          <span class="ab-back">‹</span>
+          <span class="ab-title">Komodo — Bali</span>
+          <span class="ab-btn footage" title="Manage footage">🎬</span>
+          <span class="ab-btn" title="Edit">✎</span>
+          <span class="ab-btn" title="More">⋯</span>
+        </div>
+        <div class="hero">
+          <span class="hero-type">Reef</span>
+          <div class="hero-site">Angel Reef 📍</div>
+          <div class="hero-meta">#148 · Komodo, Indonesia · Wed 13 May 2026</div>
+        </div>
+        <div class="band">
+          <div class="band-cell"><div class="band-n">22.9</div><div class="band-l">↓ max m</div></div>
+          <div class="band-cell"><div class="band-n">65</div><div class="band-l">⏱ min</div></div>
+          <div class="band-cell"><div class="band-n">20</div><div class="band-l">👁 vis m</div></div>
+        </div>
+        <div class="seg">
+          <button class="active">Marine <span class="badge">12</span></button>
+          <button>Overview</button>
+          <button>Notes</button>
+        </div>
+
+        <div class="tab-pad"></div>
+        <div class="alb-hero">
+          <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/medium.jpg">
+          <div class="alb-hero-grad"></div>
+          <div class="alb-hero-id">
+            <div class="alb-hero-badges"><span class="iucn CR">CR</span><span class="alb-hero-group">🐢 Reptile</span></div>
+            <div class="alb-hero-name">Hawksbill turtle</div>
+            <div class="alb-hero-sci">Eretmochelys imbricata</div>
+          </div>
+        </div>
+        <div class="alb-nav"><button>‹</button><span>1 / 12</span><button>›</button></div>
+
+        <div class="alb-gh">🐢 Reptile <span class="gn">1</span></div>
+        <div class="alb-row">
+          <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/square.jpg"></div>
+          <div class="alb-row-txt"><div class="alb-row-nm">Hawksbill turtle</div><div class="alb-row-sci">Eretmochelys imbricata</div></div>
+          <span class="iucn CR">CR</span><span class="alb-row-ab">R</span>
+        </div>
+        <div class="alb-gh">🦈 Shark · Ray <span class="gn">2</span></div>
+        <div class="alb-row">
+          <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/33852153/square.jpg"></div>
+          <div class="alb-row-txt"><div class="alb-row-nm">Manta ray</div><div class="alb-row-sci">Mobula birostris</div></div>
+          <span class="alb-vid">▶</span><span class="iucn EN">EN</span><span class="alb-row-ab">O</span>
+        </div>
+        <div class="alb-row">
+          <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/29230134/square.jpg"></div>
+          <div class="alb-row-txt"><div class="alb-row-nm">Whitetip reef shark</div><div class="alb-row-sci">Triaenodon obesus</div></div>
+          <span class="iucn VU">VU</span><span class="alb-row-ab">R</span>
+        </div>
+        <div class="alb-gh">🐠 Fish <span class="gn">9</span></div>
+        <div class="alb-row">
+          <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/709279/square.jpg"></div>
+          <div class="alb-row-txt"><div class="alb-row-nm">Bumphead parrotfish</div><div class="alb-row-sci">Bolbometopon muricatum</div></div>
+          <span class="alb-vid">▶</span><span class="iucn VU">VU</span><span class="alb-row-ab">C</span>
+        </div>
+        <div class="alb-row">
+          <div class="alb-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/square.jpg"></div>
+          <div class="alb-row-txt"><div class="alb-row-nm">Lionfish</div><div class="alb-row-sci">Pterois volitans</div></div>
+          <span class="iucn LC">LC</span><span class="alb-row-ab">O</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TAB 2: OVERVIEW ═══════════ -->
+  <div class="col">
+    <div class="col-tag">Tab 2</div>
+    <div class="col-name">Overview (dive data)</div>
+    <div class="phone">
+      <div class="statusbar"><span>14:09</span><span>77%</span></div>
+      <div class="screen">
+        <div class="appbar">
+          <span class="ab-back">‹</span>
+          <span class="ab-title">Komodo — Bali</span>
+          <span class="ab-btn footage" title="Manage footage">🎬</span>
+          <span class="ab-btn" title="Edit">✎</span>
+          <span class="ab-btn" title="More">⋯</span>
+        </div>
+        <div class="hero">
+          <span class="hero-type">Reef</span>
+          <div class="hero-site">Angel Reef 📍</div>
+          <div class="hero-meta">#148 · Komodo, Indonesia · Wed 13 May 2026</div>
+        </div>
+        <div class="band">
+          <div class="band-cell"><div class="band-n">22.9</div><div class="band-l">↓ max m</div></div>
+          <div class="band-cell"><div class="band-n">65</div><div class="band-l">⏱ min</div></div>
+          <div class="band-cell"><div class="band-n">20</div><div class="band-l">👁 vis m</div></div>
+        </div>
+        <div class="seg">
+          <button>Marine <span class="badge">12</span></button>
+          <button class="active">Overview</button>
+          <button>Notes</button>
+        </div>
+
+        <div class="card">
+          <div class="card-h">Conditions</div>
+          <div class="dl">
+            <div class="dt">Water</div><div class="dd">Salt</div>
+            <div class="dt">Temp</div><div class="dd">28 °C</div>
+            <div class="dt">Current</div><div class="dd">Moderate</div>
+            <div class="dt">Weather</div><div class="dd">Sunny</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">Profile</div>
+          <div class="dl">
+            <div class="dt">Avg depth</div><div class="dd">14 m</div>
+            <div class="dt">Entry → Exit</div><div class="dd">09:15 → 10:20</div>
+            <div class="dt">Safety stop</div><div class="dd">5 m / 3 min</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">Gas &amp; equipment</div>
+          <div class="dl">
+            <div class="dt">Gas</div><div class="dd">Nitrox 32</div>
+            <div class="dt">Pressure</div><div class="dd">200 → 50 bar</div>
+            <div class="dt">SAC rate</div><div class="dd"><span class="good">14.2 L/min</span></div>
+            <div class="dt">Cylinder</div><div class="dd">Steel 12 L</div>
+            <div class="dt">Suit</div><div class="dd">3 mm</div>
+            <div class="dt">Weight</div><div class="dd">5 kg</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TAB 3: NOTES ═══════════ -->
+  <div class="col">
+    <div class="col-tag">Tab 3</div>
+    <div class="col-name">Notes &amp; sign-off</div>
+    <div class="phone">
+      <div class="statusbar"><span>14:09</span><span>77%</span></div>
+      <div class="screen">
+        <div class="appbar">
+          <span class="ab-back">‹</span>
+          <span class="ab-title">Komodo — Bali</span>
+          <span class="ab-btn footage" title="Manage footage">🎬</span>
+          <span class="ab-btn" title="Edit">✎</span>
+          <span class="ab-btn" title="More">⋯</span>
+        </div>
+        <div class="hero">
+          <span class="hero-type">Reef</span>
+          <div class="hero-site">Angel Reef 📍</div>
+          <div class="hero-meta">#148 · Komodo, Indonesia · Wed 13 May 2026</div>
+        </div>
+        <div class="band">
+          <div class="band-cell"><div class="band-n">22.9</div><div class="band-l">↓ max m</div></div>
+          <div class="band-cell"><div class="band-n">65</div><div class="band-l">⏱ min</div></div>
+          <div class="band-cell"><div class="band-n">20</div><div class="band-l">👁 vis m</div></div>
+        </div>
+        <div class="seg">
+          <button>Marine <span class="badge">12</span></button>
+          <button>Overview</button>
+          <button class="active">Notes</button>
+        </div>
+
+        <div class="card">
+          <div class="card-h">Notes</div>
+          <div class="notes-body">Drift along the wall, manta cleaning station at 18 m — three individuals circling. Big bumphead parrotfish school on the descent. Visibility dropped to ~10 m on the safety stop as the current picked up.</div>
+        </div>
+        <div class="card">
+          <div class="card-h">Sign-off</div>
+          <div class="dl">
+            <div class="dt">Buddy</div><div class="dd">Yasmine</div>
+            <div class="dt">Operator</div><div class="dd">Naga Biru</div>
+            <div class="dt">Trip</div><div class="dd">Komodo — Bali</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

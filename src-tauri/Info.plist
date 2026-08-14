@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Merged into the generated bundle Info.plist by tauri-bundler on macOS.
+
+  NSBluetoothAlwaysUsageDescription is REQUIRED, not optional polish: on
+  macOS 11+ an app that touches CoreBluetooth without this key is killed by
+  the OS on first use rather than shown a permission prompt. src/ble.rs is
+  the only thing here that uses Bluetooth (native dive-computer sync — the
+  shell's WKWebView has no navigator.bluetooth, so the browser build's Web
+  Bluetooth path cannot run here).
+
+  The string is what the user reads in the permission dialog, so it names
+  the actual purpose rather than the API.
+-->
+<plist version="1.0">
+<dict>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>Shoal uses Bluetooth to download dives directly from your dive computer.</string>
+</dict>
+</plist>

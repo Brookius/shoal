@@ -1,0 +1,115 @@
+[package]
+name = "app"
+version = "0.1.0"
+description = "A Tauri App"
+authors = ["you"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.6.2", features = [] }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+tauri = { version = "2.11.2", features = ["protocol-asset"] }
+tauri-plugin-log = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+# Android OAuth redirect (src/gdrive.rs's Android consent flow, plan step 9
+# §2.9) — the desktop loopback-listener technique has no mobile equivalent.
+# Cross-platform crate but only registered/used on Android (see lib.rs) —
+# desktop keeps its existing, already-working loopback flow unchanged.
+tauri-plugin-deep-link = "2"
+tokio = { version = "1", features = ["sync", "time", "net", "io-util"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+# Google Drive OAuth (src/gdrive.rs) — loopback-listener PKCE flow.
+# sha2/base64/rand/url are already transitive deps of reqwest/rustls-tls;
+# promoting them to direct deps rather than reaching for something new.
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.8"
+url = "2"
+futures = "0.3"
+uuid = "1"
+
+# ANDROID SPIKE (2026-07-30, throwaway branch `android-spike`): keyring's
+# apple-native feature has no Android backend at all (confirmed — see
+# BRIEF-play-store-readiness.md §2.2), so it's gated to non-Android targets
+# here rather than made to compile against a feature that doesn't exist for
+# this platform. gdrive.rs's four keyring-calling functions get an
+# `#[cfg(target_os = "android")]` stub below that errors instead of storing
+# anything — proving the REST of the crate builds for Android is the goal;
+# a real Android Keystore-backed implementation is deliberately NOT attempted
+# here (see the plan's step 8, "Rust platform gating").
+[target.'cfg(not(target_os = "android"))'.dependencies]
+# Real OS keychain (macOS Keychain Services via security-framework), not a
+# plaintext file — token storage keeps the refresh token out of the webview's
+# reach entirely (js/localStorage never sees it). Pinned to the 3.x line
+# deliberately, not the newer 4.x: 3.6.3's MSRV (1.75) sits comfortably inside
+# this project's own rust-version floor above; 4.x's rewrite (rust-version
+# 1.88) raises that floor for a still-unstable API surface this doesn't need.
+# Entry::new/set_password/get_password/delete_credential verified directly
+# against 3.6.3's own downloaded source, not assumed from docs.
+keyring = { version = "3", features = ["apple-native"] }
+# Native BLE transport for dive-computer sync (src/ble.rs). btleplug is used
+# directly rather than through tauri-plugin-blec (which only wraps it):
+# BRIEF-dive-computer-sync.md §20 flagged that plugin as pre-1.0 with
+# maintainer-reported iOS signing issues, and this codebase already prefers
+# calling a native library from its own Rust command over routing through a
+# plugin from JS — the same call this repo made for ffmpeg (DECISIONS.md).
+# Licensing: btleplug is BSD-3-Clause/MIT/Apache-2.0 (§5) — no GPL in the chain.
+#
+# ANDROID SPIKE NOTE: also gated out for now. btleplug's Android backend
+# (droidplug) needs a Gradle-built Java component alongside the Rust side —
+# a real, separate integration step (plan step 9), not something a `cargo
+# build` alone would exercise even if the crate compiled. Gating it here
+# isolates the keyring question (b) from the droidplug question, which
+# belongs to a later, dedicated pass.
+[target.'cfg(not(target_os = "android"))'.dependencies.btleplug]
+version = "0.11"
+
+# Android folder sync via the Storage Access Framework (plan step 9).
+# Android has NO working folder-access path without this: the native
+# `pick_folder` doesn't exist in tauri-plugin-dialog for Android
+# (plugins-workspace#933, open since Feb 2024), and the web
+# `showDirectoryPicker()` fallback rejects with AbortError because wry's
+# onShowFileChooser never implements MODE_OPEN_FOLDER — both confirmed on
+# real hardware, see BRIEF-play-store-readiness.md §2.3.
+#
+# Licence MIT/Apache-2.0 — no GPL in the chain, consistent with the
+# App-Store-eligibility rule the ffmpeg/btleplug choices already follow.
+# Android-only by construction: it's a Tauri plugin whose Kotlin side Tauri's
+# own build system wires in (unlike droidplug, which needs manual Gradle).
+[target.'cfg(target_os = "android")'.dependencies]
+tauri-plugin-android-fs = "29"
+# Android BLE transport for dive-computer sync (plan step 9). btleplug's own
+# Android backend ("droidplug") needs a hybrid Rust/Java build — cargo-ndk,
+# a Java component, hand-placed JNI libs — real integration cost this plugin
+# exists to avoid, the same way tauri-plugin-android-fs avoided hand-rolled
+# SAF/JNI above. Its build.rs uses the identical auto-wired Tauri
+# mobile-plugin pattern (`android_path("android")`), so its Kotlin/Gradle
+# side is wired in the same way, no manual Gradle needed.
+#
+# Rust-internal only: src/ble.rs's Android branch calls `Handler` methods
+# directly (both `get_handler()` and `Handler` are public) and keeps
+# presenting this app's own five ble_* command names — js/computer-sync.js
+# is completely unaffected, never touches this plugin's own API shape.
+# Verified against the vendored source, not docs (which lost the one detail
+# that mattered three times over): notification delivery is one
+# `stream.next()` → one callback → one `tauri::ipc::Channel` send, the same
+# boundary-preserving guarantee the existing macOS transport already
+# requires. Pre-1.0 (also flagged, for a different platform/integration
+# shape, in BRIEF-dive-computer-sync.md §20) — a real maturity signal, not a
+# disqualifying one; see BRIEF-play-store-readiness.md §2.8 for the full
+# reconciliation and what's still unverified (a real device pairing).
+tauri-plugin-blec = "0.12"

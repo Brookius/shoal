@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dive-type textures — a second channel for the categorical ramp</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   A TEXTURE CHANNEL FOR THE DIVE-TYPE RAMP.
+   rev 4 — Night/Cave reassigned, a colourblind-assist toggle for worded
+   swatches (halo, not plate), and a corrected account of where the ramp
+   actually renders (no donut exists in the shipped app).
+
+   Cross-cutting (light + dark), so this file is not part of the mockup-dark-*
+   family. Companion to mockup-dark-tokens.html, which locked the dark ramp and
+   measured the colourblind problem this file answers.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root{
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --font-size-xs:12px; --font-size-sm:14px; --font-size-base:16px;
+  --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-full:999px;
+
+  --surface-lowest:#FDFBF9; --surface-low:#FAF6F1; --surface-base:#F5EBD8;
+  --surface-high:#EDE5D8; --surface-highest:#DED8CC;
+  --bg:var(--surface-base); --surface:var(--surface-low); --surface2:var(--surface-high);
+  --border:rgba(28,48,48,0.1); --border-mid:rgba(28,48,48,0.18);
+  --text:#1C3030; --text-muted:#726557; --text-dim:#B5A898;
+  --accent:#4A90B8; --accent-text:#397191; --accent-fill:#407DA0;
+  --accent-dim:rgba(74,144,184,0.1); --accent-border:rgba(74,144,184,0.3);
+  --success:#3B7650; --warn:#9C5621; --danger:#B0492E;
+  --on-type:#FFFFFF;
+  --type-Boat:#2F7E8C; --type-Shore:#B0894F; --type-Drift:#3FA9A0;
+  --type-Night:#3A4A7A; --type-Cave:#566071; --type-Wreck:#6E4A33;
+  --type-Reef:#C97A4A; --type-Wall:#863C5E; --type-Pinnacle:#517548;
+  --type-Muck:#5E5A31;
+}
+.theme-harbour{
+  color:var(--text);
+  --surface-lowest:#091010; --surface-low:#182827; --surface-base:#111E1D;
+  --surface-high:#20312F; --surface-highest:#2E3E3B;
+  --bg:var(--surface-base); --surface:var(--surface-low); --surface2:var(--surface-high);
+  --border:rgba(237,230,218,0.08); --border-mid:rgba(237,230,218,0.17);
+  --text:#EDE6DA; --text-muted:#BFB3A2; --text-dim:#857D70;
+  --accent:#74B3D8; --accent-text:#74B3D8; --accent-fill:#407DA0;
+  --accent-dim:rgba(116,179,216,0.12); --accent-border:rgba(116,179,216,0.36);
+  --success:#5FB180; --warn:#E98A6A; --danger:#E96E4C;
+  --on-type:#091010;
+  --type-Boat:#2A8B9C; --type-Shore:#B0894F; --type-Drift:#3FA9A0;
+  --type-Night:#6A7EB4; --type-Cave:#748094; --type-Wreck:#A1765B;
+  --type-Reef:#C97A4A; --type-Wall:#B36888; --type-Pinnacle:#5F8A54;
+  --type-Muck:#868150;
+}
+
+/* ── THE TEXTURE ALPHABET (7) ────────────────────────────────────────────────
+   Curves tile exactly like straight hatches, so nothing about the mechanism
+   resisted them; adding arcs let the diagonal split into two angles. Each is
+   drawn in --on-type, so it re-themes for free.
+   CSS angle trap: a gradient's BANDS run perpendicular to its axis, so
+   135deg gives "/" and 45deg gives "\". */
+[data-tex]{ --tw:1.5px; --tg:5px; --ta:0.42; --texink:rgba(255,255,255,var(--ta)); }
+.theme-harbour [data-tex]{ --texink:rgba(9,16,16,calc(var(--ta) + 0.16)); }
+
+[data-tex="solid"]      { background-image:none; }
+[data-tex="vertical"]   { background-image:repeating-linear-gradient(90deg,
+    rgba(0,0,0,0) 0 calc(var(--tg) - var(--tw)), var(--texink) calc(var(--tg) - var(--tw)) var(--tg)); }
+[data-tex="horizontal"] { background-image:repeating-linear-gradient(0deg,
+    rgba(0,0,0,0) 0 calc(var(--tg) - var(--tw)), var(--texink) calc(var(--tg) - var(--tw)) var(--tg)); }
+[data-tex="diagR"]      { background-image:repeating-linear-gradient(135deg,
+    rgba(0,0,0,0) 0 calc(var(--tg) - var(--tw)), var(--texink) calc(var(--tg) - var(--tw)) var(--tg)); }
+[data-tex="diagL"]      { background-image:repeating-linear-gradient(45deg,
+    rgba(0,0,0,0) 0 calc(var(--tg) - var(--tw)), var(--texink) calc(var(--tg) - var(--tw)) var(--tg)); }
+[data-tex="dots"]       { background-image:radial-gradient(var(--texink) 1.1px, rgba(0,0,0,0) 1.2px);
+                          background-size:var(--tg) var(--tg); }
+[data-tex="arcs"]       { background-image:radial-gradient(circle at 0% 50%,
+    rgba(0,0,0,0) 56%, var(--texink) 57%, var(--texink) 76%, rgba(0,0,0,0) 77%);
+    background-size:calc(var(--tg) + 2px) calc(var(--tg) + 4px); }
+.notex [data-tex]{ background-image:none !important; }
+
+/* Halo — the colourblind-assist mechanism for WORDED swatches (section 5),
+   distinct from the plate rejected in the previous revision: it follows the
+   letterforms, not a rectangle, so it produces no band/plain/band split. */
+.tex-halo{ -webkit-text-stroke:3px var(--tc); paint-order:stroke fill; }
+.tex-plate{ background:var(--tc); border-radius:3px; }  /* kept only for the rev-2 comparison */
+</style>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);
+     font-size:var(--font-size-base);line-height:1.55;padding:30px 20px 90px}
+.wrap{max-width:1000px;margin:0 auto}
+h1{font-size:24px;font-weight:600;letter-spacing:-.02em}
+.sub{font-family:var(--mono);font-size:var(--font-size-sm);color:var(--text-muted);margin:6px 0 20px}
+h2{font-family:var(--mono);font-size:var(--font-size-xs);letter-spacing:.1em;text-transform:uppercase;
+   font-weight:600;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border);
+   margin:38px 0 14px;display:flex;align-items:baseline;gap:10px}
+h2 .n{font-weight:400;letter-spacing:.04em;text-transform:none;color:var(--text-muted)}
+p{font-size:var(--font-size-sm);color:var(--text-muted);max-width:80ch;margin-bottom:10px}
+p b,li b,td b{color:var(--text)}
+ul{margin:0 0 12px 18px} li{font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:6px;max-width:78ch}
+code{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text)}
+table{border-collapse:collapse;width:100%;margin:6px 0 16px;font-size:var(--font-size-sm)}
+th{font-family:var(--mono);font-size:var(--font-size-xs);text-transform:uppercase;letter-spacing:.07em;
+   color:var(--text-muted);font-weight:600;text-align:left;padding:7px 10px;border-bottom:1px solid var(--border-mid)}
+td{padding:7px 10px;border-bottom:1px solid var(--border)}
+td.mono{font-family:var(--mono);font-size:var(--font-size-xs)}
+.callout{border-left:3px solid var(--accent);background:var(--accent-dim);
+  border-radius:0 var(--radius-md) var(--radius-md) 0;padding:13px 17px;margin:12px 0 20px}
+.callout p{margin:0;color:var(--text)} .callout p+p{margin-top:9px}
+.callout.warnbox{border-left-color:var(--warn);background:rgba(156,86,33,.09)}
+.theme-harbour .callout.warnbox{background:rgba(233,138,106,.10)}
+.callout.good{border-left-color:var(--success);background:rgba(59,118,80,.09)}
+.theme-harbour .callout.good{background:rgba(95,177,128,.10)}
+.pass{color:var(--success);font-family:var(--mono);font-size:var(--font-size-xs)}
+.fail{color:var(--danger);font-family:var(--mono);font-size:var(--font-size-xs);font-weight:700}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:18px 20px;margin-bottom:14px}
+.cap{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted);
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:11px}
+.cap b{color:var(--text)}
+
+.spines{display:flex;gap:7px;flex-wrap:wrap}
+.spv{width:26px;height:86px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;
+  background-color:var(--tc)}
+.spv span{writing-mode:vertical-rl;font-family:var(--mono);font-size:var(--font-size-xs);font-weight:700;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--on-type)}
+.spv .tex-plate{padding:5px 2px}
+.st-row{display:flex;align-items:center;gap:12px;padding:5px 0}
+.st-lbl{flex:0 0 88px;font-size:var(--font-size-sm);color:var(--text)}
+.st-trk{flex:1;height:9px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.st-trk.tall{height:14px;border-radius:7px}
+.st-fil{height:100%;border-radius:5px;background-color:var(--tc)}
+.st-val{flex:0 0 30px;text-align:right;font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted)}
+.chips{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}
+.chip{display:flex;align-items:center;justify-content:center;font-size:var(--font-size-xs);font-weight:600;
+  padding:11px 3px;border-radius:var(--radius-md);border:1px solid var(--border-mid);
+  color:var(--on-type);background-color:var(--tc)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:860px){.two,.three{grid-template-columns:1fr}.chips{grid-template-columns:repeat(3,1fr)}}
+.simgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.simcell{height:60px;border-radius:var(--radius-sm);background-color:var(--tc)}
+.simnm{font-family:var(--mono);font-size:9px;color:var(--text-muted);text-align:center;margin-top:4px}
+.alpha{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.alpha .sw{height:64px;border-radius:var(--radius-sm);background-color:var(--tc);border:1px solid var(--border)}
+.alpha .nm{font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:5px;text-align:center}
+
+/* Settings mockup */
+.set-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:18px 20px}
+.set-title{font-family:var(--mono);font-size:var(--font-size-xs);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:6px}
+.set-desc{font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:14px}
+.set-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--border)}
+.set-row:first-of-type{border-top:none}
+.set-row.nested{padding-left:26px;position:relative}
+.set-row.nested::before{content:'';position:absolute;left:10px;top:0;bottom:50%;width:10px;
+  border-left:1px solid var(--border-mid);border-bottom:1px solid var(--border-mid);border-radius:0 0 0 6px}
+.set-row.disabled{opacity:.42}
+.set-lbl{flex:1;min-width:0}
+.set-lbl .t{font-size:var(--font-size-sm);color:var(--text);font-weight:600}
+.set-lbl .d{font-size:var(--font-size-xs);color:var(--text-muted);margin-top:2px;max-width:46ch}
+.sw-toggle{flex-shrink:0;width:40px;height:24px;border-radius:var(--radius-full);position:relative;cursor:pointer;
+  background:var(--border-mid);transition:background .15s}
+.sw-toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+  background:var(--surface-low);box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .15s}
+.sw-toggle.on{background:var(--accent-fill)}
+.sw-toggle.on::after{left:19px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Dive-type textures — a second channel for the ramp</h1>
+<div class="sub">rev 4 · Night/Cave reassigned · colourblind-assist toggle for worded swatches · legend question resolved</div>
+
+<div class="callout warnbox">
+<p><b>The honest finding first, because it decides everything else.</b> I checked every place the
+<code>--type-*</code> ramp renders, and <b>all of them already carry the type's name as adjacent text</b>. So
+<b>WCAG 1.4.1 (Use of Color) is already satisfied</b> — colour is nowhere the only visual means of conveying which type
+something is. Textures are <b>not a compliance fix</b>. They are a glanceability improvement. That is why the default
+recommendation stays opt-in, and it is also why, further down, a second toggle exists for people who want the extra
+help even where a label is already present.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>1 <span class="n">— Night ⇄ Cave: your swap, corrected for one collision</span></h2>
+<p>Night getting dots does read as a night-sky/star motif, and it's a genuine improvement — Night's mnemonic was
+previously blank. But a literal swap (Night takes Cave's dots, Cave takes Night's vertical) breaks the thing the whole
+assignment exists to guarantee:</p>
+<div class="callout warnbox">
+<p><b>Cave and Wall would both become vertical, and Cave/Wall is one of the 12 at-risk pairs</b> — 0.022 ΔEok under dark
+protanopia, 0.034 under light deuteranopia (Cave's grey-blue and Wall's plum-rose collapse toward each other for a
+red-green colourblind viewer). Verified by re-running the same graph check the original assignment used, not assumed:
+a straight swap fails validation on exactly that one pair.</p>
+</div>
+<p>Fix: <b>Night still takes dots</b> — that's the part of your idea that stands on its own. <b>Cave takes
+horizontal</b> instead of vertical — Wall already owns vertical and the two are an edge, so Cave can't have it; a
+cave's flat sediment/rock-strata ceiling is a reasonable enough mnemonic, and horizontal is free to share with Muck
+(Cave/Muck isn't an edge, and the two colours — slate blue-grey vs dark olive — are nowhere near each other under
+either simulation).</p>
+
+<table>
+<tr><th>Type</th><th>Was (rev 3)</th><th>Now</th><th>Why</th></tr>
+<tr><td><b>Night</b></td><td class="mono">vertical</td><td class="mono">dots</td><td>your change — a genuine mnemonic gain, verified to not break any edge (Night's only edge is Boat/solid)</td></tr>
+<tr><td><b>Cave</b></td><td class="mono">dots</td><td class="mono">horizontal</td><td>vertical was blocked by the Cave/Wall edge; horizontal is free and reads as strata</td></tr>
+</table>
+<p>Re-verified against all 12 edges after the change: valid. Full assignment in section 3.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>2 <span class="n">— textures on worded swatches: still scoped out by default, but now a real opt-in</span></h2>
+<p>The previous revision found that texture behind a word looks like a bandaid (a plate spans the full width of a
+spine and slices it into textured/plain/textured bands) and concluded textures should apply only to swatches with no
+adjacent label — bars, and any future donut/legend. That conclusion stands as the <b>default</b>. But you're right
+that it shouldn't be the <i>only</i> option: someone who is colourblind may still want the extra scan-without-reading
+signal on the timeline, even though the word is technically already there and 1.4.1 is already satisfied. Reading
+every spine word to sort ten dive-type colours apart is real cognitive cost that a sighted user with normal colour
+vision doesn't pay.</p>
+<div class="callout good">
+<p><b>So there are two controls, not one, and the second is nested under the first.</b> The primary toggle governs
+wordless swatches (unchanged from rev 3, off by default). A secondary, dependent toggle — off even when the primary is
+on — extends texture to the three worded swatches (spine, log-form chip, dive-file hero pill) using the <b>halo</b>
+technique rather than the plate: <code>-webkit-text-stroke</code> in the type's own colour with
+<code>paint-order: stroke fill</code>, which follows the letterforms instead of a rectangle and produces no
+band/plain/band split. It was documented in rev 3 as the right mechanism <i>if</i> a worded surface ever needed
+texture; this is that surface.</p>
+</div>
+
+<div class="panel">
+  <div class="cap"><b>Settings → Appearance</b> — the real section (<code>index.html:880</code>), extended</div>
+  <div class="set-section">
+    <div class="set-title">Appearance</div>
+    <p class="set-desc">The gentle shimmer on stat cards and timeline dives. Slide left for calm, right for lively — or all the way off.</p>
+    <div class="set-row"><div class="set-lbl"><div class="t">Background shimmer</div><div class="d">existing slider, unchanged</div></div></div>
+    <div class="set-row">
+      <div class="set-lbl"><div class="t">Distinguish dive types by pattern</div>
+        <div class="d">Adds a texture to dive-type bars and charts, for telling types apart without relying on colour.</div></div>
+      <div class="sw-toggle on"></div>
+    </div>
+    <div class="set-row nested">
+      <div class="set-lbl"><div class="t">Also on labelled tags</div>
+        <div class="d">Extends the pattern to the timeline spine, log form, and dive file — surfaces that already show the type's name.</div></div>
+      <div class="sw-toggle on"></div>
+    </div>
+  </div>
+  <p style="margin-top:12px"><b>Nested and dependent</b>, not two independent switches — the sub-option is meaningless
+  without the parent, and hiding/disabling it when the parent is off keeps the control from ever describing a state
+  the app can't produce. Both off by default; a colourblind user turns on the parent and, if they want it, the child.</p>
+</div>
+
+<div class="two">
+  <div class="panel">
+    <div class="cap">Sub-toggle <b>off</b> — spine stays pure fill (the rev-3 default)</div>
+    <div class="spines">
+      <div class="spv" style="--tc:var(--type-Night)"><span>Night</span></div>
+      <div class="spv" style="--tc:var(--type-Cave)"><span>Cave</span></div>
+      <div class="spv" style="--tc:var(--type-Wall)"><span>Wall</span></div>
+      <div class="spv" style="--tc:var(--type-Wreck)"><span>Wreck</span></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="cap">Sub-toggle <b>on</b> — halo, letterform-shaped, no bandaid</div>
+    <div class="spines">
+      <div class="spv" data-tex="dots" style="--tc:var(--type-Night)"><span class="tex-halo">Night</span></div>
+      <div class="spv" data-tex="horizontal" style="--tc:var(--type-Cave)"><span class="tex-halo">Cave</span></div>
+      <div class="spv" data-tex="vertical" style="--tc:var(--type-Wall)"><span class="tex-halo">Wall</span></div>
+      <div class="spv" data-tex="diagR" style="--tc:var(--type-Wreck)"><span class="tex-halo">Wreck</span></div>
+    </div>
+  </div>
+</div>
+<p style="margin-top:4px">Compare the halo above with the rejected plate below, both applied to the identical four
+spines — the halo removes the band/plain/band structure that made the plate read as a bandaid, because the clear
+zone follows the glyphs rather than a rectangle.</p>
+<div class="panel">
+  <div class="cap"><b style="color:var(--danger)">For reference only</b> — the rejected plate, same four spines</div>
+  <div class="spines">
+    <div class="spv" data-tex="dots" style="--tc:var(--type-Night)"><span class="tex-plate">Night</span></div>
+    <div class="spv" data-tex="horizontal" style="--tc:var(--type-Cave)"><span class="tex-plate">Cave</span></div>
+    <div class="spv" data-tex="vertical" style="--tc:var(--type-Wall)"><span class="tex-plate">Wall</span></div>
+    <div class="spv" data-tex="diagR" style="--tc:var(--type-Wreck)"><span class="tex-plate">Wreck</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>3 <span class="n">— the alphabet and final assignment</span></h2>
+<div class="panel">
+  <div class="cap">The seven fills</div>
+  <div class="alpha">
+    <div><div class="sw" data-tex="solid"      style="--tc:var(--type-Boat)"></div><div class="nm">solid</div></div>
+    <div><div class="sw" data-tex="dots"       style="--tc:var(--type-Boat)"></div><div class="nm">dots</div></div>
+    <div><div class="sw" data-tex="arcs"       style="--tc:var(--type-Boat)"></div><div class="nm">arcs ) ) )</div></div>
+    <div><div class="sw" data-tex="vertical"   style="--tc:var(--type-Boat)"></div><div class="nm">vertical</div></div>
+    <div><div class="sw" data-tex="horizontal" style="--tc:var(--type-Boat)"></div><div class="nm">horizontal</div></div>
+    <div><div class="sw" data-tex="diagR"      style="--tc:var(--type-Boat)"></div><div class="nm">diagR / / /</div></div>
+    <div><div class="sw" data-tex="diagL"      style="--tc:var(--type-Boat)"></div><div class="nm">diagL \ \ \</div></div>
+  </div>
+</div>
+<table>
+<tr><th>Type</th><th>Texture</th><th>Mnemonic</th></tr>
+<tr><td><b>Boat</b></td><td class="mono">solid</td><td>the most common type stays plainest</td></tr>
+<tr><td><b>Shore</b></td><td class="mono">dots</td><td>sand grains</td></tr>
+<tr><td><b>Drift</b></td><td class="mono">arcs <b>) ) )</b></td><td>the current, as ripples</td></tr>
+<tr><td><b>Night</b></td><td class="mono">dots</td><td><b>stars</b></td></tr>
+<tr><td><b>Cave</b></td><td class="mono">horizontal</td><td>flat strata, a cave ceiling</td></tr>
+<tr><td><b>Wreck</b></td><td class="mono">diagR <b>/ / /</b></td><td>collapsed, leaning off true</td></tr>
+<tr><td><b>Reef</b></td><td class="mono">solid</td><td>dense, unbroken</td></tr>
+<tr><td><b>Wall</b></td><td class="mono">vertical</td><td>the wall face</td></tr>
+<tr><td><b>Pinnacle</b></td><td class="mono">diagL <b>\ \ \</b></td><td>the spire's slope</td></tr>
+<tr><td><b>Muck</b></td><td class="mono">horizontal</td><td>sediment layers</td></tr>
+</table>
+<p>All ten now have a working mnemonic — Night was the one gap and your change fills it. Re-verified against all 12
+at-risk pairs: valid. Shared textures — Boat/Reef (solid), Shore/Night (dots), Cave/Muck (horizontal) — are each
+confirmed non-edges, far apart in colour under both simulations.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>4 <span class="n">— does the key/legend question apply? checked against the real app, not the mockup</span></h2>
+<div class="callout warnbox">
+<p><b>Correction: there is no donut chart in the shipped app.</b> The earlier revisions of this file rendered an SVG
+donut because an older design-exploration mockup (<code>mockup-stats.html</code>) sketched one, and <code>CLAUDE
+colour UI.md</code> still describes one in prose ("the donut is gestalt, the legend carries precision"). Checked
+against the real code just now: <code>js/stats.js</code>'s dive-type breakdown renders <b>only bars</b>, via a single
+function, <code>stBar()</code> (<code>stats.js:26</code>) — no canvas, no SVG arcs, nothing donut-shaped exists
+anywhere in <code>index.html</code> or the JS. That's worth fixing in the colour doc separately; it isn't a texture
+decision, just a stale description.</p>
+</div>
+<div class="callout good">
+<p><b>Given that, the answer to "do we need a key" is no — not because a key exists elsewhere, but because there is
+nowhere for one to be missing.</b> <code>stBar()</code> is called once per type and <b>always</b> writes the type's
+name into <code>.st-lbl</code> in the same row as the coloured/textured fill — read the function: the label isn't
+optional or conditionally rendered, it's the first thing the template builds. Every render site the primary toggle
+can reach (there is currently exactly one: the Stats dive-type bars) already carries its own label immediately beside
+the texture. There is no scenario in today's app where a user sees a pattern with nothing beside it saying what it
+means.</p>
+</div>
+<div class="panel">
+  <div class="cap">The real render site — <code>#divetype-bars</code>, texture on, label always present</div>
+  <div class="st-row"><span class="st-lbl">Drift</span><span class="st-trk"><span class="st-fil" data-tex="arcs" style="width:82%;--tc:var(--type-Drift)"></span></span><span class="st-val">31</span></div>
+  <div class="st-row"><span class="st-lbl">Night</span><span class="st-trk"><span class="st-fil" data-tex="dots" style="width:68%;--tc:var(--type-Night)"></span></span><span class="st-val">26</span></div>
+  <div class="st-row"><span class="st-lbl">Cave</span><span class="st-trk"><span class="st-fil" data-tex="horizontal" style="width:52%;--tc:var(--type-Cave)"></span></span><span class="st-val">18</span></div>
+  <div class="st-row"><span class="st-lbl">Wreck</span><span class="st-trk"><span class="st-fil" data-tex="diagR" style="width:34%;--tc:var(--type-Wreck)"></span></span><span class="st-val">13</span></div>
+  <div class="st-row"><span class="st-lbl">Pinnacle</span><span class="st-trk"><span class="st-fil" data-tex="diagL" style="width:22%;--tc:var(--type-Pinnacle)"></span></span><span class="st-val">7</span></div>
+</div>
+<p><b>The forward-looking half of the question still matters.</b> If a donut or any other unlabelled chart shape is
+ever built, <i>that</i> feature would need to carry its own legend before textures on it would make sense — same as
+it would need one for colour alone today, since <code>CLAUDE colour UI.md</code>'s existing principle ("the legend
+carries precision") already requires a named legend for exactly this reason, independent of texture. So the rule to
+carry forward isn't "textures need a key" — it's the existing, broader one: <b>any dive-type visual that isn't already
+labelled per-item needs a legend before it ships, texture or no texture.</b> Nothing about texture adds a new
+requirement; it just makes the case where the requirement gets skipped more obviously wrong.</p>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>5 <span class="n">— does it work? deuteranopia, textured vs not</span></h2>
+<p>Simulated colours at legend-swatch scale. Cover the names and try to group the top row, then the bottom.</p>
+<div class="panel">
+  <div class="cap">Dark ramp, deuteranopia — <b style="color:var(--danger)">colour only</b> (what ships)</div>
+  <div class="simgrid notex">
+    <div><div class="simcell" style="--tc:#76769D"></div><div class="simnm">Boat</div></div>
+    <div><div class="simcell" style="--tc:#97974C"></div><div class="simnm">Shore</div></div>
+    <div><div class="simcell" style="--tc:#9191A2"></div><div class="simnm">Drift</div></div>
+    <div><div class="simcell" style="--tc:#7878B4"></div><div class="simnm">Night</div></div>
+    <div><div class="simcell" style="--tc:#7C7C94"></div><div class="simnm">Cave</div></div>
+    <div><div class="simcell" style="--tc:#868659"></div><div class="simnm">Wreck</div></div>
+    <div><div class="simcell" style="--tc:#9A9A44"></div><div class="simnm">Reef</div></div>
+    <div><div class="simcell" style="--tc:#878786"></div><div class="simnm">Wall</div></div>
+    <div><div class="simcell" style="--tc:#7E7E56"></div><div class="simnm">Pinn</div></div>
+    <div><div class="simcell" style="--tc:#838350"></div><div class="simnm">Muck</div></div>
+  </div>
+  <div class="cap" style="margin:16px 0 11px">Same colours, <b style="color:var(--success)">with the (final) texture channel</b></div>
+  <div class="simgrid">
+    <div><div class="simcell" data-tex="solid"      style="--tc:#76769D"></div><div class="simnm">Boat</div></div>
+    <div><div class="simcell" data-tex="dots"       style="--tc:#97974C"></div><div class="simnm">Shore</div></div>
+    <div><div class="simcell" data-tex="arcs"       style="--tc:#9191A2"></div><div class="simnm">Drift</div></div>
+    <div><div class="simcell" data-tex="dots"       style="--tc:#7878B4"></div><div class="simnm">Night</div></div>
+    <div><div class="simcell" data-tex="horizontal" style="--tc:#7C7C94"></div><div class="simnm">Cave</div></div>
+    <div><div class="simcell" data-tex="diagR"      style="--tc:#868659"></div><div class="simnm">Wreck</div></div>
+    <div><div class="simcell" data-tex="solid"      style="--tc:#9A9A44"></div><div class="simnm">Reef</div></div>
+    <div><div class="simcell" data-tex="vertical"   style="--tc:#878786"></div><div class="simnm">Wall</div></div>
+    <div><div class="simcell" data-tex="diagL"      style="--tc:#7E7E56"></div><div class="simnm">Pinn</div></div>
+    <div><div class="simcell" data-tex="horizontal" style="--tc:#838350"></div><div class="simnm">Muck</div></div>
+  </div>
+  <p style="margin-top:12px">Wreck/Muck and Shore/Reef — the two worst pairs, at 0.011–0.014 — separate immediately.
+  Night now reads distinctly from both Shore (shares dots, but the two colours are far apart) and from Cave, which
+  moved to horizontal specifically to stay clear of Wall.</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>6 <span class="n">— every real size, both themes</span></h2>
+<div class="two">
+  <div class="panel">
+    <div class="cap">Light</div>
+    <div class="cap" style="margin:0 0 8px">Timeline spines — pure fill by default</div>
+    <div class="spines">
+      <div class="spv" style="--tc:var(--type-Boat)"><span>Boat</span></div>
+      <div class="spv" style="--tc:var(--type-Shore)"><span>Shore</span></div>
+      <div class="spv" style="--tc:var(--type-Drift)"><span>Drift</span></div>
+      <div class="spv" style="--tc:var(--type-Night)"><span>Night</span></div>
+      <div class="spv" style="--tc:var(--type-Cave)"><span>Cave</span></div>
+      <div class="spv" style="--tc:var(--type-Wreck)"><span>Wreck</span></div>
+      <div class="spv" style="--tc:var(--type-Reef)"><span>Reef</span></div>
+      <div class="spv" style="--tc:var(--type-Wall)"><span>Wall</span></div>
+      <div class="spv" style="--tc:var(--type-Pinnacle)"><span>Pinn</span></div>
+      <div class="spv" style="--tc:var(--type-Muck)"><span>Muck</span></div>
+    </div>
+    <div class="cap" style="margin:18px 0 8px">Stat bars — 9px, textured (primary toggle)</div>
+    <div class="st-row"><span class="st-lbl">Night</span><span class="st-trk"><span class="st-fil" data-tex="dots" style="width:82%;--tc:var(--type-Night)"></span></span><span class="st-val">31</span></div>
+    <div class="st-row"><span class="st-lbl">Cave</span><span class="st-trk"><span class="st-fil" data-tex="horizontal" style="width:68%;--tc:var(--type-Cave)"></span></span><span class="st-val">26</span></div>
+    <div class="st-row"><span class="st-lbl">Wreck</span><span class="st-trk"><span class="st-fil" data-tex="diagR" style="width:52%;--tc:var(--type-Wreck)"></span></span><span class="st-val">18</span></div>
+    <div class="st-row"><span class="st-lbl">Pinnacle</span><span class="st-trk"><span class="st-fil" data-tex="diagL" style="width:34%;--tc:var(--type-Pinnacle)"></span></span><span class="st-val">13</span></div>
+    <div class="st-row"><span class="st-lbl">Wall</span><span class="st-trk"><span class="st-fil" data-tex="vertical" style="width:22%;--tc:var(--type-Wall)"></span></span><span class="st-val">7</span></div>
+    <div class="cap" style="margin:18px 0 8px">…the same five at 14px</div>
+    <div class="st-row"><span class="st-lbl">Night</span><span class="st-trk tall"><span class="st-fil" data-tex="dots" style="width:82%;--tc:var(--type-Night)"></span></span><span class="st-val">31</span></div>
+    <div class="st-row"><span class="st-lbl">Cave</span><span class="st-trk tall"><span class="st-fil" data-tex="horizontal" style="width:68%;--tc:var(--type-Cave)"></span></span><span class="st-val">26</span></div>
+    <div class="st-row"><span class="st-lbl">Wreck</span><span class="st-trk tall"><span class="st-fil" data-tex="diagR" style="width:52%;--tc:var(--type-Wreck)"></span></span><span class="st-val">18</span></div>
+    <div class="st-row"><span class="st-lbl">Pinnacle</span><span class="st-trk tall"><span class="st-fil" data-tex="diagL" style="width:34%;--tc:var(--type-Pinnacle)"></span></span><span class="st-val">13</span></div>
+    <div class="st-row"><span class="st-lbl">Wall</span><span class="st-trk tall"><span class="st-fil" data-tex="vertical" style="width:22%;--tc:var(--type-Wall)"></span></span><span class="st-val">7</span></div>
+    <div class="cap" style="margin:18px 0 8px">Log-form chips — pure fill by default</div>
+    <div class="chips">
+      <span class="chip" style="--tc:var(--type-Boat)">Boat</span>
+      <span class="chip" style="--tc:var(--type-Night)">Night</span>
+      <span class="chip" style="--tc:var(--type-Cave)">Cave</span>
+      <span class="chip" style="--tc:var(--type-Wall)">Wall</span>
+      <span class="chip" style="--tc:var(--type-Wreck)">Wreck</span>
+    </div>
+  </div>
+
+  <div class="panel theme-harbour" style="background:var(--surface);border-color:var(--border)">
+    <div class="cap">Dark</div>
+    <div class="cap" style="margin:0 0 8px">Timeline spines — pure fill by default</div>
+    <div class="spines">
+      <div class="spv" style="--tc:var(--type-Boat)"><span>Boat</span></div>
+      <div class="spv" style="--tc:var(--type-Shore)"><span>Shore</span></div>
+      <div class="spv" style="--tc:var(--type-Drift)"><span>Drift</span></div>
+      <div class="spv" style="--tc:var(--type-Night)"><span>Night</span></div>
+      <div class="spv" style="--tc:var(--type-Cave)"><span>Cave</span></div>
+      <div class="spv" style="--tc:var(--type-Wreck)"><span>Wreck</span></div>
+      <div class="spv" style="--tc:var(--type-Reef)"><span>Reef</span></div>
+      <div class="spv" style="--tc:var(--type-Wall)"><span>Wall</span></div>
+      <div class="spv" style="--tc:var(--type-Pinnacle)"><span>Pinn</span></div>
+      <div class="spv" style="--tc:var(--type-Muck)"><span>Muck</span></div>
+    </div>
+    <div class="cap" style="margin:18px 0 8px">Stat bars — 9px, textured</div>
+    <div class="st-row"><span class="st-lbl">Night</span><span class="st-trk"><span class="st-fil" data-tex="dots" style="width:82%;--tc:var(--type-Night)"></span></span><span class="st-val">31</span></div>
+    <div class="st-row"><span class="st-lbl">Cave</span><span class="st-trk"><span class="st-fil" data-tex="horizontal" style="width:68%;--tc:var(--type-Cave)"></span></span><span class="st-val">26</span></div>
+    <div class="st-row"><span class="st-lbl">Wreck</span><span class="st-trk"><span class="st-fil" data-tex="diagR" style="width:52%;--tc:var(--type-Wreck)"></span></span><span class="st-val">18</span></div>
+    <div class="st-row"><span class="st-lbl">Pinnacle</span><span class="st-trk"><span class="st-fil" data-tex="diagL" style="width:34%;--tc:var(--type-Pinnacle)"></span></span><span class="st-val">13</span></div>
+    <div class="st-row"><span class="st-lbl">Wall</span><span class="st-trk"><span class="st-fil" data-tex="vertical" style="width:22%;--tc:var(--type-Wall)"></span></span><span class="st-val">7</span></div>
+    <div class="cap" style="margin:18px 0 8px">…at 14px</div>
+    <div class="st-row"><span class="st-lbl">Night</span><span class="st-trk tall"><span class="st-fil" data-tex="dots" style="width:82%;--tc:var(--type-Night)"></span></span><span class="st-val">31</span></div>
+    <div class="st-row"><span class="st-lbl">Cave</span><span class="st-trk tall"><span class="st-fil" data-tex="horizontal" style="width:68%;--tc:var(--type-Cave)"></span></span><span class="st-val">26</span></div>
+    <div class="st-row"><span class="st-lbl">Wreck</span><span class="st-trk tall"><span class="st-fil" data-tex="diagR" style="width:52%;--tc:var(--type-Wreck)"></span></span><span class="st-val">18</span></div>
+    <div class="st-row"><span class="st-lbl">Pinnacle</span><span class="st-trk tall"><span class="st-fil" data-tex="diagL" style="width:34%;--tc:var(--type-Pinnacle)"></span></span><span class="st-val">13</span></div>
+    <div class="st-row"><span class="st-lbl">Wall</span><span class="st-trk tall"><span class="st-fil" data-tex="vertical" style="width:22%;--tc:var(--type-Wall)"></span></span><span class="st-val">7</span></div>
+    <div class="cap" style="margin:18px 0 8px">Log-form chips — pure fill by default</div>
+    <div class="chips">
+      <span class="chip" style="--tc:var(--type-Boat)">Boat</span>
+      <span class="chip" style="--tc:var(--type-Night)">Night</span>
+      <span class="chip" style="--tc:var(--type-Cave)">Cave</span>
+      <span class="chip" style="--tc:var(--type-Wall)">Wall</span>
+      <span class="chip" style="--tc:var(--type-Wreck)">Wreck</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<h2>7 <span class="n">— recommendation</span></h2>
+<div class="callout">
+<p><b>Two nested Settings controls, both off by default.</b> Primary — "Distinguish dive types by pattern" — textures
+every wordless render site (today: the Stats dive-type bars only). Secondary — "Also on labelled tags," disabled
+unless the primary is on — extends texture to the spine/chip/hero pill via the halo technique, for anyone who wants
+the scan-without-reading benefit even where a label already exists.</p>
+<p><b>One table, two adapters, unchanged from rev 3.</b> <code>TYPE_TEXTURE</code> + the seven geometry definitions,
+read by a CSS-gradient adapter (bars, and the halo path reads the same table) and, if a future chart needs it, an SVG
+<code>&lt;pattern&gt;</code> adapter. Do not let the two representations become two tables.</p>
+<p><b>No new legend work is required today</b>, because the only real render site already labels itself unconditionally.
+The requirement to carry forward is the existing one — any future unlabelled dive-type visual needs its own legend
+before it ships, independent of whether texture is involved.</p>
+<p><b>Textures — and the halo — draw in <code>--on-type</code></b>, the pair introduced for the dark ramp's spine ink,
+so both re-theme for free. Dark needs more alpha than light (0.58 vs 0.42).</p>
+<p><b>Geometry changes ride along only while the primary toggle is on:</b> the stat bar 9px → 14px. No donut geometry
+change is proposed, since no donut exists to change.</p>
+</div>
+
+<h2>8 <span class="n">— what this does not fix</span></h2>
+<ul>
+<li><b>The map.</b> Dive markers are Leaflet's default pin and carry no type colour today, so there's nothing to texture. If type-coloured pins are ever added they need to enter this system rather than invent a parallel one.</li>
+<li><b>The underlying hue collisions.</b> Textures are redundancy, not a fix — with both toggles off, Wreck and Muck are still 0.011 apart for a deuteranope. Rebalancing the ramp's own hues would break the mnemonics it is built on and is deliberately not proposed.</li>
+<li><b><code>CLAUDE colour UI.md</code>'s donut references are stale</b> and should be corrected separately from this texture work — they describe a chart that was never built.</li>
+</ul>
+
+</div>
+</body>
+</html>

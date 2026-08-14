@@ -1,0 +1,794 @@
+{
+  "Acanthurus blochii": {
+    "aphiaId": 219639,
+    "note": "accepted"
+  },
+  "Acanthurus dussumieri": {
+    "aphiaId": 219641,
+    "note": "accepted"
+  },
+  "Acanthurus fowleri": {
+    "aphiaId": 272960,
+    "note": "accepted"
+  },
+  "Acanthurus guttatus": {
+    "aphiaId": 219650,
+    "note": "accepted"
+  },
+  "Acanthurus japonicus": {
+    "aphiaId": 272962,
+    "note": "accepted"
+  },
+  "Acanthurus leucosternon": {
+    "aphiaId": 219628,
+    "note": "accepted"
+  },
+  "Acanthurus lineatus": {
+    "aphiaId": 159582,
+    "note": "accepted"
+  },
+  "Acanthurus nigricauda": {
+    "aphiaId": 219626,
+    "note": "accepted"
+  },
+  "Acanthurus nigrofuscus": {
+    "aphiaId": 219640,
+    "note": "accepted"
+  },
+  "Acanthurus nigroris": {
+    "aphiaId": 219642,
+    "note": "accepted"
+  },
+  "Acanthurus nigros": {
+    "aphiaId": 301897,
+    "note": "accepted"
+  },
+  "Acanthurus olivaceus": {
+    "aphiaId": 219625,
+    "note": "accepted"
+  },
+  "Acanthurus pyroferus": {
+    "aphiaId": 219648,
+    "note": "accepted"
+  },
+  "Acanthurus reversus": {
+    "aphiaId": 272966,
+    "note": "accepted"
+  },
+  "Acanthurus thompsoni": {
+    "aphiaId": 219646,
+    "note": "accepted"
+  },
+  "Acanthurus triostegus": {
+    "aphiaId": 219630,
+    "note": "accepted"
+  },
+  "Acanthurus tristis": {
+    "aphiaId": 219644,
+    "note": "accepted"
+  },
+  "Acanthurus xanthopterus": {
+    "aphiaId": 219634,
+    "note": "accepted"
+  },
+  "Alopias pelagicus": {
+    "aphiaId": 220019,
+    "note": "accepted"
+  },
+  "Alopias vulpinus": {
+    "aphiaId": 105836,
+    "note": "accepted"
+  },
+  "Amblyeleotris diagonalis": {
+    "aphiaId": 209269,
+    "note": "accepted"
+  },
+  "Amblyeleotris guttata": {
+    "aphiaId": 278967,
+    "note": "accepted"
+  },
+  "Amblyeleotris gymnocephala": {
+    "aphiaId": 278968,
+    "note": "accepted"
+  },
+  "Apolemichthys trimaculatus": {
+    "aphiaId": 211787,
+    "note": "accepted"
+  },
+  "Apolemichthys xanthopunctatus": {
+    "aphiaId": 277566,
+    "note": "accepted"
+  },
+  "Architeuthis dux": {
+    "aphiaId": 342218,
+    "note": "accepted"
+  },
+  "Arothron meleagris": {
+    "aphiaId": 219926,
+    "note": "accepted"
+  },
+  "Arothron stellatus": {
+    "aphiaId": 219928,
+    "note": "accepted"
+  },
+  "Aspidontus taeniatus": {
+    "aphiaId": 219242,
+    "note": "accepted"
+  },
+  "Aulostomus chinensis": {
+    "aphiaId": 217964,
+    "note": "accepted"
+  },
+  "Bodianus axillaris": {
+    "aphiaId": 218933,
+    "note": "accepted"
+  },
+  "Bodianus bilunulatus": {
+    "aphiaId": 218932,
+    "note": "accepted"
+  },
+  "Bodianus diana": {
+    "aphiaId": 218931,
+    "note": "accepted"
+  },
+  "Bodianus mesothorax": {
+    "aphiaId": 273536,
+    "note": "accepted"
+  },
+  "Bodianus rufus": {
+    "aphiaId": 273541,
+    "note": "accepted"
+  },
+  "Bolbometopon muricatum": {
+    "aphiaId": 219074,
+    "note": "accepted"
+  },
+  "Caesio caerulaurea": {
+    "aphiaId": 219995,
+    "note": "accepted"
+  },
+  "Caesio cuning": {
+    "aphiaId": 278536,
+    "note": "accepted"
+  },
+  "Caesio teres": {
+    "aphiaId": 219996,
+    "note": "accepted"
+  },
+  "Caesio xanthonota": {
+    "aphiaId": 219994,
+    "note": "accepted"
+  },
+  "Canthigaster epilampra": {
+    "aphiaId": 275251,
+    "note": "accepted"
+  },
+  "Carangoides fulvoguttatus": {
+    "aphiaId": 1802015,
+    "note": "unaccepted, using valid_AphiaID (status=superseded combination)"
+  },
+  "Caranx ignobilis": {
+    "aphiaId": 218414,
+    "note": "accepted"
+  },
+  "Caranx latus": {
+    "aphiaId": 126804,
+    "note": "accepted"
+  },
+  "Caulastrea furcata": {
+    "aphiaId": 289577,
+    "note": "unaccepted, using valid_AphiaID (status=misspelling - incorrect subsequent spelling)"
+  },
+  "Centropyge acanthops": {
+    "aphiaId": 211775,
+    "note": "accepted"
+  },
+  "Centropyge argi": {
+    "aphiaId": 278827,
+    "note": "accepted"
+  },
+  "Centropyge bicolor": {
+    "aphiaId": 211780,
+    "note": "accepted"
+  },
+  "Centropyge bispinosa": {
+    "aphiaId": 278830,
+    "note": "accepted"
+  },
+  "Centropyge ferrugata": {
+    "aphiaId": 278834,
+    "note": "accepted"
+  },
+  "Centropyge nox": {
+    "aphiaId": 278847,
+    "note": "accepted"
+  },
+  "Centropyge potteri": {
+    "aphiaId": 278848,
+    "note": "accepted"
+  },
+  "Cetorhinus maximus": {
+    "aphiaId": 105837,
+    "note": "accepted"
+  },
+  "Chaetodon lunula": {
+    "aphiaId": 218733,
+    "note": "accepted"
+  },
+  "Chaetodon melannotus": {
+    "aphiaId": 218743,
+    "note": "accepted"
+  },
+  "Chaetodon pelewensis": {
+    "aphiaId": 273353,
+    "note": "accepted"
+  },
+  "Chaetodon rafflesii": {
+    "aphiaId": 273357,
+    "note": "accepted"
+  },
+  "Chaetodontoplus duboulayi": {
+    "aphiaId": 280118,
+    "note": "accepted"
+  },
+  "Cheilinus fasciatus": {
+    "aphiaId": 218940,
+    "note": "accepted"
+  },
+  "Cheilodactylus fuscus": {
+    "aphiaId": 1526241,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Cheilodactylus nigripes": {
+    "aphiaId": 1526164,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Chelidonichthys capensis": {
+    "aphiaId": 218120,
+    "note": "accepted"
+  },
+  "Chiloscyllium punctatum": {
+    "aphiaId": 277833,
+    "note": "accepted"
+  },
+  "Chimaera monstrosa": {
+    "aphiaId": 105824,
+    "note": "accepted"
+  },
+  "Choerodon fasciatus": {
+    "aphiaId": 277268,
+    "note": "accepted"
+  },
+  "Chromis acares": {
+    "aphiaId": 1595014,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Chromis agilis": {
+    "aphiaId": 1592293,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Chromis chrysura": {
+    "aphiaId": 212824,
+    "note": "accepted"
+  },
+  "Chromis cyanea": {
+    "aphiaId": 1565681,
+    "note": "unaccepted, using valid_AphiaID (status=junior objective synonym)"
+  },
+  "Chromis elerae": {
+    "aphiaId": 1605313,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Chromis enchrysura": {
+    "aphiaId": 304153,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Chromis insolata": {
+    "aphiaId": 273731,
+    "note": "accepted"
+  },
+  "Chromis iomelas": {
+    "aphiaId": 1592380,
+    "note": "unaccepted, using valid_AphiaID (status=superseded combination)"
+  },
+  "Chromis lepidolepis": {
+    "aphiaId": 1605312,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Chromis lubbocki": {
+    "aphiaId": 273738,
+    "note": "accepted"
+  },
+  "Chromis mccullochi": {
+    "aphiaId": null,
+    "note": "no exact match"
+  },
+  "Chromis multilineata": {
+    "aphiaId": 1623786,
+    "note": "unaccepted, using valid_AphiaID (status=superseded combination)"
+  },
+  "Chromis nitida": {
+    "aphiaId": 273744,
+    "note": "accepted"
+  },
+  "Chromis ovalis": {
+    "aphiaId": 1042320,
+    "note": "accepted"
+  },
+  "Chromis scotti": {
+    "aphiaId": 273756,
+    "note": "accepted"
+  },
+  "Chromis ternatensis": {
+    "aphiaId": 212810,
+    "note": "accepted"
+  },
+  "Chromis vanderbilti": {
+    "aphiaId": 320883,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Chromis weberi": {
+    "aphiaId": 212817,
+    "note": "accepted"
+  },
+  "Chrysaora hysoscella": {
+    "aphiaId": 135304,
+    "note": "accepted"
+  },
+  "Cladiella australis": {
+    "aphiaId": 209608,
+    "note": "accepted"
+  },
+  "Cladiella sp.": {
+    "aphiaId": null,
+    "note": "no exact match"
+  },
+  "Coryphaena hippurus": {
+    "aphiaId": 126846,
+    "note": "accepted"
+  },
+  "Ctenochaetus binotatus": {
+    "aphiaId": 219655,
+    "note": "accepted"
+  },
+  "Ctenochaetus flavicauda": {
+    "aphiaId": 277560,
+    "note": "accepted"
+  },
+  "Ctenochaetus marginatus": {
+    "aphiaId": 219657,
+    "note": "accepted"
+  },
+  "Ctenochaetus truncatus": {
+    "aphiaId": 277563,
+    "note": "accepted"
+  },
+  "Cyanea lamarckii": {
+    "aphiaId": 135302,
+    "note": "accepted"
+  },
+  "Dactyloptena orientalis": {
+    "aphiaId": 218158,
+    "note": "accepted"
+  },
+  "Ecsenius bicolor": {
+    "aphiaId": 277652,
+    "note": "accepted"
+  },
+  "Ecsenius lineatus": {
+    "aphiaId": 219272,
+    "note": "accepted"
+  },
+  "Ecsenius midas": {
+    "aphiaId": 219271,
+    "note": "accepted"
+  },
+  "Elagatis bipinnulata": {
+    "aphiaId": 126809,
+    "note": "accepted"
+  },
+  "Eucrossorhinus dasypogon": {
+    "aphiaId": 298163,
+    "note": "accepted"
+  },
+  "Eunice aphroditois": {
+    "aphiaId": 130053,
+    "note": "accepted"
+  },
+  "Forcipiger flavissimus": {
+    "aphiaId": 218760,
+    "note": "accepted"
+  },
+  "Forcipiger longirostris": {
+    "aphiaId": 218759,
+    "note": "accepted"
+  },
+  "Gymnomuraena zebra": {
+    "aphiaId": 217476,
+    "note": "accepted"
+  },
+  "Gymnothorax griseus": {
+    "aphiaId": 271838,
+    "note": "accepted"
+  },
+  "Heniochus varius": {
+    "aphiaId": 276750,
+    "note": "accepted"
+  },
+  "Heterodontus portusjacksoni": {
+    "aphiaId": 276699,
+    "note": "accepted"
+  },
+  "Hexanchus griseus": {
+    "aphiaId": 105833,
+    "note": "accepted"
+  },
+  "Himantura jenkinsii": {
+    "aphiaId": 1043418,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Holacanthus ciliaris": {
+    "aphiaId": 276012,
+    "note": "accepted"
+  },
+  "Lachnolaimus maximus": {
+    "aphiaId": 158822,
+    "note": "accepted"
+  },
+  "Lactoria cornuta": {
+    "aphiaId": 219904,
+    "note": "accepted"
+  },
+  "Lobophyllia hemprichii": {
+    "aphiaId": 207392,
+    "note": "accepted"
+  },
+  "Maja squinado": {
+    "aphiaId": 107350,
+    "note": "accepted"
+  },
+  "Megabalanus tintinnabulum": {
+    "aphiaId": 106225,
+    "note": "accepted"
+  },
+  "Meiacanthus atrodorsalis": {
+    "aphiaId": 279304,
+    "note": "accepted"
+  },
+  "Meiacanthus grammistes": {
+    "aphiaId": 279310,
+    "note": "accepted"
+  },
+  "Meiacanthus oualanensis": {
+    "aphiaId": 279316,
+    "note": "accepted"
+  },
+  "Meiacanthus vittatus": {
+    "aphiaId": 279323,
+    "note": "accepted"
+  },
+  "Monodon monoceros": {
+    "aphiaId": 137116,
+    "note": "accepted"
+  },
+  "Mulloidichthys flavolineatus": {
+    "aphiaId": 218647,
+    "note": "accepted"
+  },
+  "Mulloidichthys vanicolensis": {
+    "aphiaId": 218648,
+    "note": "accepted"
+  },
+  "Mytilus edulis": {
+    "aphiaId": 140480,
+    "note": "accepted"
+  },
+  "Naso annulatus": {
+    "aphiaId": 219673,
+    "note": "accepted"
+  },
+  "Naso brevirostris": {
+    "aphiaId": 219671,
+    "note": "accepted"
+  },
+  "Naso elegans": {
+    "aphiaId": 278005,
+    "note": "accepted"
+  },
+  "Naso hexacanthus": {
+    "aphiaId": 219667,
+    "note": "accepted"
+  },
+  "Naso literatus": {
+    "aphiaId": 219665,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Naso lituratus": {
+    "aphiaId": 219665,
+    "note": "accepted"
+  },
+  "Naso tuberosus": {
+    "aphiaId": 219675,
+    "note": "accepted"
+  },
+  "Naso unicornis": {
+    "aphiaId": 219668,
+    "note": "accepted"
+  },
+  "Naso vlamingii": {
+    "aphiaId": 219672,
+    "note": "accepted"
+  },
+  "Nemateleotris decora": {
+    "aphiaId": 219612,
+    "note": "accepted"
+  },
+  "Odonus niger": {
+    "aphiaId": 219883,
+    "note": "accepted"
+  },
+  "Ogilbyina novaehollandiae": {
+    "aphiaId": 281867,
+    "note": "accepted"
+  },
+  "Opistognathus aurifrons": {
+    "aphiaId": 276442,
+    "note": "accepted"
+  },
+  "Paracanthurus hepatus": {
+    "aphiaId": 219676,
+    "note": "accepted"
+  },
+  "Parapercis cephalopunctata": {
+    "aphiaId": 219147,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Parapercis clathrata": {
+    "aphiaId": 276987,
+    "note": "accepted"
+  },
+  "Parapercis cylindrica": {
+    "aphiaId": 219155,
+    "note": "accepted"
+  },
+  "Parapercis hexophtalma": {
+    "aphiaId": 219159,
+    "note": "accepted"
+  },
+  "Parapercis nebulosa": {
+    "aphiaId": 219154,
+    "note": "accepted"
+  },
+  "Parapercis schauinslandii": {
+    "aphiaId": 219158,
+    "note": "accepted"
+  },
+  "Parapercis snyderi": {
+    "aphiaId": 277016,
+    "note": "accepted"
+  },
+  "Parupeneus barberinus": {
+    "aphiaId": 218660,
+    "note": "accepted"
+  },
+  "Parupeneus bifasciatus": {
+    "aphiaId": 277826,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Parupeneus cyclostomus": {
+    "aphiaId": 218665,
+    "note": "accepted"
+  },
+  "Parupeneus indicus": {
+    "aphiaId": 218658,
+    "note": "accepted"
+  },
+  "Parupeneus macronema": {
+    "aphiaId": 277817,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Parupeneus porphyreus": {
+    "aphiaId": 218662,
+    "note": "accepted"
+  },
+  "Parupeneus rubescens": {
+    "aphiaId": 218664,
+    "note": "accepted"
+  },
+  "Pastinachus sephen": {
+    "aphiaId": 217419,
+    "note": "accepted"
+  },
+  "Pelagia noctiluca": {
+    "aphiaId": 135305,
+    "note": "accepted"
+  },
+  "Pervagor melanocephalus": {
+    "aphiaId": 220071,
+    "note": "accepted"
+  },
+  "Phocoena phocoena": {
+    "aphiaId": 137117,
+    "note": "accepted"
+  },
+  "Phyllopteryx taeniolatus": {
+    "aphiaId": 282254,
+    "note": "accepted"
+  },
+  "Physalia physalis": {
+    "aphiaId": 135479,
+    "note": "accepted"
+  },
+  "Physeter macrocephalus": {
+    "aphiaId": 137119,
+    "note": "accepted"
+  },
+  "Pictichromis diadema": {
+    "aphiaId": 398492,
+    "note": "accepted"
+  },
+  "Pictichromis magna": {
+    "aphiaId": null,
+    "note": "no exact match"
+  },
+  "Pictichromis paccagnellae": {
+    "aphiaId": 398494,
+    "note": "accepted"
+  },
+  "Plagiotremus rhinorhynchos": {
+    "aphiaId": 219334,
+    "note": "accepted"
+  },
+  "Pomacanthus annularis": {
+    "aphiaId": 220004,
+    "note": "accepted"
+  },
+  "Pomacanthus asfur": {
+    "aphiaId": 219999,
+    "note": "accepted"
+  },
+  "Pomacanthus paru": {
+    "aphiaId": 276025,
+    "note": "accepted"
+  },
+  "Pseudochromis aldabraensis": {
+    "aphiaId": 218333,
+    "note": "accepted"
+  },
+  "Pseudochromis flavivertex": {
+    "aphiaId": 218331,
+    "note": "accepted"
+  },
+  "Pseudochromis fridmani": {
+    "aphiaId": 218336,
+    "note": "accepted"
+  },
+  "Pseudochromis fuscus": {
+    "aphiaId": 278179,
+    "note": "accepted"
+  },
+  "Pseudochromis paccagnellae": {
+    "aphiaId": 398494,
+    "note": "unaccepted, using valid_AphiaID (status=superseded combination)"
+  },
+  "Pseudochromis springeri": {
+    "aphiaId": 218337,
+    "note": "accepted"
+  },
+  "Ptereleotris evides": {
+    "aphiaId": 219622,
+    "note": "accepted"
+  },
+  "Ptereleotris heteroptera": {
+    "aphiaId": 219617,
+    "note": "accepted"
+  },
+  "Ptereleotris zebra": {
+    "aphiaId": 219618,
+    "note": "accepted"
+  },
+  "Pterocaesio tile": {
+    "aphiaId": 213656,
+    "note": "accepted"
+  },
+  "Pterois volitans": {
+    "aphiaId": 159559,
+    "note": "accepted"
+  },
+  "Scarus gibbus": {
+    "aphiaId": 219088,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Scarus strongylocephalus": {
+    "aphiaId": 219086,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Scomberoides commersonianus": {
+    "aphiaId": 218432,
+    "note": "unaccepted, using valid_AphiaID (status=unaccepted)"
+  },
+  "Seriola rivoliana": {
+    "aphiaId": 126818,
+    "note": "accepted"
+  },
+  "Siganus corallinus": {
+    "aphiaId": 219690,
+    "note": "accepted"
+  },
+  "Siganus fuscescens": {
+    "aphiaId": 273912,
+    "note": "accepted"
+  },
+  "Siganus luridus": {
+    "aphiaId": 127044,
+    "note": "accepted"
+  },
+  "Siganus puellus": {
+    "aphiaId": 273920,
+    "note": "accepted"
+  },
+  "Siganus uspi": {
+    "aphiaId": 273926,
+    "note": "accepted"
+  },
+  "Siganus vulpinus": {
+    "aphiaId": 273929,
+    "note": "accepted"
+  },
+  "Solenostomus halimeda": {
+    "aphiaId": 278939,
+    "note": "accepted"
+  },
+  "Sousa plumbea": {
+    "aphiaId": 383586,
+    "note": "accepted"
+  },
+  "Spirobranchus giganteus": {
+    "aphiaId": 209944,
+    "note": "accepted"
+  },
+  "Squalus acanthias": {
+    "aphiaId": 105923,
+    "note": "accepted"
+  },
+  "Squatina squatina": {
+    "aphiaId": 105928,
+    "note": "accepted"
+  },
+  "Symphyllia radians": {
+    "aphiaId": 888141,
+    "note": "unaccepted, using valid_AphiaID (status=junior objective synonym)"
+  },
+  "Taeniura lymma": {
+    "aphiaId": 217422,
+    "note": "accepted"
+  },
+  "Trachyphyllia geoffroyi": {
+    "aphiaId": 207495,
+    "note": "accepted"
+  },
+  "Upeneus tragula": {
+    "aphiaId": 218689,
+    "note": "accepted"
+  },
+  "Upeneus vittatus": {
+    "aphiaId": 218691,
+    "note": "accepted"
+  },
+  "Uraspis helvola": {
+    "aphiaId": 218449,
+    "note": "accepted"
+  },
+  "Urogymnus asperrimus": {
+    "aphiaId": 217424,
+    "note": "accepted"
+  },
+  "Zanclus cornutus": {
+    "aphiaId": 220083,
+    "note": "accepted"
+  },
+  "Zebrasoma flavescens": {
+    "aphiaId": 219683,
+    "note": "accepted"
+  }
+}

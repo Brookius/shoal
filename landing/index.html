@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#F5EBD8">
+<meta name="description" content="A marine life log for scuba divers. Every creature you've seen, tagged to the dive, the site, and the trip — with a proper dive log underneath. Plain files you own, no account.">
+<link rel="icon" type="image/png" href="./assets/Shoal Logo.png">
+<title>Shoal — a marine life log for scuba divers</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<div class="bg-gradient" aria-hidden="true"></div>
+
+<header class="site-header">
+  <img src="./assets/Shoal Logo.png" alt="" class="site-logo">
+  <span class="site-name">Shoal</span>
+</header>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <p class="eyebrow">A marine life log for scuba divers</p>
+      <h1 class="hero-title">Where did I see that octopus?</h1>
+      <p class="lede">Shoal can answer that — and every other question your paper logbook can't. How many wreck dives you've done. What you saw on that trip. Everywhere in the world you've been diving. All of it saved as plain files you own.</p>
+      <div class="cta-row">
+        <a class="btn-primary" href="https://app.diveshoal.com">Try Shoal</a>
+        <span class="cta-note">Free to start · No account · Works offline</span>
+      </div>
+    </div>
+
+    <div class="hero-phone-wrap">
+      <div class="phone-frame">
+        <div class="phone-screen">
+          <div class="phone-notch" aria-hidden="true"></div>
+          <div class="status-bar">
+            <span class="status-time">9:41</span>
+            <span class="status-icons" aria-hidden="true">
+              <span class="signal-bars"><span></span><span></span><span></span><span></span></span>
+              <span class="battery"><span class="battery-fill"></span></span>
+            </span>
+          </div>
+
+          <!-- The hero screen is the species profile, not the timeline: it's the
+               literal answer to the headline's question. Every site here is UK /
+               NE-Atlantic because Eledone cirrhosa is — a curled octopus in the
+               tropics would be wrong, and the app's own "Found in" data says so. -->
+          <div class="phone-content phone-content-flush">
+            <div class="profile-hero">
+              <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/23289903/medium.jpg" alt="Curled octopus">
+              <div class="profile-hero-scrim"></div>
+              <div class="profile-hero-caption">
+                <div class="profile-hero-name">Curled octopus</div>
+                <div class="profile-hero-sci">Eledone cirrhosa</div>
+              </div>
+            </div>
+            <div class="profile-meta-row">
+              <span class="iucn-badge iucn-lc">LC</span>
+              <span class="profile-group">🐙 Cephalopod</span>
+            </div>
+            <div class="profile-facts">
+              <span>3 dives</span>
+              <span>First seen Sun 27 Aug 2023</span>
+            </div>
+
+            <div class="profile-block">
+              <div class="profile-block-head">Mapped sightings <span>3 sites</span></div>
+              <div class="mini-map mini-map-uk" aria-hidden="true">
+                <div class="mini-map-tiles">
+                  <img src="https://a.tile.openstreetmap.org/4/6/4.png" alt="">
+                  <img src="https://b.tile.openstreetmap.org/4/7/4.png" alt="">
+                  <img src="https://c.tile.openstreetmap.org/4/8/4.png" alt="">
+                  <img src="https://a.tile.openstreetmap.org/4/6/5.png" alt="">
+                  <img src="https://b.tile.openstreetmap.org/4/7/5.png" alt="">
+                  <img src="https://c.tile.openstreetmap.org/4/8/5.png" alt="">
+                  <img src="https://a.tile.openstreetmap.org/4/6/6.png" alt="">
+                  <img src="https://b.tile.openstreetmap.org/4/7/6.png" alt="">
+                  <img src="https://c.tile.openstreetmap.org/4/8/6.png" alt="">
+                </div>
+                <span class="mini-map-pin" style="left:calc(50% - 10px);top:calc(50% - 63px)"></span>
+                <span class="mini-map-pin" style="left:calc(50% - 11px);top:calc(50% + 20px)"></span>
+                <span class="mini-map-pin" style="left:calc(50% + 20px);top:calc(50% + 43px)"></span>
+                <span class="map-attribution map-attribution-light">© OpenStreetMap</span>
+              </div>
+            </div>
+
+            <div class="profile-block">
+              <div class="profile-block-head">Dive log <span>most recent first</span></div>
+              <div class="dive-log-list">
+                <!-- Region moves onto the date line rather than trailing the
+                     site name: at phone width a single line truncated these to
+                     "North …", which loses the one thing the row exists to say. -->
+                <div class="dive-log-row">
+                  <span class="dive-log-num">#87</span>
+                  <span class="dive-log-site">📍 North Wall, Skomer</span>
+                  <span class="dive-log-date">Wales · 14 Jun 2026</span>
+                  <span class="abundance-badge">O</span>
+                </div>
+                <div class="dive-log-row">
+                  <span class="dive-log-num">#74</span>
+                  <span class="dive-log-site">📍 Loch Fyne</span>
+                  <span class="dive-log-date">Scotland · 2 May 2025</span>
+                  <span class="abundance-badge">R</span>
+                </div>
+                <div class="dive-log-row">
+                  <span class="dive-log-num">#66</span>
+                  <span class="dive-log-site">📍 M2 Submarine</span>
+                  <span class="dive-log-date">Dorset · 27 Aug 2023</span>
+                  <span class="abundance-badge">R</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Order + icons must match index.html's real <nav class="mobile-nav">
+               — hand-checked here, not build-synced (see landing/prepare-shared.sh's
+               header for why: this markup needs a DIFFERENT active tab per demo,
+               which isn't something a copy step can decide). Last checked v2.99. -->
+          <nav class="phone-nav">
+            <span class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>History</span>
+            <span class="nav-item nav-item-active"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M16 12s-2.4-3.4-6.2-3.4S3.6 12 3.6 12s2.4 3.4 6.2 3.4S16 12 16 12z"/><path d="M16 12l4.4-2.6v5.2z"/><circle cx="7.6" cy="11.4" r=".9" fill="currentColor" stroke="none"/></svg></span>Species</span>
+            <span class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>Log</span>
+            <span class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>Plan</span>
+            <span class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20v-5M10 20V6M15 20v-9M20 20v-4"/></svg></span>Stats</span>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ DIVE-FILE DEMO ═══════════════════ -->
+<section class="demo-section">
+  <div class="demo-layout">
+    <div class="demo-copy">
+      <p class="eyebrow">The dive behind it</p>
+      <h2 class="section-title">What else did I see on that dive?</h2>
+      <p class="section-lede">Tap the sighting and you get the whole dive around it. Dive #66, the M2 submarine off Portland — the conger in the hangar door, the lobsters in the plating, everything else down there at thirty metres. Depth, conditions, who you were with, and room to write it up.</p>
+      <p class="demo-note">Marine, Overview and Journal are tabs in the app — shown here in full, and each sitting where it sits in the real tab strip.</p>
+    </div>
+
+    <div class="demo-outer">
+    <div class="demo-screen">
+
+      <div class="demo-statusbar">
+        <div class="phone-notch" aria-hidden="true"></div>
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <span class="status-icons" aria-hidden="true">
+            <span class="signal-bars"><span></span><span></span><span></span><span></span></span>
+            <span class="battery"><span class="battery-fill"></span></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="demo-scroll">
+
+        <div class="dive-hero-map" aria-hidden="true">
+          <div class="dive-hero-map-tiles">
+            <img src="https://a.tile.openstreetmap.org/11/1008/688.png" alt="">
+            <img src="https://b.tile.openstreetmap.org/11/1009/688.png" alt="">
+            <img src="https://c.tile.openstreetmap.org/11/1010/688.png" alt="">
+            <img src="https://a.tile.openstreetmap.org/11/1008/689.png" alt="">
+            <img src="https://b.tile.openstreetmap.org/11/1009/689.png" alt="">
+            <img src="https://c.tile.openstreetmap.org/11/1010/689.png" alt="">
+            <img src="https://a.tile.openstreetmap.org/11/1008/690.png" alt="">
+            <img src="https://b.tile.openstreetmap.org/11/1009/690.png" alt="">
+            <img src="https://c.tile.openstreetmap.org/11/1010/690.png" alt="">
+          </div>
+          <span class="dive-hero-pin"></span>
+          <span class="map-attribution">© OpenStreetMap</span>
+          <div class="dive-hero-scrim"></div>
+          <div class="dive-hero-caption">
+            <span class="type-pill type-pill-wreck">Wreck</span>
+            <div class="dive-hero-site">M2 Submarine</div>
+            <div class="dive-hero-meta">#66 · Portland, Dorset · Sun 27 Aug 2023</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-band">
+            <div class="stat-band-caustics" aria-hidden="true"></div>
+            <div class="stat-cell">
+              <div class="stat-value">29.6</div>
+              <div class="stat-label">↓ max m</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-value">30</div>
+              <div class="stat-label">⏱ min</div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-value">8</div>
+              <div class="stat-label">👁 vis m</div>
+              <div class="vis-bar"><span class="vis-tick" style="left:26.7%"></span></div>
+            </div>
+            <div class="stat-cell">
+              <div class="stat-value">17.8</div>
+              <div class="stat-label">avg m</div>
+            </div>
+          </div>
+
+          <div class="profile-chart" id="profile-chart" data-src="./assets/m2-profile-compact.json"></div>
+
+          <div class="ndl-row">
+            <span class="ndl-label">NDL</span>
+            <div class="ndl-track-wrap">
+              <div class="ndl-track"></div>
+              <div class="ndl-ticks">
+                <span>0</span><span style="left:10%">10</span><span style="left:25%">25</span><span style="left:50%">50</span><span class="ndl-tick-r">99 min</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- In the app these three are a tab strip (.df-seg, one panel visible at
+             a time). Unrolled here on purpose: a static demo can't rely on anyone
+             tapping a tab, and the whole point of this section is showing what a
+             dive file actually holds. Each keeps its tab-shaped header so it still
+             reads as "these are tabs" — see the caption below the phone. -->
+        <div class="df-panel-head">Marine <span class="df-seg-badge">5</span></div>
+        <div class="df-panel" data-panel="marine">
+          <div class="marine-heading">Marine life · 5 sightings</div>
+          <div class="carousel-wrap">
+            <div class="carousel" id="marine-carousel">
+              <div class="carousel-slide">
+                <div class="sighting-card">
+                  <div class="sighting-photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/693888856/medium.jpg" alt="Conger eel"></div>
+                  <div class="sighting-body">
+                    <div class="sighting-head">
+                      <div><div class="sighting-name">Conger eel</div><div class="sighting-sci">Conger conger</div></div>
+                      <span class="iucn-badge iucn-lc">LC</span>
+                    </div>
+                    <div class="sighting-group">Eel</div>
+                  </div>
+                </div>
+              </div>
+              <div class="carousel-slide">
+                <div class="sighting-card">
+                  <div class="sighting-photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/88240797/medium.jpeg" alt="Common lobster"></div>
+                  <div class="sighting-body">
+                    <div class="sighting-head">
+                      <div><div class="sighting-name">Common lobster</div><div class="sighting-sci">Homarus gammarus</div></div>
+                      <span class="iucn-badge iucn-lc">LC</span>
+                    </div>
+                    <div class="sighting-group">Crustacean</div>
+                  </div>
+                </div>
+              </div>
+              <div class="carousel-slide">
+                <div class="sighting-card">
+                  <div class="sighting-photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/23289903/medium.jpg" alt="Curled octopus"></div>
+                  <div class="sighting-body">
+                    <div class="sighting-head">
+                      <div><div class="sighting-name">Curled octopus</div><div class="sighting-sci">Eledone cirrhosa</div></div>
+                      <span class="iucn-badge iucn-lc">LC</span>
+                    </div>
+                    <div class="sighting-group">Cephalopod</div>
+                  </div>
+                </div>
+              </div>
+              <div class="carousel-slide">
+                <div class="sighting-card">
+                  <div class="sighting-photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/694126585/medium.jpg" alt="Plumose anemone"></div>
+                  <div class="sighting-body">
+                    <div class="sighting-head">
+                      <div><div class="sighting-name">Plumose anemone</div><div class="sighting-sci">Metridium senile</div></div>
+                    </div>
+                    <div class="sighting-group">Coral</div>
+                  </div>
+                </div>
+              </div>
+              <div class="carousel-slide">
+                <div class="sighting-card">
+                  <div class="sighting-photo"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/690183886/medium.jpg" alt="Dead man's fingers"></div>
+                  <div class="sighting-body">
+                    <div class="sighting-head">
+                      <div><div class="sighting-name">Dead man's fingers</div><div class="sighting-sci">Alcyonium digitatum</div></div>
+                    </div>
+                    <div class="sighting-group">Sponge</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="carousel-nav">
+              <button type="button" class="carousel-btn" id="carousel-prev" aria-label="Previous sighting">‹</button>
+              <span class="carousel-count" id="carousel-count">1 / 5</span>
+              <button type="button" class="carousel-btn" id="carousel-next" aria-label="Next sighting">›</button>
+            </div>
+          </div>
+
+          <ul class="marine-list">
+            <li class="marine-group-head">🐍 Eel <span>1</span></li>
+            <li class="marine-row">
+              <span class="marine-row-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/693888856/square.jpg" alt=""></span>
+              <span class="marine-row-info"><span class="marine-row-name">Conger eel</span><span class="marine-row-sci">Conger conger</span></span>
+              <span class="iucn-badge iucn-lc">LC</span>
+            </li>
+            <li class="marine-group-head">🦐 Crustacean <span>1</span></li>
+            <li class="marine-row">
+              <span class="marine-row-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/88240797/square.jpeg" alt=""></span>
+              <span class="marine-row-info"><span class="marine-row-name">Common lobster</span><span class="marine-row-sci">Homarus gammarus</span></span>
+              <span class="iucn-badge iucn-lc">LC</span>
+            </li>
+            <li class="marine-group-head">🐙 Cephalopod <span>1</span></li>
+            <li class="marine-row">
+              <span class="marine-row-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/23289903/square.jpg" alt=""></span>
+              <span class="marine-row-info"><span class="marine-row-name">Curled octopus</span><span class="marine-row-sci">Eledone cirrhosa</span></span>
+              <span class="iucn-badge iucn-lc">LC</span>
+            </li>
+            <li class="marine-group-head">🪸 Coral <span>1</span></li>
+            <li class="marine-row">
+              <span class="marine-row-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/694126585/square.jpg" alt=""></span>
+              <span class="marine-row-info"><span class="marine-row-name">Plumose anemone</span><span class="marine-row-sci">Metridium senile</span></span>
+            </li>
+            <li class="marine-group-head">🧽 Sponge <span>1</span></li>
+            <li class="marine-row">
+              <span class="marine-row-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/690183886/square.jpg" alt=""></span>
+              <span class="marine-row-info"><span class="marine-row-name">Dead man's fingers</span><span class="marine-row-sci">Alcyonium digitatum</span></span>
+            </li>
+          </ul>
+        </div>
+
+        <div class="df-panel-head df-panel-head--mid">Overview</div>
+        <div class="df-panel" data-panel="overview">
+          <div class="overview-tile">
+            <div class="overview-tile-head"><span>Water temp</span><span class="overview-tile-val">17 °C</span></div>
+            <div class="temp-gauge"><span class="temp-gauge-ticker" style="left:48.6%"></span></div>
+          </div>
+          <div class="overview-grid2">
+            <div class="overview-tile">
+              <div class="current-chevrons" aria-hidden="true"><span class="chev chev-active"></span><span class="chev"></span><span class="chev"></span></div>
+              <div class="overview-tile-val">Slight</div>
+              <div class="overview-tile-sub">Current</div>
+            </div>
+            <div class="overview-tile">
+              <div class="weather-icon" aria-hidden="true">☀</div>
+              <div class="overview-tile-val">Sunny</div>
+              <div class="overview-tile-sub">Weather · Salt</div>
+            </div>
+          </div>
+          <dl class="spec-rows">
+            <div class="spec-row"><dt>Suit · weight</dt><dd>Drysuit · 14 kg</dd></div>
+            <div class="spec-row"><dt>Buddy</dt><dd>Rhian</dd></div>
+          </dl>
+        </div>
+
+        <div class="df-panel-head df-panel-head--right">Journal</div>
+        <div class="df-panel" data-panel="journal">
+          <div class="journal-kicker">Journal</div>
+          <h3 class="journal-title">Down the line to the M2</h3>
+          <p class="journal-body">Thirty metres of green turned the shot line into a rope through nothing — and then the hull came out of the gloom all at once, the aircraft hangar door still open after ninety years. A conger thick as my thigh sat inside it, jaw open, entirely unbothered by us. Lobsters in every gap in the plating, a curled octopus tucked in under the gun mount, plumose anemones so dense the steel reads as soft. Thirty minutes wasn't enough. It never is on her.</p>
+        </div>
+
+      </div>
+
+      <div class="demo-appbar">
+        <span class="appbar-back"><span aria-hidden="true">‹</span> Dorset</span>
+        <span class="appbar-btn appbar-btn-accent" aria-hidden="true">🎬</span>
+        <span class="appbar-btn" aria-hidden="true">✎</span>
+        <span class="appbar-btn" aria-hidden="true">⋯</span>
+      </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ TRIP DEMO ═══════════════════════ -->
+<section class="section-intro">
+  <p class="eyebrow">The trip around it</p>
+  <h2 class="section-title">Which dives did I do on this trip?</h2>
+  <p class="section-lede">All five from those three days in Dorset, grouped under one trip — from a shore entry at Chesil Cove to the wreck out in the bay. The map pins every site and colours it by dive type, so the shape of a trip reads at a glance.</p>
+</section>
+
+<section class="trip-demo">
+
+  <div class="phone-shell">
+    <div class="phone-shell-content">
+      <h3 class="phone-heading">Dive history</h3>
+      <p class="phone-subheading">Tap any dive to expand details</p>
+      <div class="sort-row">
+        <span class="sort-label">Sort by</span>
+        <span class="pill pill-active">Dive no. ↓</span>
+        <span class="pill">Depth ↓</span>
+        <span class="pill">Country ↓</span>
+      </div>
+
+      <div class="trip-header">
+        <div class="trip-name-row">
+          <span class="trip-name">Dorset</span>
+          <span class="trip-edit" aria-hidden="true">✎</span>
+        </div>
+        <div class="trip-where">Portland, England · Aug 2023</div>
+        <div class="trip-stats">5 dives · 12 sp. · 3 days</div>
+      </div>
+
+      <!-- Portland at z10. Pin offsets are measured from the tile grid's own
+           centre (see .trip-map-dorset's margins) — recomputed for this area,
+           not carried over from the old Skomer map. -->
+      <div class="trip-map trip-map-dorset" aria-hidden="true">
+        <div class="trip-map-tiles">
+          <img src="https://a.tile.openstreetmap.org/10/504/343.png" alt="">
+          <img src="https://b.tile.openstreetmap.org/10/505/343.png" alt="">
+          <img src="https://c.tile.openstreetmap.org/10/506/343.png" alt="">
+          <img src="https://a.tile.openstreetmap.org/10/504/344.png" alt="">
+          <img src="https://b.tile.openstreetmap.org/10/505/344.png" alt="">
+          <img src="https://c.tile.openstreetmap.org/10/506/344.png" alt="">
+          <img src="https://a.tile.openstreetmap.org/10/504/345.png" alt="">
+          <img src="https://b.tile.openstreetmap.org/10/505/345.png" alt="">
+          <img src="https://c.tile.openstreetmap.org/10/506/345.png" alt="">
+        </div>
+        <span class="trip-map-pin pin-wreck" style="left:calc(50% - 77px);top:calc(50% - 32px)"></span>
+        <span class="trip-map-pin pin-wreck" style="left:calc(50% + 10px);top:calc(50% - 30px)"></span>
+        <span class="trip-map-pin pin-shore" style="left:calc(50% - 9px);top:calc(50% - 25px)"></span>
+        <span class="trip-map-pin pin-drift" style="left:calc(50% + 13px);top:calc(50% - 17px)"></span>
+        <span class="trip-map-pin pin-reef"  style="left:calc(50% - 11px);top:calc(50% + 32px)"></span>
+        <span class="trip-map-expand">⤢</span>
+      </div>
+
+      <article class="dive-card">
+        <div class="dive-spine dive-spine-shore">Shore</div>
+        <div class="dive-body">
+          <div class="dive-identity">
+            <div class="dive-site">Chesil Cove 📍</div>
+            <div class="dive-date">Mon 28 Aug 2023</div>
+            <div class="dive-num"><strong>#68</strong> <span>· 3 sp.</span></div>
+          </div>
+          <div class="dive-meas">
+            <span class="meas-icon">↓</span><span class="meas-val">11</span><span class="meas-unit">m</span>
+            <span class="meas-icon">⏱</span><span class="meas-val">54</span><span class="meas-unit">min</span>
+            <span class="meas-icon meas-icon-dim">👁</span><span class="meas-val meas-val-sm">4</span><span class="meas-unit">m</span>
+          </div>
+          <div class="dive-marine">
+            <span class="dive-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/693275358/square.jpg" alt="Ballan wrasse"></span>
+            <span class="dive-glimpse">Wrasse working the boulders, right in the shallows.</span>
+            <span class="dive-edit" aria-hidden="true">✎</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="dive-card">
+        <div class="dive-spine dive-spine-drift">Drift</div>
+        <div class="dive-body">
+          <div class="dive-identity">
+            <div class="dive-site">Balaclava Bay 📍</div>
+            <div class="dive-date">Sun 27 Aug 2023</div>
+            <div class="dive-num"><strong>#67</strong> <span>· 4 sp.</span></div>
+          </div>
+          <div class="dive-meas">
+            <span class="meas-icon">↓</span><span class="meas-val">14</span><span class="meas-unit">m</span>
+            <span class="meas-icon">⏱</span><span class="meas-val">47</span><span class="meas-unit">min</span>
+            <span class="meas-icon meas-icon-dim">👁</span><span class="meas-val meas-val-sm">6</span><span class="meas-unit">m</span>
+          </div>
+          <div class="dive-marine">
+            <span class="dive-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/23289903/square.jpg" alt="Curled octopus"></span>
+            <span class="dive-glimpse">Another octopus tucked under the ledges at twelve metres.</span>
+            <span class="dive-edit" aria-hidden="true">✎</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="dive-card">
+        <div class="dive-spine dive-spine-wreck">Wreck</div>
+        <div class="dive-body">
+          <div class="dive-identity">
+            <div class="dive-site">M2 Submarine 📍</div>
+            <div class="dive-date">Sun 27 Aug 2023</div>
+            <div class="dive-num"><strong>#66</strong> <span>· 5 sp.</span></div>
+          </div>
+          <div class="dive-meas">
+            <span class="meas-icon">↓</span><span class="meas-val">30</span><span class="meas-unit">m</span>
+            <span class="meas-icon">⏱</span><span class="meas-val">30</span><span class="meas-unit">min</span>
+            <span class="meas-icon meas-icon-dim">👁</span><span class="meas-val meas-val-sm">8</span><span class="meas-unit">m</span>
+          </div>
+          <div class="dive-marine">
+            <span class="dive-thumb"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/693888856/square.jpg" alt="Conger eel"></span>
+            <span class="dive-glimpse">The conger owns the hangar door, and knows it.</span>
+            <span class="dive-edit" aria-hidden="true">✎</span>
+          </div>
+        </div>
+      </article>
+    </div>
+    <!-- Same nav as the hero — order + icons hand-matched to index.html's real
+         mobile-nav; History is active here because this is the timeline. See
+         the comment on the hero instance for why this isn't build-synced. -->
+    <nav class="phone-nav">
+      <span class="nav-item nav-item-active"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>History</span>
+      <span class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M16 12s-2.4-3.4-6.2-3.4S3.6 12 3.6 12s2.4 3.4 6.2 3.4S16 12 16 12z"/><path d="M16 12l4.4-2.6v5.2z"/><circle cx="7.6" cy="11.4" r=".9" fill="currentColor" stroke="none"/></svg></span>Species</span>
+      <span class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>Log</span>
+      <span class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>Plan</span>
+      <span class="nav-item"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20v-5M10 20V6M15 20v-9M20 20v-4"/></svg></span>Stats</span>
+    </nav>
+  </div>
+
+  <!-- Tap the trip map and it opens full-screen, pins coloured by dive type.
+       The legend is required, not decorative: this is the one surface in the
+       app where colour is the only per-item encoding — a pin carries no word
+       the way the timeline spine does. See CLAUDE colour UI.md → "Map pins". -->
+  <div class="tripmap-card">
+    <div class="tripmap-head">
+      <div class="tripmap-title">Dorset</div>
+      <div class="tripmap-sub">5 dives · 5 sites · Aug 2023</div>
+    </div>
+    <div class="tripmap" aria-hidden="true">
+      <div class="tripmap-tiles">
+        <!-- 4 rows, not 3: at the desktop map's 470px height a 3-row grid
+             (768px) doesn't reach the top edge once it's offset to centre the
+             sites, leaving a blank band. This row is pure coverage. -->
+        <img src="https://a.tile.openstreetmap.org/11/1009/688.png" alt="">
+        <img src="https://b.tile.openstreetmap.org/11/1010/688.png" alt="">
+        <img src="https://c.tile.openstreetmap.org/11/1011/688.png" alt="">
+        <img src="https://a.tile.openstreetmap.org/11/1009/689.png" alt="">
+        <img src="https://b.tile.openstreetmap.org/11/1010/689.png" alt="">
+        <img src="https://c.tile.openstreetmap.org/11/1011/689.png" alt="">
+        <img src="https://a.tile.openstreetmap.org/11/1009/690.png" alt="">
+        <img src="https://b.tile.openstreetmap.org/11/1010/690.png" alt="">
+        <img src="https://c.tile.openstreetmap.org/11/1011/690.png" alt="">
+        <img src="https://a.tile.openstreetmap.org/11/1009/691.png" alt="">
+        <img src="https://b.tile.openstreetmap.org/11/1010/691.png" alt="">
+        <img src="https://c.tile.openstreetmap.org/11/1011/691.png" alt="">
+      </div>
+      <span class="tripmap-pin pin-wreck" style="left:calc(50% - 153px);top:calc(50% - 35px)"></span>
+      <span class="tripmap-pin pin-wreck" style="left:calc(50% + 18px);top:calc(50% - 30px)"></span>
+      <span class="tripmap-pin pin-shore" style="left:calc(50% - 19px);top:calc(50% - 21px)"></span>
+      <span class="tripmap-pin pin-drift" style="left:calc(50% + 25px);top:calc(50% - 5px)"></span>
+      <span class="tripmap-pin pin-reef"  style="left:calc(50% - 24px);top:calc(50% + 91px)"></span>
+      <span class="map-attribution map-attribution-light">© OpenStreetMap</span>
+    </div>
+    <div class="tripmap-legend">
+      <span class="legend-row"><span class="legend-swatch pin-wreck"></span>Wreck <span class="legend-count">2</span></span>
+      <span class="legend-row"><span class="legend-swatch pin-shore"></span>Shore <span class="legend-count">1</span></span>
+      <span class="legend-row"><span class="legend-swatch pin-drift"></span>Drift <span class="legend-count">1</span></span>
+      <span class="legend-row"><span class="legend-swatch pin-reef"></span>Reef <span class="legend-count">1</span></span>
+    </div>
+  </div>
+
+</section>
+
+<p class="demo-caption demo-caption-wide">One creature, one dive, one trip — every direction joins back up.</p>
+
+<!-- ═══════════════════════ PLATFORM STATUS ═══════════════════════ -->
+<section class="section-intro">
+  <p class="eyebrow">Where it runs</p>
+  <h2 class="section-title">How do I use Shoal?</h2>
+  <p class="section-lede">Two ways, depending on what you dive with. There's no app store in either case — you install it straight from your browser, or download it.</p>
+</section>
+
+<section class="platform-status">
+  <div class="platform-featured">
+    <p class="platform-tag">Recommended</p>
+    <h3 class="platform-name">Android</h3>
+    <p class="platform-desc">Install it from Chrome or Edge in a few taps — this is the one to use in the field. Your dives sync straight to your own Google Drive folder, and the app updates itself quietly in the background. Pair a Bluetooth dive computer and pull your dives straight in.</p>
+  </div>
+  <div class="platform-secondary-grid">
+    <div class="platform-row">
+      <h3 class="platform-name">Mac</h3>
+      <p class="platform-desc">A real desktop app — download it, no browser needed. The same Bluetooth dive-computer sync as Android, and a bigger screen for writing up a trip afterwards. Shoal tells you in-app when a new version's ready.</p>
+      <a class="platform-download" href="/downloads/Shoal.dmg">Download for Mac ↓</a>
+    </div>
+  </div>
+  <!-- Not a third option, deliberately — it's a heads-up. iPhone genuinely
+       runs Shoal, but backup is manual there, and someone finding that out
+       AFTER logging a trip's worth of dives is exactly the bad first
+       experience this line exists to prevent. -->
+  <p class="platform-note">On iPhone it runs and logs dives offline, but backup is still manual — you'd need to export your dives yourself from Settings. Proper sync, like Android's, is being built.</p>
+</section>
+
+<!-- ═══════════════════════ WHAT'S NEW ═══════════════════════
+     Dates are the real ship dates from CHANGELOG.md, not approximations —
+     the point of this section is evidence of active development, which a
+     rounded-off date quietly undermines. Deliberately hand-picked and
+     rewritten rather than generated from the changelog: those entries are
+     written in an internal register that doesn't belong on a public page. -->
+<section class="section-intro">
+  <p class="eyebrow">Actively built</p>
+  <h2 class="section-title">What's new?</h2>
+  <p class="section-lede">Shoal ships something most weeks. Here's the recent run — scroll for more.</p>
+</section>
+
+<section class="recent-updates">
+  <div class="changelog-scroll" tabindex="0" role="region" aria-label="Recent updates, newest first">
+    <table class="changelog">
+      <thead>
+        <tr><th scope="col">Date</th><th scope="col">What changed</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="cl-date"><time datetime="2026-08-12">12 Aug 2026</time></td>
+          <td><span class="cl-title">Colour-coded map pins</span><span class="cl-desc">Every dive site on the map now carries its dive type as colour, with a legend and tap-through to the dive.</span></td>
+        </tr>
+        <tr>
+          <td class="cl-date"><time datetime="2026-08-07">7 Aug 2026</time></td>
+          <td><span class="cl-title">Colourblind-friendly dive types</span><span class="cl-desc">An optional pattern channel alongside colour, so a dive type is never colour-only.</span></td>
+        </tr>
+        <tr>
+          <td class="cl-date"><time datetime="2026-08-06">6 Aug 2026</time></td>
+          <td><span class="cl-title">App-wide dark mode</span><span class="cl-desc">Follows your phone's setting, or pick it yourself.</span></td>
+        </tr>
+        <tr>
+          <td class="cl-date"><time datetime="2026-07-30">30 Jul 2026</time></td>
+          <td><span class="cl-title">Screen-reader labels throughout</span><span class="cl-desc">Every form control in the app now has a name assistive tech can announce.</span></td>
+        </tr>
+        <tr>
+          <td class="cl-date"><time datetime="2026-07-25">25 Jul 2026</time></td>
+          <td><span class="cl-title">Auto-match footage to dives</span><span class="cl-desc">Point at a folder of video and Shoal works out which dive each clip belongs to, from its own capture time.</span></td>
+        </tr>
+        <tr>
+          <td class="cl-date"><time datetime="2026-07-23">23 Jul 2026</time></td>
+          <td><span class="cl-title">Bulk dive renumbering</span><span class="cl-desc">Renumber a whole run of dives at once, instead of one at a time.</span></td>
+        </tr>
+        <tr>
+          <td class="cl-date"><time datetime="2026-07-22">22 Jul 2026</time></td>
+          <td><span class="cl-title">Bluetooth sync on the Mac app</span><span class="cl-desc">Pair a Shearwater or Suunto from the desktop app, not just the browser.</span></td>
+        </tr>
+        <tr>
+          <td class="cl-date"><time datetime="2026-07-21">21 Jul 2026</time></td>
+          <td><span class="cl-title">Dive planning with real tides</span><span class="cl-desc">Moon-phase tide calendar, wind and sea forecast, and a surface-interval calculator.</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══════════════════════ CONTACT ═══════════════════════ -->
+<section class="contact">
+  <div class="contact-card">
+    <p class="eyebrow">Early days</p>
+    <h2 class="contact-title">Built by one diver. Ask him anything.</h2>
+    <p class="contact-lede">Shoal is young, and it's made by one person — a diver who outgrew his paper logbook and wanted to know where he'd seen things. There's no support desk and no ticket queue: questions, ideas, and confusions come straight to me, and I answer all of them.</p>
+    <!-- CONFIRM before going live: is this the right, monitored public contact address? -->
+    <p class="contact-email"><a href="mailto:luke@diveshoal.com">luke@diveshoal.com</a></p>
+
+    <div class="facts-block">
+      <div class="eyebrow">True today</div>
+      <div class="facts-list">
+        <div class="fact-row">Free to start</div>
+        <div class="fact-row">No account. No profiling. No ads.</div>
+        <div class="fact-row">Works offline — even mid-ocean</div>
+        <div class="fact-row">Your dives are plain files you own</div>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a class="btn-primary" href="https://app.diveshoal.com">Try Shoal</a>
+      <span class="cta-note">One tap. You're using the real thing.</span>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span class="footer-brand">
+      <img src="./assets/Shoal Logo.png" alt="" class="footer-logo">
+      <span class="footer-name">Shoal</span>
+      <span class="footer-tag">— a marine life log for scuba divers</span>
+    </span>
+    <span class="footer-links"><a href="./privacy.html">Privacy</a></span>
+    <span class="footer-copyright">© 2026</span>
+  </footer>
+</section>
+
+<script src="./chart-math.js" defer></script>
+<script src="./script.js" defer></script>
+</body>
+</html>

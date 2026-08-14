@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Shoal">
+<meta name="theme-color" content="#F5EBD8">
+<meta name="description" content="A marine life log for scuba divers. Every creature you've seen, tagged to the dive, the site, and the trip — with a proper dive log underneath.">
+<!-- Dark-mode boot flag — must run before first paint, so it's inline here
+     rather than in any of the <script src> files near the bottom of this
+     document (all load far too late to avoid a flash of light theme).
+     Mirrors the resolution logic in js/app.js's applyTheme(); kept in sync
+     by hand since this one intentionally has no dependency on app.js. -->
+<script>
+(function(){
+  try {
+    var pref = localStorage.getItem('divelog-theme'); // 'system'|'light'|'dark'|null
+    var dark = pref === 'dark' || (pref !== 'light' &&
+      window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (dark) document.documentElement.classList.add('theme-harbour');
+  } catch (e) {}
+})();
+</script>
+<!-- use-credentials: behind Cloudflare Access the manifest fetch must carry
+     the session cookie, or it 302s to the login page and dies on CORS -->
+<link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<title>Shoal</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="layout">
+  <!-- Icons are inline SVG, matching the mobile bottom nav exactly (same
+       path data) — not emoji, for the same reason as mobile: an emoji glyph
+       can't inherit `color`, and .nav-link.active already relies on colour
+       (var(--accent-on-dark)) as part of its selected state. -->
+  <nav class="sidebar" aria-label="Main navigation">
+    <div class="logo">
+      <div class="logo-mark">Dive Journal</div>
+      <div class="logo-name">Shoal</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-current" id="nav-current"></div>
+      <button class="nav-link active" data-panel="history" onclick="navTo('history', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+        History
+      </button>
+      <button class="nav-link" data-panel="species" onclick="navTo('species', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M16 12s-2.4-3.4-6.2-3.4S3.6 12 3.6 12s2.4 3.4 6.2 3.4S16 12 16 12z"/><path d="M16 12l4.4-2.6v5.2z"/><circle cx="7.6" cy="11.4" r=".9" fill="currentColor" stroke="none"/></svg>
+        Species
+      </button>
+      <button class="nav-link" data-panel="log" onclick="navTo('log', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        New dive
+      </button>
+      <button class="nav-link" data-panel="plan" onclick="navTo('plan', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+        Plan
+      </button>
+      <div class="nav-label">Analyse</div>
+      <button class="nav-link" data-panel="stats" onclick="navTo('stats', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20v-5M10 20V6M15 20v-9M20 20v-4"/></svg>
+        Stats
+      </button>
+    </div>
+    <div class="sidebar-footer">
+      <button class="nav-link nav-settings" id="nav-obsidian" data-panel="obsidian" onclick="navTo('obsidian', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 8.8V5M12 19V15.2M15.2 12H19M5 12H8.8M14.3 9.7l2.7-2.7M7 17l2.7-2.7M14.3 14.3l2.7 2.7M7 7l2.7 2.7"/></svg>
+        Settings
+      </button>
+      <div class="dive-count">
+        <strong id="total-count">0</strong>
+        dives logged
+      </div>
+      <div id="sidebar-sync" style="margin-top:8px;font-family:var(--mono);font-size: var(--font-size-xs);color:var(--text-dim)"></div>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <button class="mobile-cog" id="mobile-cog" onclick="navTo('obsidian', this)" aria-label="Settings">⚙</button>
+
+    <!-- NEW DIVE -->
+    <div class="panel" id="panel-log">
+      <h1 class="page-title" id="log-title">Log a dive</h1>
+      <p class="page-sub">The depth, the buddies, the memories. Capture it in minutes, no signal needed.</p>
+      <p class="page-sub">Every field is optional. Fill out what you want and you can always return to edit any dive in the history page.</p>
+      <div id="sync-banner-log" style="display:none" class="sync-banner"></div>
+
+      <!-- Dive computer quick-import (UDDF) + BLE sync — one card, two ways
+           in. BRIEF-dive-profile-import.md, BRIEF-dive-computer-sync.md.
+           The Sync button (#lf-ble-sync-btn) is hidden by default; revealed
+           by js/computer-sync.js only where BLE actually works — Web
+           Bluetooth in the browser (Chrome/Edge), or the native transport
+           in the desktop shell (which has no navigator.bluetooth at all,
+           so it goes through src-tauri/src/ble.rs instead). Import always
+           works everywhere. -->
+      <div class="sync-banner neutral lf-uddf-banner">
+        <div class="lf-uddf-text"><strong>Dive computer?</strong> Import a <code>.uddf</code> file, or pair over Bluetooth to pull your dives straight in. Auto-fills depth, time and date — plus a chart of your dive profile once saved.</div>
+        <input type="file" id="lf-uddf-input" multiple accept=".uddf" style="display:none" onchange="importUddfForNewDive(this.files)">
+        <button type="button" class="btn-ghost" onclick="document.getElementById('lf-uddf-input').click()">↑ Import</button>
+        <button type="button" class="btn-ghost" id="lf-ble-sync-btn" style="display:none" onclick="syncFromBluetooth()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/></svg>
+          Sync
+        </button>
+      </div>
+      <div id="lf-uddf-status" style="display:none;margin-bottom:1rem;font-family:var(--mono);font-size: var(--font-size-sm);color:var(--text-muted)"></div>
+      <div id="lf-ble-progress" style="display:none">
+        <div id="lf-ble-progress-track" class="lf-ble-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-label="Bluetooth sync progress"><div id="lf-ble-progress-fill"></div></div>
+        <div id="lf-ble-progress-label"></div>
+      </div>
+      <button type="button" id="lf-ble-cancel" class="btn-ghost" style="display:none;margin-bottom:1rem" onclick="cancelBluetoothSync()">✕ Cancel sync</button>
+      <div id="lf-uddf-picker" style="display:none;margin-bottom:1rem"></div>
+      <div id="lf-uddf-review" style="display:none;margin-bottom:1rem"></div>
+
+      <!-- Edit-mode banner (v2.83) — shown while editing an existing dive on this form -->
+      <div id="edit-banner" class="sync-banner neutral" style="display:none">
+        <div class="lf-uddf-text">✎ Editing <strong id="edit-banner-label"></strong> — saving updates the existing dive.</div>
+        <button type="button" class="btn-ghost" onclick="cancelEdit()">Cancel</button>
+      </div>
+
+      <div class="lf-layout">
+      <div class="lf-form-col">
+
+      <!-- ── A: Dive ──────────────────────────────────────────────────────── -->
+      <div class="cs open" id="cs-dive">
+        <div class="cs-head" role="button" tabindex="0"
+             aria-expanded="true" onclick="toggleSection('cs-dive')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('cs-dive')}">
+          <span class="cs-chevron">▶</span>
+          <span class="cs-title">Dive</span>
+          <span class="cs-summary" id="cs-summary-dive">Expand</span>
+        </div>
+        <div class="cs-body">
+          <div class="grid-2-tight mb-12">
+            <div class="field">
+              <label for="f-date-trigger">Date</label>
+              <div class="lf-picker-wrap">
+                <button type="button" class="lf-picker-trigger" id="f-date-trigger" onclick="lfShowPicker('f-date')">
+                  <svg class="lf-picker-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  <span class="lf-picker-txt" id="f-date-txt">Select date</span>
+                </button>
+                <input type="date" id="f-date" class="lf-picker-native" oninput="lfSyncPickerDisplay('f-date')">
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-divenum">Dive # <span class="auto-annot" id="divenum-auto-label">auto</span></label>
+              <input type="number" id="f-divenum" placeholder="e.g. 42" inputmode="numeric" enterkeyhint="next"
+                     oninput="hideAutoAnnot('divenum-auto-label')">
+            </div>
+          </div>
+          <!-- Location: pin map (relocates to the desktop rail) + country/region (two-way) -->
+          <div class="lf-loc-card">
+            <div class="lf-loc-head">
+              <span class="lf-lbl">Location</span>
+              <button type="button" class="lf-loc-btn" id="f-useloc">⊕ Use my location</button>
+            </div>
+            <div id="f-map-slot">
+              <div id="f-mapbox">
+                <div id="f-map-wrap">
+                  <div id="f-map" class="lf-map"></div>
+                  <div class="lf-coord-row">
+                    <span class="lf-coord-ic">📍</span>
+                    <span id="f-coord" class="lf-coord">Tap the map or use your location</span>
+                    <span class="lf-coord-hint lf-coord-hint-desk">tap map · drag pin</span>
+                    <span class="lf-coord-hint lf-coord-hint-mob">tap to expand</span>
+                  </div>
+                  <div class="lf-manual-row">
+                    <button type="button" class="lf-coord-manual-btn" id="f-manual-toggle" onclick="lfToggleManualCoords('f')">✎ Enter coordinates</button>
+                  </div>
+                  <div class="lf-geo-row" id="f-geo-row" style="display:none">
+                    <span class="lf-geo-ic">🌐</span>
+                    <div class="lf-geo-txt">
+                      <div id="f-geo-place" class="lf-geo-place"></div>
+                      <div id="f-geo-sub" class="lf-geo-sub">From the pin — tap to confirm</div>
+                    </div>
+                    <button type="button" class="lf-geo-confirm" id="f-geo-confirm">Confirm</button>
+                  </div>
+                </div>
+                <div class="lf-offline" id="f-map-offline" style="display:none">
+                  <div class="lf-offline-msg" id="f-offline-msg">⚠ Map unavailable offline — enter coordinates manually</div>
+                  <div class="lf-offline-grid">
+                    <input type="number" id="f-gps-lat" placeholder="Latitude e.g. -8.537" step="0.000001" inputmode="decimal" enterkeyhint="next" aria-label="Latitude in decimal degrees">
+                    <input type="number" id="f-gps-lng" placeholder="Longitude e.g. 119.614" step="0.000001" inputmode="decimal" enterkeyhint="done" aria-label="Longitude in decimal degrees">
+                  </div>
+                  <div class="lf-gps-status" id="f-gps-status"></div>
+                  <button type="button" class="lf-manual-set-btn" onclick="lfApplyManualCoords('f')">Set pin →</button>
+                </div>
+              </div>
+            </div>
+            <div class="lf-loc-fields">
+              <div class="field">
+                <label for="f-location">Country <span class="mono-dim-sm">(focuses the map)</span></label>
+                <select id="f-location" onchange="lfCountryChange()">
+                  <option value="">— Select country —</option>
+                  <option value="Afghanistan">Afghanistan</option><option value="Albania">Albania</option><option value="Algeria">Algeria</option><option value="Angola">Angola</option><option value="Antigua and Barbuda">Antigua and Barbuda</option><option value="Argentina">Argentina</option><option value="Australia">Australia</option><option value="Bahamas">Bahamas</option><option value="Bahrain">Bahrain</option><option value="Bangladesh">Bangladesh</option><option value="Barbados">Barbados</option><option value="Belize">Belize</option><option value="Benin">Benin</option><option value="Brazil">Brazil</option><option value="Brunei">Brunei</option><option value="Cambodia">Cambodia</option><option value="Cameroon">Cameroon</option><option value="Canada">Canada</option><option value="Cape Verde">Cape Verde</option><option value="Chile">Chile</option><option value="China">China</option><option value="Colombia">Colombia</option><option value="Comoros">Comoros</option><option value="Congo">Congo</option><option value="Costa Rica">Costa Rica</option><option value="Croatia">Croatia</option><option value="Cuba">Cuba</option><option value="Cyprus">Cyprus</option><option value="Denmark">Denmark</option><option value="Djibouti">Djibouti</option><option value="Dominica">Dominica</option><option value="Dominican Republic">Dominican Republic</option><option value="Ecuador">Ecuador</option><option value="Egypt">Egypt</option><option value="El Salvador">El Salvador</option><option value="Equatorial Guinea">Equatorial Guinea</option><option value="Eritrea">Eritrea</option><option value="Fiji">Fiji</option><option value="France">France</option><option value="Gabon">Gabon</option><option value="Gambia">Gambia</option><option value="Ghana">Ghana</option><option value="Greece">Greece</option><option value="Grenada">Grenada</option><option value="Guatemala">Guatemala</option><option value="Guinea">Guinea</option><option value="Guinea-Bissau">Guinea-Bissau</option><option value="Guyana">Guyana</option><option value="Haiti">Haiti</option><option value="Honduras">Honduras</option><option value="India">India</option><option value="Indonesia">Indonesia</option><option value="Iran">Iran</option><option value="Iraq">Iraq</option><option value="Ireland">Ireland</option><option value="Israel">Israel</option><option value="Italy">Italy</option><option value="Jamaica">Jamaica</option><option value="Japan">Japan</option><option value="Jordan">Jordan</option><option value="Kenya">Kenya</option><option value="Kiribati">Kiribati</option><option value="Kuwait">Kuwait</option><option value="Lebanon">Lebanon</option><option value="Liberia">Liberia</option><option value="Libya">Libya</option><option value="Madagascar">Madagascar</option><option value="Malaysia">Malaysia</option><option value="Maldives">Maldives</option><option value="Marshall Islands">Marshall Islands</option><option value="Mauritania">Mauritania</option><option value="Mauritius">Mauritius</option><option value="Mexico">Mexico</option><option value="Micronesia">Micronesia</option><option value="Monaco">Monaco</option><option value="Morocco">Morocco</option><option value="Mozambique">Mozambique</option><option value="Myanmar">Myanmar</option><option value="Namibia">Namibia</option><option value="Nauru">Nauru</option><option value="Netherlands">Netherlands</option><option value="New Zealand">New Zealand</option><option value="Nicaragua">Nicaragua</option><option value="Nigeria">Nigeria</option><option value="North Korea">North Korea</option><option value="Norway">Norway</option><option value="Oman">Oman</option><option value="Pakistan">Pakistan</option><option value="Palau">Palau</option><option value="Panama">Panama</option><option value="Papua New Guinea">Papua New Guinea</option><option value="Peru">Peru</option><option value="Philippines">Philippines</option><option value="Portugal">Portugal</option><option value="Qatar">Qatar</option><option value="Russia">Russia</option><option value="Saint Kitts and Nevis">Saint Kitts and Nevis</option><option value="Saint Lucia">Saint Lucia</option><option value="Saint Vincent and the Grenadines">Saint Vincent and the Grenadines</option><option value="Samoa">Samoa</option><option value="São Tomé and Príncipe">São Tomé and Príncipe</option><option value="Saudi Arabia">Saudi Arabia</option><option value="Senegal">Senegal</option><option value="Seychelles">Seychelles</option><option value="Sierra Leone">Sierra Leone</option><option value="Singapore">Singapore</option><option value="Solomon Islands">Solomon Islands</option><option value="Somalia">Somalia</option><option value="South Africa">South Africa</option><option value="South Korea">South Korea</option><option value="Spain">Spain</option><option value="Sri Lanka">Sri Lanka</option><option value="Sudan">Sudan</option><option value="Suriname">Suriname</option><option value="Tanzania">Tanzania</option><option value="Thailand">Thailand</option><option value="Timor-Leste">Timor-Leste</option><option value="Togo">Togo</option><option value="Tonga">Tonga</option><option value="Trinidad and Tobago">Trinidad and Tobago</option><option value="Tunisia">Tunisia</option><option value="Turkey">Turkey</option><option value="Tuvalu">Tuvalu</option><option value="United Arab Emirates">United Arab Emirates</option><option value="United Kingdom">United Kingdom</option><option value="United States">United States</option><option value="Uruguay">Uruguay</option><option value="Vanuatu">Vanuatu</option><option value="Venezuela">Venezuela</option><option value="Vietnam">Vietnam</option><option value="Yemen">Yemen</option>
+                </select>
+              </div>
+              <div class="field"><label for="f-region">Region <span class="mono-dim-sm">(how you'd name it)</span></label><div class="ac-wrap"><input type="text" id="f-region" placeholder="e.g. Komodo, Moyo Island" autocomplete="off" enterkeyhint="next" oninput="onRegionInput(this,'f')" onblur="acBlur('f-region')" onkeydown="acKey(event,'f-region')"><div class="ac-dropdown" id="ac-f-region" style="display:none"></div></div></div>
+            </div>
+            <div class="lf-site-row">
+              <label class="lf-site-label" for="f-site">Site name</label>
+              <div class="ac-wrap site-search-wrap"><input type="text" id="f-site" placeholder="e.g. Blue Corner — type to search, or enter your own" autocomplete="off" enterkeyhint="next" oninput="onSiteInput(this,'f')" onblur="acBlur('f-site')" onkeydown="siteKey(event,'f-site')"><div class="ac-dropdown" id="ac-f-site" style="display:none"></div></div>
+              <div class="lf-site-hint">Search suggests known sites and drops the pin — no match? just type your own name</div>
+            </div>
+          </div>
+
+          <!-- Trip — moved after Location (was directly under Date/Dive #, where
+               testers read it as "where," since the very next field was always a
+               country select). Country/Region/Site are now already answered by
+               the time this appears, so it can only read as a separate, optional,
+               higher-level label — not another "where" question. -->
+          <div class="field gap-top">
+            <label for="f-trip">Trip</label>
+            <div class="ac-wrap"><input type="text" id="f-trip" placeholder="e.g. 'Christmas liveaboard'" autocomplete="off" enterkeyhint="next" oninput="acInput(this,'trip')" onblur="acBlur('f-trip')" onkeydown="acKey(event,'f-trip')"><div class="ac-dropdown" id="ac-f-trip" style="display:none"></div></div>
+            <div class="mono-dim-sm" style="margin-top:5px;line-height:1.5">Optional — name a multi-dive trip, like a photo album title (not the destination). Leave blank for a single dive.</div>
+          </div>
+
+          <!-- Dive type — colour-chip grid → hidden #f-entry -->
+          <div class="field gap-top">
+            <span class="field-lbl" id="lbl-divetype">Dive type <span class="auto-annot" id="divetype-auto-label" style="display:none">auto from Dive Vibe</span></span>
+            <div class="lf-typegrid" id="f-typegrid" role="group" aria-labelledby="lbl-divetype"></div>
+            <input type="hidden" id="f-entry">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── B: Dive profile ──────────────────────────────────────────────── -->
+      <div class="cs" id="cs-profile">
+        <div class="cs-head" role="button" tabindex="0"
+             aria-expanded="false" onclick="toggleSection('cs-profile')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('cs-profile')}">
+          <span class="cs-chevron">▶</span>
+          <span class="cs-title">Dive profile</span>
+          <span class="cs-summary" id="cs-summary-profile">Expand</span>
+        </div>
+        <div class="cs-body">
+          <div class="lf-pgroup lf-pgroup-compact">
+          <span class="lf-pgroup-lbl" id="lbl-time">Time</span>
+          <div class="lf-pfields lf-pfields-time" role="group" aria-labelledby="lbl-time">
+            <div class="lf-numcol">
+              <label class="lf-numlbl" for="f-time">Bottom</label>
+              <div class="lf-num lf-num-compact"><input type="number" id="f-time" placeholder="45" inputmode="numeric" enterkeyhint="next" aria-label="Bottom time in minutes" oninput="calcExitTime()"><span class="lf-unit" aria-hidden="true">min</span></div>
+            </div>
+            <div class="lf-numcol">
+              <label class="lf-numlbl" for="f-entrytime-trigger">Entry</label>
+              <div class="lf-picker-wrap">
+                <button type="button" class="lf-picker-trigger" id="f-entrytime-trigger" onclick="lfShowPicker('f-entrytime')">
+                  <svg class="lf-picker-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  <span class="lf-picker-txt" id="f-entrytime-txt">—</span>
+                </button>
+                <input type="time" id="f-entrytime" class="lf-picker-native" oninput="calcExitTime();lfSyncPickerDisplay('f-entrytime')">
+              </div>
+            </div>
+            <div class="lf-numcol">
+              <label class="lf-numlbl" for="f-exittime-trigger">Exit <span class="auto-annot">auto</span></label>
+              <div class="lf-picker-wrap">
+                <button type="button" class="lf-picker-trigger" id="f-exittime-trigger" onclick="lfShowPicker('f-exittime')">
+                  <svg class="lf-picker-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  <span class="lf-picker-txt" id="f-exittime-txt">—</span>
+                </button>
+                <input type="time" id="f-exittime" class="lf-picker-native" oninput="lfSyncPickerDisplay('f-exittime')" placeholder="—">
+              </div>
+            </div>
+          </div>
+          </div>
+          <div class="lf-pgroup lf-pgroup-compact">
+          <span class="lf-pgroup-lbl" id="lbl-depth">Depth</span>
+          <div class="lf-pfields lf-pfields-2" role="group" aria-labelledby="lbl-depth">
+            <div class="lf-numcol">
+              <label class="lf-numlbl" for="f-depth">Max</label>
+              <div class="lf-num"><input type="number" id="f-depth" placeholder="18" inputmode="decimal" enterkeyhint="next" aria-label="Maximum depth in metres"><span class="lf-unit" aria-hidden="true">m</span></div>
+            </div>
+            <div class="lf-numcol">
+              <label class="lf-numlbl" for="f-avgdepth">Average</label>
+              <div class="lf-num"><input type="number" id="f-avgdepth" placeholder="12" inputmode="decimal" enterkeyhint="next" aria-label="Average depth in metres"><span class="lf-unit" aria-hidden="true">m</span></div>
+            </div>
+          </div>
+          </div>
+          <!-- Safety stop + deco stop -->
+          <div class="stops-group" role="group" aria-labelledby="lbl-stops">
+            <div class="stops-label" id="lbl-stops">Stops</div>
+            <div class="stop-row">
+              <span class="stop-type" aria-hidden="true">Safety</span>
+              <div class="stop-cell">
+                <input type="number" id="f-safety-stop-depth" value="5" min="0" step="0.5" inputmode="decimal" enterkeyhint="next" aria-label="Safety stop depth in metres">
+                <span class="stop-unit" aria-hidden="true">m</span>
+              </div>
+              <div class="stop-cell">
+                <input type="number" id="f-safety-stop-time" value="3" min="0" inputmode="numeric" enterkeyhint="next" aria-label="Safety stop time in minutes">
+                <span class="stop-unit" aria-hidden="true">min</span>
+              </div>
+            </div>
+            <div class="stop-row">
+              <span class="stop-type deco" aria-hidden="true">Deco</span>
+              <div class="stop-cell">
+                <input type="number" id="f-deco-stop-depth" placeholder="—" min="0" step="0.5" inputmode="decimal" enterkeyhint="next" aria-label="Deco stop depth in metres">
+                <span class="stop-unit" aria-hidden="true">m</span>
+              </div>
+              <div class="stop-cell">
+                <input type="number" id="f-deco-stop-time" placeholder="—" min="0" inputmode="numeric" enterkeyhint="done" aria-label="Deco stop time in minutes">
+                <span class="stop-unit" aria-hidden="true">min</span>
+              </div>
+            </div>
+            <p class="stops-hint">Safety pre-fills at 5 m / 3 min — edit if yours differed. Deco is optional.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── C: Journal ──────────────────────────────────────────────────────── -->
+      <div class="cs" id="cs-notes">
+        <div class="cs-head" role="button" tabindex="0"
+             aria-expanded="false" onclick="toggleSection('cs-notes')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('cs-notes')}">
+          <span class="cs-chevron">▶</span>
+          <span class="cs-title">Journal</span>
+          <span class="cs-summary" id="cs-summary-notes">Expand</span>
+        </div>
+        <div class="cs-body">
+          <div class="field mb-12">
+            <label for="f-title">Headline</label>
+            <input type="text" id="f-title" placeholder="Summarise your dive" maxlength="50" enterkeyhint="next"
+                   oninput="_updateSectionSummary('cs-notes')">
+          </div>
+          <div class="field">
+            <label for="f-notes">Memories</label>
+            <textarea id="f-notes" class="notes-ta" placeholder="What did you see? How did it feel? Who were you with?"
+                      oninput="_updateSectionSummary('cs-notes');this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── D: Marine life (open by default) ─────────────────────────────── -->
+      <div class="cs open" id="cs-marine">
+        <div class="cs-head" role="button" tabindex="0"
+             aria-expanded="true" onclick="toggleSection('cs-marine')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('cs-marine')}">
+          <span class="cs-chevron">▶</span>
+          <span class="cs-title">Marine life</span>
+          <span class="cs-summary zero" id="cs-summary-marine">0 sightings</span>
+        </div>
+        <div class="cs-body">
+          <!-- Sighting cards rendered here by renderSightings() -->
+          <div class="sighting-list" id="sighting-list"></div>
+          <!-- Key — always visible now, sitting right above the search bar where
+               it's actually needed (you're about to pick a species and rate its
+               abundance); the old "? key" toggle in the header was too easy to
+               miss entirely. -->
+          <div class="legend-panel-body" id="marine-legend-panel">
+            <div>
+              <div style="font-family:var(--mono);font-size:var(--font-size-xs);text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);font-weight:600;margin-bottom:4px">IUCN Red List</div>
+              <div class="iucn-key" style="margin-bottom:0">
+                <span class="iucn-key-item"><span class="iucn-badge iucn-CR">CR</span> Critically Endangered</span>
+                <span class="iucn-key-item"><span class="iucn-badge iucn-EN">EN</span> Endangered</span>
+                <span class="iucn-key-item"><span class="iucn-badge iucn-VU">VU</span> Vulnerable</span>
+                <span class="iucn-key-item"><span class="iucn-badge iucn-NT">NT</span> Near Threatened</span>
+                <span class="iucn-key-item"><span class="iucn-badge iucn-LC">LC</span> Least Concern</span>
+                <span class="iucn-key-item"><span class="iucn-badge iucn-DD">DD</span> Data Deficient</span>
+              </div>
+            </div>
+            <hr style="border:none;border-top:1px solid var(--border)">
+            <div>
+              <div style="font-family:var(--mono);font-size:var(--font-size-xs);text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim);font-weight:600;margin-bottom:4px">Abundance (Seasearch R/O/C)</div>
+              <div class="roc-key" style="margin-bottom:0">
+                <span class="roc-key-item"><b>R</b>are — 1 or 2</span>
+                <span class="roc-key-item"><b>O</b>ccasional — a few</span>
+                <span class="roc-key-item"><b>C</b>ommon — many</span>
+              </div>
+            </div>
+          </div>
+          <!-- Country pre-filter banner — populated by _renderSpeciesFilterBanners()
+               (js/species.js) whenever the Location card's Country field maps to a
+               known region; empty/inert otherwise. Mirrored inside the mobile
+               full-screen picker's own template (_mspOverlayHtml) via the same
+               class, since that overlay covers this whole section once open. -->
+          <div class="sp-region-banner-mount" id="sp-region-banner"></div>
+          <!-- Species search -->
+          <div class="species-search-wrap" id="species-search-wrap">
+            <input type="text" id="marine-input"
+              placeholder="Search species (e.g. grey reef shark)…"
+              aria-label="Search marine species"
+              enterkeyhint="search"
+              oninput="onSpeciesInput()"
+              onfocus="onSpeciesInput()"
+              onkeydown="onSpeciesKeydown(event)"
+              autocomplete="off">
+            <div class="species-status" id="species-status"></div>
+            <button class="sp-freetext-btn" onclick="addFreeText()">+ Free text</button>
+            <div class="species-dropdown" id="species-dropdown" style="display:none"></div>
+            <!-- Mobile-only: the input above never actually accepts a keystroke
+                 there (focus always redirects into the full-screen picker before
+                 one can land) — a real button says so, instead of an input that
+                 invites typing it can't honour. Hidden on desktop, where the
+                 input is genuinely live (results render inline in the rail). -->
+            <button type="button" class="sp-mobile-search-btn" onclick="openMobileSpeciesSearch()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+              <span>Search species…</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── E: Conditions ────────────────────────────────────────────────── -->
+      <div class="cs" id="cs-conditions">
+        <div class="cs-head" role="button" tabindex="0"
+             aria-expanded="false" onclick="toggleSection('cs-conditions')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('cs-conditions')}">
+          <span class="cs-chevron">▶</span>
+          <span class="cs-title">Conditions</span>
+          <span class="cs-summary" id="cs-summary-conditions">Expand</span>
+        </div>
+        <div class="cs-body">
+          <!-- Weather — icon row → hidden #f-weather -->
+          <span class="lf-lbl" id="lbl-weather">Weather / surface</span>
+          <div class="lf-weather" id="f-weather-seg" role="group" aria-labelledby="lbl-weather">
+            <button type="button" class="lf-wopt" data-val="Sunny"><span class="lf-wic">☀️</span>Sunny</button>
+            <button type="button" class="lf-wopt" data-val="Cloudy"><span class="lf-wic">⛅</span>Cloudy</button>
+            <button type="button" class="lf-wopt" data-val="Rain"><span class="lf-wic">🌧️</span>Rain</button>
+          </div>
+          <input type="hidden" id="f-weather">
+
+          <!-- Water type — segmented → hidden #f-watertype -->
+          <span class="lf-lbl" id="lbl-watertype">Water type</span>
+          <div class="lf-seg" role="group" aria-labelledby="lbl-watertype" data-lf-target="f-watertype" data-lf-sum="cs-conditions">
+            <button type="button" class="lf-seg-opt" data-val="Salt">Salt</button>
+            <button type="button" class="lf-seg-opt" data-val="Fresh">Fresh</button>
+            <button type="button" class="lf-seg-opt" data-val="Brackish">Brackish</button>
+          </div>
+          <input type="hidden" id="f-watertype" value="Salt">
+
+          <!-- Current — segmented → hidden #f-current ("" = None) -->
+          <span class="lf-lbl" id="lbl-current">Current</span>
+          <div class="lf-seg" role="group" aria-labelledby="lbl-current" data-lf-target="f-current" data-lf-sum="cs-conditions">
+            <button type="button" class="lf-seg-opt" data-val="">None</button>
+            <button type="button" class="lf-seg-opt" data-val="Slight">Slight</button>
+            <button type="button" class="lf-seg-opt" data-val="Moderate">Moderate</button>
+            <button type="button" class="lf-seg-opt" data-val="Strong">Strong</button>
+          </div>
+          <input type="hidden" id="f-current">
+
+          <!-- Visibility + water temp — dials paired with number inputs -->
+          <div class="lf-dial-block">
+            <div class="lf-dial-head">
+              <label class="lf-dial-name" for="f-vis">Visibility</label>
+              <div class="lf-num lf-num-sm">
+                <input type="number" id="f-vis" min="0" max="30" placeholder="15" inputmode="numeric" enterkeyhint="next"><span class="lf-unit" aria-hidden="true">m</span>
+              </div>
+            </div>
+            <input class="dial dial-vis" id="f-vis-dial" type="range" min="0" max="30" step="1" value="15"
+                   aria-label="Visibility in metres">
+            <div class="lf-dial-ends"><span>0 m · murky</span><span>30 m · gin-clear</span></div>
+          </div>
+          <div class="lf-dial-block">
+            <div class="lf-dial-head">
+              <label class="lf-dial-name" for="f-temp">Water temp</label>
+              <div class="lf-num lf-num-sm">
+                <input type="number" id="f-temp" min="0" max="35" placeholder="24" inputmode="numeric" enterkeyhint="next"><span class="lf-unit" aria-hidden="true">°C</span>
+              </div>
+            </div>
+            <input class="dial dial-temp" id="f-temp-dial" type="range" min="0" max="35" step="1" value="24"
+                   aria-label="Water temperature in degrees Celsius">
+            <div class="lf-dial-ends"><span>0 °C · drysuit</span><span>35 °C · tropical</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── F: Gas &amp; equipment ────────────────────────────────────────── -->
+      <div class="cs" id="cs-equipment">
+        <div class="cs-head" role="button" tabindex="0"
+             aria-expanded="false" onclick="toggleSection('cs-equipment')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('cs-equipment')}">
+          <span class="cs-chevron">▶</span>
+          <span class="cs-title">Gas &amp; equipment</span>
+          <span class="cs-summary" id="cs-summary-equipment">Expand</span>
+        </div>
+        <div class="cs-body">
+          <span class="lf-lbl" id="lbl-cylinder">Cylinder &amp; pressure</span>
+          <div class="lf-numrow lf-numrow-2" role="group" aria-labelledby="lbl-cylinder">
+            <div class="lf-numcol"><label class="lf-numlbl" for="f-pstart">Start</label><div class="lf-num-wrap"><div class="lf-num lf-num-compact"><input type="number" id="f-pstart" placeholder="200" inputmode="numeric" enterkeyhint="next"><span class="lf-unit" aria-hidden="true">bar</span></div><button type="button" class="lf-num-wheel" aria-label="Pick start pressure from a list" onclick="lfOpenNumScroller('f-pstart')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></button></div></div>
+            <div class="lf-numcol"><label class="lf-numlbl" for="f-pend">End</label><div class="lf-num-wrap"><div class="lf-num lf-num-compact"><input type="number" id="f-pend" placeholder="50" inputmode="numeric" enterkeyhint="next"><span class="lf-unit" aria-hidden="true">bar</span></div><button type="button" class="lf-num-wheel" aria-label="Pick end pressure from a list" onclick="lfOpenNumScroller('f-pend')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></button></div></div>
+          </div>
+          <div class="lf-numrow lf-numrow-2 gap-top" role="group" aria-labelledby="lbl-cylinder">
+            <div class="lf-numcol"><label class="lf-numlbl" for="f-tanksize">Size</label><div class="lf-num-wrap"><div class="lf-num lf-num-compact ac-wrap"><input type="number" id="f-tanksize" value="12" step="0.5" inputmode="decimal" enterkeyhint="next" autocomplete="off" oninput="acInput(this,'tanksize')" onblur="acBlur('f-tanksize')" onkeydown="acKey(event,'f-tanksize')"><span class="lf-unit" aria-hidden="true">L</span><div class="ac-dropdown" id="ac-f-tanksize" style="display:none"></div></div><button type="button" class="lf-num-wheel" aria-label="Pick tank size from a list" onclick="lfOpenNumScroller('f-tanksize')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></button></div></div>
+            <div class="field"><label for="f-gas">Gas mix</label><select id="f-gas"><option>Air</option><option>Nitrox 29</option><option>Nitrox 30</option><option>Nitrox 31</option><option>Nitrox 32</option><option>Nitrox 33</option><option>Nitrox 34</option><option>Nitrox 35</option><option>Trimix</option><option>Other</option></select></div>
+          </div>
+          <div class="field gap-top">
+            <span class="field-lbl" id="lbl-tanktype">Tank type</span>
+            <div class="lf-seg" role="group" aria-labelledby="lbl-tanktype" data-lf-target="f-tanktype" data-lf-sum="cs-equipment">
+              <button type="button" class="lf-seg-opt" data-val="Aluminium">Alu</button>
+              <button type="button" class="lf-seg-opt" data-val="Steel">Steel</button>
+            </div>
+            <input type="hidden" id="f-tanktype" value="Steel">
+          </div>
+          <span class="lf-lbl" id="lbl-personal">Weight &amp; suit</span>
+          <div class="lf-numrow lf-numrow-2" role="group" aria-labelledby="lbl-personal">
+            <div class="lf-numcol"><label class="lf-numlbl" for="f-weight">Weight</label><div class="lf-num-wrap"><div class="lf-num lf-num-compact ac-wrap"><input type="number" id="f-weight" placeholder="6" inputmode="decimal" enterkeyhint="next" autocomplete="off" oninput="acInput(this,'weight')" onblur="acBlur('f-weight')" onkeydown="acKey(event,'f-weight')"><span class="lf-unit" aria-hidden="true">kg</span><div class="ac-dropdown" id="ac-f-weight" style="display:none"></div></div><button type="button" class="lf-num-wheel" aria-label="Pick weight from a list" onclick="lfOpenNumScroller('f-weight')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg></button></div></div>
+            <div class="lf-numcol"><label class="lf-numlbl" for="f-suit">Suit</label><div class="lf-num ac-wrap"><input type="text" id="f-suit" placeholder="e.g. 5mm" autocomplete="off" enterkeyhint="next" oninput="acInput(this,'suit')" onblur="acBlur('f-suit')" onkeydown="acKey(event,'f-suit')"><div class="ac-dropdown" id="ac-f-suit" style="display:none"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── G: Buddy &amp; sign-off ─────────────────────────────────────── -->
+      <div class="cs" id="cs-signoff">
+        <div class="cs-head" role="button" tabindex="0"
+             aria-expanded="false" onclick="toggleSection('cs-signoff')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('cs-signoff')}">
+          <span class="cs-chevron">▶</span>
+          <span class="cs-title">Buddy &amp; sign-off</span>
+          <span class="cs-summary" id="cs-summary-signoff">Expand</span>
+        </div>
+        <div class="cs-body">
+          <div class="grid-2 mb-12">
+            <div class="field"><label for="f-liveaboard">Liveaboard operator</label><div class="ac-wrap"><input type="text" id="f-liveaboard" placeholder="e.g. MV Orion" autocomplete="off" enterkeyhint="next" oninput="acInput(this,'liveaboard')" onblur="acBlur('f-liveaboard')" onkeydown="acKey(event,'f-liveaboard')"><div class="ac-dropdown" id="ac-f-liveaboard" style="display:none"></div></div></div>
+            <div class="field"><label for="f-buddy">Buddy</label><div class="ac-wrap"><input type="text" id="f-buddy" placeholder="Name" autocomplete="off" enterkeyhint="next" oninput="acInput(this,'buddy')" onblur="acBlur('f-buddy')" onkeydown="acKey(event,'f-buddy')"><div class="ac-dropdown" id="ac-f-buddy" style="display:none"></div></div></div>
+          </div>
+          <div class="grid-2">
+            <div class="field"><label for="f-signoff">Instructor / divemaster</label><div class="ac-wrap"><input type="text" id="f-signoff" placeholder="Name" autocomplete="off" enterkeyhint="next" oninput="acInput(this,'instructor')" onblur="acBlur('f-signoff')" onkeydown="acKey(event,'f-signoff')"><div class="ac-dropdown" id="ac-f-signoff" style="display:none"></div></div></div>
+            <div class="field"><label for="f-certnum">Cert number</label><input type="text" id="f-certnum" placeholder="e.g. BSAC-123456" enterkeyhint="done"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="lf-save-btn" onclick="armDelete(this, saveDive, 'Confirm?')">Save dive →</button>
+
+      <div id="md-output-area" style="display:none; margin-top:1rem; padding:10px 14px; background:var(--success-dim); border:1px solid rgba(58,148,80,0.25); border-radius:8px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <span style="font-family:var(--mono);font-size: var(--font-size-sm);color:var(--success)">✓ Dive saved — <span id="md-filename">dive-000-site.md</span></span>
+        <button type="button" class="btn-ghost" onclick="show('history'); openDiveFile(lastSavedDiveId)">View dive →</button>
+      </div>
+
+      </div><!-- /lf-form-col -->
+      <aside class="lf-rail" id="log-rail">
+        <div class="lf-rail-head" id="log-rail-head">Location</div>
+        <div class="lf-rail-body" id="log-rail-body"></div>
+      </aside>
+      </div><!-- /lf-layout -->
+    </div>
+
+    <!-- HISTORY -->
+    <div class="panel active" id="panel-history">
+      <!-- Dive file full-view (shown by openDiveFile, hidden by closeDiveFile) -->
+      <div id="dive-file-view" style="display:none"></div>
+
+      <!-- History list content (hidden when dive file is open) -->
+      <div id="history-content">
+      <h1 class="page-title">Dive history</h1>
+      <p class="page-sub" id="history-sub">Tap any dive to expand details</p>
+      <div id="sync-banner-history" style="display:none" class="sync-banner"></div>
+      <!-- Actions row (list view) — "Bulk edit" label on its own line, then
+           Trip Name + Dive Number grouped tight on the left with Map pushed
+           to the right on the line below. Both bulk-edit buttons enter the
+           same tap-to-select-a-range mode (toggleSelectMode); the action
+           param just picks which action bar shows once selecting starts.
+           #hist-actions-row is flex-direction:column (overriding the shared
+           .history-toolbar row layout) specifically so the label sits above
+           rather than fighting the .hist-actions-row .hist-map-btn / Map
+           space-between rule below, which only expects two flex items. -->
+      <div class="history-toolbar hist-actions-row" id="hist-actions-row" style="flex-direction:column; align-items:stretch; justify-content:flex-start; gap:6px">
+        <span class="sort-label">Bulk edit</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap">
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <button class="hist-map-btn" onclick="toggleSelectMode(true, 'trip')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              Trip Name
+            </button>
+            <button class="hist-map-btn" onclick="toggleSelectMode(true, 'divenum')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3L7 21M17 3l-2 18M4 8h17M3 16h17"/></svg>
+              Dive Number
+            </button>
+          </div>
+          <button class="hist-map-btn" onclick="setHistoryView('map')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+            Map
+          </button>
+        </div>
+      </div>
+      <!-- Sort toolbar (list view) -->
+      <div class="history-toolbar" id="sort-toolbar">
+        <span class="sort-label">Sort by</span>
+        <div class="sort-btns">
+          <button class="sort-btn active" id="sort-num"    aria-pressed="true"  onclick="setSort('num')"    >Dive no. <span class="sort-arrow" id="arr-num">↓</span></button>
+          <button class="sort-btn"        id="sort-depth"  aria-pressed="false" onclick="setSort('depth')"  >Depth <span class="sort-arrow" id="arr-depth">↓</span></button>
+          <button class="sort-btn"        id="sort-country" aria-pressed="false" onclick="setSort('country')">Country <span class="sort-arrow" id="arr-country">↓</span></button>
+        </div>
+      </div>
+      <!-- Map toolbar (map view) — swaps in when map is active -->
+      <div class="history-toolbar" id="map-toolbar" style="display:none">
+        <button class="hist-back-btn" onclick="setHistoryView('list')">← List</button>
+        <span class="hist-map-sub" id="map-subtitle"></span>
+      </div>
+      <!-- Select toolbar (bulk edit) — swaps in via toggleSelectMode(true, action).
+           Tap a dive, tap another to select the range between, then apply
+           EITHER a trip name (born from bulk-add batches landing with no
+           trip label, see js/history.js bulk-selection comment) OR a dive-
+           number shift (born from a human miscounting a dive number and
+           needing to renumber everything after it — see DECISIONS.md) to the
+           whole selection at once. Only one of #select-action-trip /
+           #select-action-divenum is shown at a time, chosen by _selectAction. -->
+      <div class="history-toolbar" id="select-toolbar" style="display:none">
+        <button class="hist-back-btn" onclick="toggleSelectMode(false)">✕ Done</button>
+        <span class="hist-map-sub" id="select-count">Tap a dive, then tap another to select the range between</span>
+        <div class="ac-wrap select-trip-wrap" id="select-action-trip">
+          <input type="text" id="select-trip-input" placeholder="Trip name…" autocomplete="off"
+            aria-label="Trip name to apply to the selected dives" enterkeyhint="done"
+            oninput="acInput(this,'trip');_updateSelectBar()" onblur="acBlur('select-trip-input')" onkeydown="_selectTripInputKey(event)">
+          <div class="ac-dropdown" id="ac-select-trip-input" style="display:none"></div>
+          <button class="hist-map-btn" id="select-apply-btn" onclick="applyBulkTrip()" disabled>Apply</button>
+        </div>
+        <div id="select-action-divenum" style="display:none">
+          <span style="font-size:var(--font-size-sm)">Shift by</span>
+          <input type="number" id="select-divenum-delta" step="1" style="width:60px" inputmode="numeric" enterkeyhint="done"
+            aria-label="Shift dive numbers by" oninput="_updateSelectBar()">
+          <span id="select-divenum-error" style="color:var(--warn);font-size:var(--font-size-xs)"></span>
+          <button type="button" class="hist-map-btn" id="select-divenum-apply-btn" disabled
+            onclick="armDelete(this, applyBulkRenumber, 'Confirm shift')">Apply</button>
+        </div>
+      </div>
+      <!-- List content -->
+      <div id="history-pagination-top" class="history-pagination" style="display:none"></div>
+      <div id="history-list"></div>
+      <div id="history-pagination-bottom" class="history-pagination" style="display:none"></div>
+      <!-- Map (loaded lazily when Map button clicked) -->
+      <div id="map-leaflet" style="display:none"></div>
+      </div><!-- /#history-content -->
+    </div>
+
+    <!-- SPECIES -->
+    <div class="panel" id="panel-species">
+      <div id="species-root"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="panel" id="panel-stats">
+      <h1 class="page-title">Stats</h1>
+      <p class="page-sub">Running totals across all logged dives</p>
+      <div class="stat-grid" id="stats-grid"></div>
+
+      <!-- Compact summaries paired: depth ranking + dive-type mix -->
+      <div class="st-band">
+        <div class="st-sec" id="divetype-chart" style="display:none">
+          <div class="st-h">Dive type breakdown</div>
+          <div id="divetype-bars"></div>
+        </div>
+        <div class="st-sec" id="depth-chart" style="display:none">
+          <div class="st-h">Deepest dives</div>
+          <div id="depth-list"></div>
+        </div>
+      </div>
+
+      <div class="st-sec" id="species-chart" style="display:none">
+        <div class="st-h">Most frequently seen species <span class="n">(dives where seen)</span></div>
+        <div id="species-bars"></div>
+      </div>
+
+      <div class="st-sec" id="country-chart" style="display:none">
+        <div class="st-h">Dives by country</div>
+        <div id="country-bars"></div>
+      </div>
+
+      <div class="st-sec" id="country-species-section" style="display:none">
+        <div class="st-h">Top species by country</div>
+        <div class="st-tsc" id="country-species-grid"></div>
+      </div>
+
+      <div class="st-sec" id="activity-year-chart" style="display:none">
+        <div class="st-h">Diving activity
+          <span class="tools">
+            <button class="st-tgl on" id="act-btn-year"  aria-pressed="true"  onclick="setActivityView('year')">By year</button>
+            <button class="st-tgl"    id="act-btn-month" aria-pressed="false" onclick="setActivityView('month')">By month</button>
+          </span>
+        </div>
+        <div id="activity-bars"></div>
+      </div>
+
+      <div class="st-sec" id="sac-chart" style="display:none">
+        <div class="st-h">SAC rate by dive type <span class="n">(L/min — lower is more efficient)</span></div>
+        <div id="sac-bars"></div>
+        <div class="st-legend">
+          <span><i style="background:var(--success)"></i>&lt; 18 efficient</span>
+          <span><i style="background:var(--text-muted)"></i>18–25 moderate</span>
+          <span><i style="background:var(--danger)"></i>&gt; 25 high</span>
+        </div>
+        <div style="font-family:var(--mono);font-size: var(--font-size-xs);color:var(--text-dim);margin-top:10px">Only dives with start pressure, end pressure, avg depth, and logged tank size — no assumed defaults.</div>
+      </div>
+    </div>
+
+    <!-- PLAN -->
+    <div class="panel" id="panel-plan">
+      <h1 class="page-title">Plan</h1>
+      <p class="page-sub">Tides, conditions &amp; surface intervals</p>
+      <div id="plan-root"></div>
+    </div>
+
+    <!-- GEAR -->
+    <!-- OBSIDIAN -->
+    <div class="panel" id="panel-obsidian">
+      <h1 class="page-title">Settings &amp; data</h1>
+      <p class="page-sub">Manage your dive files</p>
+
+      <!-- iOS Home Screen install nudge — BRIEF-ios-sync.md §2.3/§7. Hidden by
+           default; shown by maybeShowIosInstallCard() only in Safari on iPhone/
+           iPad, outside standalone mode. -->
+      <div class="info-box" id="ios-install-card" style="display:none;margin-bottom:1.25rem">
+        <strong>Using Safari on iPhone or iPad?</strong> Add Shoal to your Home Screen
+        for more reliable offline storage — Safari can otherwise clear app data after
+        a period of inactivity. Tap the <strong>Share</strong> button, then
+        <strong>Add to Home Screen</strong>.
+        <div style="margin-top:8px">
+          <button class="btn-ghost" onclick="dismissIosInstallCard()">Got it</button>
+        </div>
+      </div>
+
+      <!-- Sync mode selector -->
+      <div class="form-section">
+        <div class="form-section-title">Where your dives live</div>
+        <p class="text-muted-para" id="sync-mode-intro">
+          You choose where your dives are kept — only one can be active at a time.
+          <strong>In your browser</strong> stores them on this device only; works offline, but back up manually using Export.
+          <strong>In a folder</strong> writes one <code>.md</code> file per dive to a folder you pick — choose a
+          Google Drive folder for automatic cloud backup.
+        </p>
+        <div id="sync-mode-row" style="display:flex;gap:6px;margin-bottom:1.25rem">
+          <button id="sync-mode-none"     class="btn-ghost" onclick="setSyncMode('none')"     style="flex:1">Browser</button>
+          <button id="sync-mode-folder"   class="btn-ghost" onclick="setSyncMode('folder')"   style="flex:1">Folder</button>
+          <button id="sync-mode-obsidian" class="btn-ghost" onclick="setSyncMode('obsidian')" style="flex:1">Obsidian</button>
+        </div>
+
+        <!-- Local folder config -->
+        <div id="sync-folder-config" style="display:none">
+          <p class="text-muted-para" id="folder-config-intro">
+            Pick any folder your device can see — a local folder, your Obsidian vault, or a
+            <strong>Google Drive</strong> folder. Every save writes one <code>.md</code> file there
+            automatically (your browser may ask permission once per session).
+          </p>
+          <div class="info-box" style="margin-bottom:1rem" id="folder-config-hint">
+            <strong>On your phone:</strong> when the picker opens, browse to <strong>Google Drive</strong>
+            and choose or create a folder — you only pick once, then every dive backs up to the cloud.
+          </div>
+          <div id="dive-folder-name" style="font-size: var(--font-size-sm);margin-bottom:12px;color:var(--text-dim)">No folder set</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button class="btn-ghost" id="dive-folder-set" onclick="setDiveFolder()">Set folder</button>
+            <button class="btn-ghost" id="folder-sync-btn" onclick="syncFromFolder()" style="display:none">↻ Sync from folder</button>
+            <button class="btn-ghost" id="dive-folder-clear" onclick="clearDiveFolder()" style="display:none;color:var(--warn);border-color:rgba(224,115,79,0.3)">✕ Clear</button>
+          </div>
+          <div id="folder-sync-status" style="font-size: var(--font-size-sm);color:var(--text-muted);margin-top:8px"></div>
+        </div>
+
+        <!-- Obsidian config -->
+        <div id="sync-obs-config" style="display:none">
+          <div class="info-box" style="margin-bottom:1rem">
+            <strong>Setup (one time):</strong><br>
+            1. Install the <code>Local REST API</code> plugin in Obsidian<br>
+            2. Enable it and copy your API key from its settings<br>
+            3. Paste the key below — the app connects over <code>http://127.0.0.1:27123</code><br>
+            4. Leave the API key blank if you haven't set one in the plugin
+          </div>
+          <div class="grid-2 mb-12">
+            <div class="field">
+              <label for="obs-apikey">API key (optional)</label>
+              <input type="password" id="obs-apikey" placeholder="Leave blank if not set" enterkeyhint="next" oninput="saveObsSettings()">
+            </div>
+            <div class="field">
+              <label for="obs-folder">Vault folder for dives</label>
+              <input type="text" id="obs-folder" placeholder="Dives" enterkeyhint="done" oninput="saveObsSettings()">
+            </div>
+          </div>
+          <button class="btn-ghost" onclick="testObsConnection()">Test connection</button>
+          <button class="btn-ghost" onclick="syncFromObsidian(true)" style="margin-left:8px">↻ Sync now</button>
+          <button class="btn-ghost" onclick="pushAllToObsidian(this)" style="margin-left:8px" title="Re-write all vault files with the current schema (uid, custom_id, etc.)">↑ Push all</button>
+          <div class="obs-status disconnected" id="obs-status-indicator" style="margin-top:8px">
+            <span class="obs-dot"></span> <span id="obs-status-text">Not tested</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admiralty UK Tidal API key — desktop only (Plan panel tide times, v2.6 phase 2.57).
+           Hidden by default; shown via isShell() in the unified show() patch. -->
+      <div class="form-section" id="admiralty-settings" style="display:none">
+        <div class="form-section-title">Tide times (UK)</div>
+        <div class="info-box" style="margin-bottom:1rem">
+          <strong>Setup (free for 1 year, a few steps the first time):</strong><br>
+          1. Create an account at the
+          <a href="https://developer.admiralty.co.uk/" target="_blank" rel="noopener">ADMIRALTY developer portal</a>
+          and follow the
+          <a href="https://developer.admiralty.co.uk/docs/startup" target="_blank" rel="noopener">get-started guide</a><br>
+          2. From <strong>Products</strong>, pick <strong>UK Tidal API – Discovery</strong> and subscribe<br>
+          3. Open any operation (e.g. Stations) and click <strong>"Try it"</strong> — under
+          <strong>Headers</strong>, your key is shown next to <code>Ocp-Apim-Subscription-Key</code><br>
+          4. Copy that value and paste it below<br>
+          5. Free tier: 10,000 requests/month, today + 6 days of events, renews annually (re-register after 1 year)
+        </div>
+        <div class="field">
+          <label for="admiralty-apikey">Admiralty API key</label>
+          <input type="password" id="admiralty-apikey" placeholder="Leave blank to use moon-phase neaps/springs only" enterkeyhint="done" oninput="saveAdmiraltyKey()">
+        </div>
+      </div>
+
+      <!-- Always-available file operations -->
+      <div class="form-section">
+        <div class="form-section-title">Dive files</div>
+        <p class="text-muted-para">
+          Every dive is a <code>.md</code> (Markdown) file — plain text that opens in any editor,
+          imports into Obsidian, and will still be readable decades from now. No proprietary format, no lock-in.
+        </p>
+        <p class="text-muted-para">
+          <strong>Your data stays yours.</strong> Shoal doesn't store copies anywhere.
+          Nothing leaves your device unless you choose a folder that syncs to a cloud service you control.
+          Import and export let you move your history freely — between devices, into other apps, or as a personal archive.
+          Re-importing is always safe: duplicates are skipped automatically.
+        </p>
+        <p class="text-muted-para" style="margin-bottom:1rem">
+          <strong style="color:var(--text-dim)">Proton Drive:</strong> Files must be downloaded to your device first — Proton's end-to-end encryption means the browser can't read cloud-only files directly.
+        </p>
+        <input type="file" id="import-md-input-data" multiple accept=".md" style="display:none" onchange="importDivesFromFiles(this.files)">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn-ghost" onclick="document.getElementById('import-md-input-data').click()">↑ Import</button>
+          <button class="btn-ghost" onclick="exportAllDives(this)">↓ Export all</button>
+        </div>
+        <div id="import-status" style="margin-top:8px;font-family:var(--mono);font-size: var(--font-size-sm);color:var(--text-muted)"></div>
+        <div id="export-status" style="font-family:var(--mono);font-size: var(--font-size-sm);color:var(--text-muted)"></div>
+      </div>
+
+      <!-- Unvalidated (free-text) species export -->
+      <div class="form-section">
+        <div class="form-section-title">Unvalidated species</div>
+        <p class="text-muted-para">
+          Marine life you've logged as free text — not matched against the built-in species database —
+          is tracked separately. Export the list to research and add the most-logged ones to the database
+          properly (scientific name, AphiaID, conservation status, reference photo).
+        </p>
+        <button class="btn-ghost" onclick="exportUnvalidatedSpecies(this)">↓ Export unvalidated species</button>
+        <div id="export-unvalidated-status" style="margin-top:8px;font-family:var(--mono);font-size: var(--font-size-sm);color:var(--text-muted)"></div>
+      </div>
+
+      <!-- Dive computer import (UDDF) — BRIEF-dive-profile-import.md -->
+      <div class="form-section">
+        <div class="form-section-title">Add profiles to dives you've already logged</div>
+        <p class="text-muted-para">
+          Export a <code>.uddf</code> file from your dive computer's software (Dive Exporter, Subsurface, MacDive,
+          or your vendor's app) and drop it in here to append the depth/time profile onto dives already in your
+          history — matched by depth and bottom time, not the file's timestamp, since computer clocks drift.
+          Anything uncertain shows up below for you to confirm.
+        </p>
+        <p class="text-muted-para">
+          <strong>Logging a new dive instead?</strong> Import from the <strong>Log a dive</strong> page — it'll
+          start the entry pre-filled.
+        </p>
+        <input type="file" id="import-uddf-input" multiple accept=".uddf" style="display:none" onchange="importUddfFile(this.files)">
+        <button class="btn-ghost" onclick="document.getElementById('import-uddf-input').click()">↑ Import .uddf</button>
+        <div id="profile-import-status" style="margin-top:8px;font-family:var(--mono);font-size: var(--font-size-sm);color:var(--text-muted)"></div>
+        <div id="profile-review-list" style="margin-top:12px;display:none"></div>
+      </div>
+
+      <!-- Match footage to dives by capture time — BRIEF-footage-cloud-hosting.md.
+           Runs against the SAME connected video folder playback resolves from
+           (js/video.js), so a matched video is playable straight away and stays
+           playable after a restart. Prompts to connect one if none is set. -->
+      <div class="form-section" id="footage-match-section">
+        <div class="form-section-title">Match footage to dives</div>
+        <p class="text-muted-para">
+          Reads each video's own capture time to work out which dive it belongs to — no need to sort
+          your footage into per-dive folders first. Subfolders are searched too, so one trip folder
+          is enough. Anything it can't place with confidence is listed for you rather than guessed at.
+        </p>
+        <p class="text-muted-para">
+          Your files aren't touched: nothing is moved, renamed or re-encoded — this only links them
+          to dives inside Shoal, and the videos become playable in each dive's footage view. Works
+          best when the camera's clock was set to local time before the dive; if it wasn't, you can
+          correct the offset before confirming.
+        </p>
+        <button class="btn-ghost" onclick="matchFootageToDives()">🎬 Match footage to dives</button>
+        <div id="footage-match-status" style="margin-top:8px;font-family:var(--mono);font-size:var(--font-size-sm);color:var(--text-muted);display:none"></div>
+        <div id="footage-match-review" style="margin-top:12px;display:none"></div>
+      </div>
+
+      <!-- Bluetooth sync history — BRIEF-dive-computer-sync.md §16. Every
+           computer synced fingerprint-first (after a clean, uninterrupted
+           sync — see js/computer-sync.js's persist-gate) lands here, with a
+           per-device "forget" action as the recovery path if a fingerprint
+           is ever suspected wrong, or after a firmware update / factory
+           reset that changes what the device itself reports. -->
+      <div class="form-section" id="ble-sync-history-section">
+        <div class="form-section-title">Bluetooth sync history</div>
+        <p class="text-muted-para">
+          Dive computers you've synced remember where they left off, so routine syncs only fetch what's new.
+          If a sync ever seems to be missing dives it shouldn't, forget the computer here to force a full re-sync next time.
+        </p>
+        <div id="ble-sync-history-list"></div>
+      </div>
+
+      <!-- Appearance — theme control -->
+      <div class="form-section">
+        <div class="form-section-title">Appearance</div>
+        <p class="text-muted-para">Theme — follows your device by default.</p>
+        <div class="theme-seg" role="group" aria-label="App theme">
+          <button type="button" class="theme-seg-opt" data-theme-val="system" aria-pressed="true"  onclick="setThemePreference('system')">System</button>
+          <button type="button" class="theme-seg-opt" data-theme-val="light"  aria-pressed="false" onclick="setThemePreference('light')">Light</button>
+          <button type="button" class="theme-seg-opt" data-theme-val="dark"   aria-pressed="false" onclick="setThemePreference('dark')">Dark</button>
+        </div>
+      </div>
+
+      <!-- Dive-type textures — colourblind-assist second channel on the
+           dive-type ramp. Both off by default; every dive type is already
+           labelled by name wherever it renders, so this is a glanceability
+           aid, not a compliance fix. See "CLAUDE colour UI.md" ->
+           "Dive-type texture channel". -->
+      <div class="form-section">
+        <div class="form-section-title">Dive-type textures</div>
+        <p class="text-muted-para">Adds a pattern to dive-type colours so they can be told apart without relying on colour alone.</p>
+        <div class="tx-row">
+          <div class="tx-lbl">
+            <div class="t">Distinguish dive types by pattern</div>
+            <div class="d">Textures the Stats dive-type bars.</div>
+          </div>
+          <button type="button" id="tex-types-toggle" class="tx-switch" role="switch" aria-checked="false" onclick="toggleTexTypes()"></button>
+        </div>
+        <div class="tx-row nested" id="tex-labels-row">
+          <div class="tx-lbl">
+            <div class="t">Also on labelled tags</div>
+            <div class="d">Extends the pattern to the timeline, log form, and dive file.</div>
+          </div>
+          <button type="button" id="tex-labels-toggle" class="tx-switch" role="switch" aria-checked="false" disabled onclick="toggleTexLabels()"></button>
+        </div>
+      </div>
+
+      <!-- About: legal notices. A <details> rather than a separate page or an
+           overlay — the text is long, rarely read, and must work identically
+           in the browser and the Tauri shell. A real page would mean
+           navigating away from this single-page app; the overlay stack is
+           more machinery than a block of static text warrants. Content is
+           fetched on first open (loadNotices, js/app.js) so ~3,000 lines of
+           licence text never sit in the DOM for anyone who doesn't ask. -->
+      <div class="form-section">
+        <div class="form-section-title">About Shoal</div>
+
+        <details class="about-block">
+          <summary>Safety notice</summary>
+          <div class="about-body">
+            <p><strong>Shoal is a logbook and a planning aid. It is not a dive computer, and it is not a substitute for proper training, your own planning, or the instruments you dive with.</strong></p>
+            <p>The Plan panel's decompression figures come from a Bühlmann ZHL-16C model applied to a square-profile assumption — the same simplification printed dive tables make. Real dives are not square profiles, and no model accounts for your own physiology on the day. Treat every number Shoal shows as an estimate to sanity-check against your training and your computer, never as an instruction.</p>
+            <p>Always dive within the limits of your certification, follow the ascent rates and stops your own dive computer gives you, and plan conservatively. Shoal is provided without warranty of any kind; you dive at your own risk.</p>
+          </div>
+        </details>
+
+        <!-- AGPL-3.0 §5(d) expects an interactive program to display an
+             "Appropriate Legal Notice"; for a GUI app that's an About box,
+             which is what this is. §6 additionally requires the source to
+             accompany any binary — see README.md → Licence for where that
+             offer is made. -->
+        <details class="about-block" id="licence-block" ontoggle="if(this.open) loadLicence()">
+          <summary>Licence</summary>
+          <div class="about-body">
+            <p>Shoal is free software, licensed under the <strong>GNU Affero General Public License v3.0</strong>. You may use, study, share and modify it; if you distribute a modified version, it must carry the same licence and its source must be available.</p>
+            <p>Shoal comes with <strong>absolutely no warranty</strong>, to the extent permitted by law. Source: <a href="https://github.com/Brookius/dive-log" target="_blank" rel="noopener">github.com/Brookius/dive-log</a></p>
+            <pre id="licence-text" class="notices-text" tabindex="0" role="region" aria-label="Full licence text">Loading…</pre>
+          </div>
+        </details>
+
+        <details class="about-block" id="notices-block" ontoggle="if(this.open) loadNotices()">
+          <summary>Open-source licences</summary>
+          <div class="about-body">
+            <p>Shoal is built on open-source software. The full notices, including every licence in full, are below.</p>
+            <!-- tabindex: a scrollable region has to be focusable or a
+                 keyboard user can't scroll it at all. -->
+            <pre id="notices-text" class="notices-text" tabindex="0" role="region" aria-label="Third-party licence notices">Loading…</pre>
+          </div>
+        </details>
+      </div>
+
+    </div>
+
+
+
+</main>
+
+<!-- Mobile sticky save bar (log panel only) -->
+<div class="mobile-save-bar" id="mobile-save-bar">
+  <button id="mobile-save-btn" onclick="armDelete(this, saveDive, 'Confirm?')">Save dive</button>
+</div>
+
+<!-- Mobile bottom navigation -->
+<!-- Icons are inline SVG, not emoji: an emoji glyph renders in its own fixed
+     colours and CANNOT inherit `color`, so the .active rule tinted nothing but
+     the 12px text label — measurably making the selected tab DIMMER than the
+     unselected ones (3.94:1 vs 5.31:1). With no visible selected state, nothing
+     ever taught testers the bar was interactive at all. See DECISIONS.md.
+     The wave is the bar's top edge (no straight border-top) — an irregular
+     silhouette is the strongest single cue that this is app content rather than
+     browser/OS chrome, which is what people were filtering it out as. -->
+<nav class="mobile-nav" aria-label="Mobile navigation">
+  <svg class="mobile-nav-wave" viewBox="0 0 340 16" preserveAspectRatio="none" aria-hidden="true">
+    <path class="mnw-fill" d="M0 10 Q42 1 85 7 T170 7 T255 7 T340 5 V16 H0 Z"/>
+    <path class="mnw-line" d="M0 10 Q42 1 85 7 T170 7 T255 7 T340 5" vector-effect="non-scaling-stroke"/>
+  </svg>
+  <button class="mobile-nav-btn active" id="mob-history" onclick="navTo('history', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+    History
+  </button>
+  <button class="mobile-nav-btn" id="mob-species" onclick="navTo('species', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M16 12s-2.4-3.4-6.2-3.4S3.6 12 3.6 12s2.4 3.4 6.2 3.4S16 12 16 12z"/><path d="M16 12l4.4-2.6v5.2z"/><circle cx="7.6" cy="11.4" r=".9" fill="currentColor" stroke="none"/></svg>
+    Species
+  </button>
+  <button class="mobile-nav-btn" id="mob-log" onclick="navTo('log', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    Log
+  </button>
+  <button class="mobile-nav-btn" id="mob-plan" onclick="navTo('plan', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    Plan
+  </button>
+  <button class="mobile-nav-btn" id="mob-stats" onclick="navTo('stats', this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 20v-5M10 20V6M15 20v-9M20 20v-4"/></svg>
+    Stats
+  </button>
+</nav>
+
+<!-- Footage modal — v2.35 full-screen 3-column player -->
+<div class="fm-overlay theme-harbour" id="footage-modal" onclick="handleFootageOverlayClick(event)">
+  <div class="fm-dialog"
+       ondragover="handleFootageDragOver(event)"
+       ondragenter="handleFootageDragEnter(event)"
+       ondragleave="handleFootageDragLeave(event)"
+       ondrop="handleFootageDrop(event)">
+    <div class="fm-dialog-head">
+      <span class="fm-dialog-title">🎬 Footage</span>
+      <span class="fm-dialog-ctx" id="fm-ctx"></span>
+      <div id="fm-sync-status" style="display:none;font-family:var(--mono);font-size:var(--font-size-xs)"></div>
+      <button class="fm-dialog-close" onclick="closeFootage()">✕</button>
+    </div>
+    <div class="fm-dialog-body" id="footage-body"></div>
+  </div>
+</div>
+
+<!-- Species profile modal -->
+<div class="modal-overlay" id="species-profile-modal" onclick="handleSpeciesModalOverlay(event)">
+  <div class="modal">
+    <div class="sp-mh">
+      <button class="sp-close" onclick="closeSpeciesProfile()">✕</button>
+    </div>
+    <div id="sp-hero-wrap"></div>
+    <div class="sp-modal-body" id="sp-modal-body"></div>
+  </div>
+</div>
+
+<!-- Welcome card — first run only (v2.8) -->
+<div class="modal-overlay" id="welcome-overlay" onclick="if(event.target===this)dismissWelcome()">
+  <div class="welcome-card">
+    <div class="wc-title">Remember every dive.</div>
+    <div class="wc-sub">Built by a diver, for divers.</div>
+    <div class="wc-item">
+      <span class="wc-ic">🤿</span>
+      <div>
+        <div class="wc-h">Log it before it fades</div>
+        <div class="wc-d">The depth, the buddies, the moment a manta cruised past — captured in seconds, no signal needed.</div>
+      </div>
+    </div>
+    <div class="wc-item">
+      <span class="wc-ic">🐠</span>
+      <div>
+        <div class="wc-h">Name everything you saw</div>
+        <div class="wc-d">Search 1,100+ species and build your own record of the marine life you've met.</div>
+      </div>
+    </div>
+    <div class="wc-item">
+      <span class="wc-ic">📅</span>
+      <div>
+        <div class="wc-h">Time it right</div>
+        <div class="wc-d">Tides, weather and surface intervals — so you dive the best conditions.</div>
+      </div>
+    </div>
+    <div class="wc-item">
+      <span class="wc-ic">📊</span>
+      <div>
+        <div class="wc-h">Watch your diving add up</div>
+        <div class="wc-d">Every site, trip and sighting builds into the story of your diving so far.</div>
+      </div>
+    </div>
+    <div class="wc-note">Most of this works offline. Photos, maps and forecasts need a connection.</div>
+    <button class="btn-primary wc-primary" onclick="dismissWelcome()">Start logging</button>
+  </div>
+</div>
+
+</div>
+
+<script src="data/species-db.js"></script>
+<script src="js/autocomplete.js"></script>
+<script src="js/map.js"></script>
+<script src="js/markdown.js"></script>
+<script src="js/obsidian.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/species.js"></script>
+<script src="js/history.js"></script>
+<script src="js/app.js"></script>
+<script src="js/logform.js"></script>
+<script src="js/footage.js"></script>
+<script src="js/video.js"></script>
+<script src="js/footage-match.js"></script>
+<script src="js/chart-math.js"></script>
+<script src="js/profile.js"></script>
+<script src="js/computer-sync.js"></script>
+<script src="js/album.js"></script>
+<script src="js/planner.js"></script>
+<script>
+  // Boot sequence — state and all functions live in js/app.js and js/*.js.
+  // This block only fires load-time calls that need the full module graph ready.
+  migrateAbundance(); // needs dives[] (app.js)
+  // Footage is Tauri-only — tag <body> so CSS hides footage entry points on the web (v2.7).
+  if (!isShell()) document.body.classList.add('is-web');
+  // Fire-and-forget — independent of dives[]/sync state, so it doesn't need
+  // to wait for anything below. No-ops instantly on web/Android (v2.994).
+  checkForAppUpdate();
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  // Auto-fill dive # with last+1 (shows "auto" annotation until user edits)
+  if (dives.length) {
+    const maxNum = Math.max(...dives.map(d => parseInt(d.divenum) || 0));
+    if (maxNum > 0) document.getElementById('f-divenum').value = maxNum + 1;
+  }
+  updateCount();
+  renderSightings();
+  // Attempt initial sync — Obsidian and folder modes both re-derive dives[]
+  // from the backend on every load, matching the vault/folder as the source
+  // of truth. Folder mode used to be manual-sync-only, which on the Tauri
+  // shell meant every fresh launch showed empty Stats charts (dives[] reset
+  // to whatever localStorage had, no re-read from the vault folder) until
+  // "Sync from folder" was clicked by hand.
+  if (syncMode === 'obsidian') {
+    syncFromObsidian(false).then(synced => {
+      setSidebarSync(synced
+        ? dives.length + ' dives in vault'
+        : (dives.length ? dives.length + ' dives (local cache)' : 'Obsidian offline')
+      );
+      buildSiteHistory();
+    });
+  } else {
+    renderSyncStatus();
+    // verbose=false: silent — see syncFromFolder's comment. On the browser
+    // this also doubles as the reconnect-banner probe (getWritableFolderHandle
+    // sets _folderNeedsReconnect on a non-granted result).
+    if (syncMode === 'folder') syncFromFolder(false).then(() => {
+      buildSiteHistory();
+      // Android only, and deliberately chained AFTER the folder sync rather
+      // than fired alongside it at boot: this makes a SAF/JNI call of its own,
+      // and every SAF call in this app has always been strictly sequential.
+      // Overlapping two of them against a network-backed Drive provider is a
+      // deadlock waiting to happen — the label is cosmetic and can wait.
+      if (typeof _refreshAndroidFolderName === 'function') _refreshAndroidFolderName();
+      // Shell only, silent, no-op if nothing was ever connected — see the
+      // function's own comment (js/video.js). Chained after dives[] is
+      // fresh from the vault so the very first render already shows
+      // matched proxies, not just the next time something re-scans.
+      if (typeof autoReconnectProxyFolderOnBoot === 'function') autoReconnectProxyFolderOnBoot();
+    });
+  }
+  buildSiteHistory(); // initial build from localStorage
+
+  // Android only, and only once at least one dive exists with no folder
+  // connected — see _maybeShowAndroidFolderRequiredPrompt's own comment
+  // (js/app.js). Checked at boot too, not just right after a save: killing
+  // the app while the prompt is up must not be a way to dodge it, and this
+  // is what makes that true — the same condition just re-fires here on the
+  // next launch instead.
+  if (typeof _maybeShowAndroidFolderRequiredPrompt === 'function') _maybeShowAndroidFolderRequiredPrompt();
+
+  // Android only: reduce Settings to the one backend that can work there.
+  // Pure DOM work, no SAF call — the folder-label refresh that DOES touch SAF
+  // is chained after the boot sync above, not fired here.
+  if (typeof _applyAndroidSyncUI === 'function') _applyAndroidSyncUI();
+
+  // Hash routing — normalise initial history entry and restore panel from URL (v2.66)
+  // #settings is the public alias for the obsidian panel
+  (function() {
+    const hash = location.hash.replace('#', '');
+    const _hashAlias = { settings: 'obsidian' };
+    const resolved = _hashAlias[hash] || hash;
+    const panel = (typeof PANEL_HASHES !== 'undefined' && PANEL_HASHES.includes(resolved)) ? resolved : 'history';
+    const _publicHash = panel === 'obsidian' ? 'settings' : panel;
+    history.replaceState({ panel: panel, overlay: null }, '', '#' + _publicHash);
+    if (panel !== 'history') show(panel); // history is already active in the HTML
+    // show() already positions the sidebar's nav-current indicator (see its
+    // unified patch), but that call is deliberately SKIPPED on the fast path
+    // above — so the indicator needs its own explicit call here to land on
+    // History (or wherever panel resolved to) on first paint.
+    if (typeof _updateNavIndicator === 'function') _updateNavIndicator(panel);
+  })();
+
+  // First-run welcome — only for a brand-new user (no dives, never dismissed)
+  if (!localStorage.getItem('divelog-welcome-seen') && !dives.length) showWelcome();
+
+  // iOS Home Screen install nudge + persistent-storage request — BRIEF-ios-sync.md
+  // §2.3/§7. Neither needs a user gesture: persist() is a silent best-effort ask
+  // (no dialog on Safari; heuristic-graded elsewhere), and the card just toggles
+  // display inside the (currently inactive) Settings panel.
+  maybeShowIosInstallCard();
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+</script>
+
+</body>
+</html>

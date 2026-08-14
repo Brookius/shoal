@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark mode — Stats (bubble hero, bars, donut)</title>
+<style>
+/* Harbour Night on the Stats panel. This is the screen carrying the tracked
+   WCAG 1.4.11 failure — 7 of 10 dive-type bars under 3:1 on a dark track.
+   Fixed here by the lifted ramp, with the before/after rendered side by side.
+   Token reasoning: mockups/mockup-dark-tokens.html. */
+:root{
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --display:Georgia,serif;
+  --font-size-xs:12px; --font-size-sm:14px; --font-size-base:16px;
+  --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px;
+}
+.theme-harbour{
+  color:var(--text);
+  --surface-lowest:#091010; --surface-low:#182827; --surface-base:#111E1D;
+  --surface-high:#20312F; --surface-highest:#2E3E3B;
+  --bg:var(--surface-base); --surface:var(--surface-low); --surface2:var(--surface-high);
+  --border:rgba(237,230,218,0.08); --border-mid:rgba(237,230,218,0.17);
+  --text:#EDE6DA; --text-muted:#BFB3A2; --text-dim:#857D70;
+  --accent:#74B3D8; --accent-fill:#407DA0;
+  /* the light theme's accent ink/text SPLIT collapses on dark: #74B3D8 already
+     clears 4.91:1 at worst as text, so no second darkened value is needed.
+     Leaving --accent-text at its light #397191 fails on every rung (2.11–3.61). */
+  --accent-text:#74B3D8;
+  --accent-dim:rgba(116,179,216,0.12); --accent-border:rgba(116,179,216,0.36);
+  --success:#5FB180; --warn:#E98A6A; --danger:#E96E4C; --gold:#D9B45C;
+  --on-type:#091010;
+  --type-Boat:#2A8B9C;  --type-Shore:#B0894F;  --type-Drift:#3FA9A0;
+  --type-Night:#6A7EB4; --type-Cave:#748094;   --type-Wreck:#A1765B;
+  --type-Reef:#C97A4A;  --type-Wall:#B36888;   --type-Pinnacle:#5F8A54;
+  --type-Muck:#868150;
+  /* the unlifted :root ramp, kept only to render the "before" comparison */
+  --old-Boat:#2F7E8C; --old-Night:#3A4A7A; --old-Cave:#566071; --old-Wreck:#6E4A33;
+  --old-Wall:#863C5E; --old-Pinnacle:#517548; --old-Muck:#5E5A31;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);
+     font-size:var(--font-size-base);line-height:1.55;padding:30px 20px 80px}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.9;
+  background:linear-gradient(180deg,#182827 0%,#111E1D 42%,#0B1616 100%)}
+.wrap{max-width:860px;margin:0 auto}
+.note{font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:26px;max-width:78ch}
+.note b{color:var(--text)}
+code{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text)}
+.page-title{font-family:var(--display);font-size:22px;font-weight:500;letter-spacing:-0.02em}
+.page-sub{font-size:var(--font-size-sm);color:var(--text-muted);font-family:var(--mono);margin-bottom:1.75rem}
+
+/* ── hero bubbles ───────────────────────────────────────────────────────── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;justify-items:center;margin-bottom:2.25rem}
+@keyframes df-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.stat-card{aspect-ratio:1;border-radius:50%;max-width:200px;width:100%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--surface);border:1px solid var(--border);padding:1.25rem;
+  box-shadow:0 2px 10px rgba(0,0,0,0.30);animation:df-bob 5s ease-in-out infinite;position:relative;overflow:hidden}
+/* caustics shimmer — on dark it has to ADD light, not multiply it (see note) */
+.stat-card::after{content:'';position:absolute;inset:0;pointer-events:none;opacity:.42;
+  background:radial-gradient(circle at 30% 26%,rgba(151,198,226,0.20),transparent 46%),
+             radial-gradient(circle at 72% 66%,rgba(151,198,226,0.13),transparent 52%)}
+.stat-card>*{position:relative;z-index:1}
+.stat-card:nth-child(2){animation-duration:6.2s;animation-delay:-2s}
+.stat-card:nth-child(3){animation-duration:5.5s;animation-delay:-1s}
+.stat-card:nth-child(4){animation-duration:6.8s;animation-delay:-3.4s}
+.stat-card:nth-child(5){animation-duration:5.9s;animation-delay:-.6s}
+.stat-card:nth-child(6){animation-duration:6.4s;animation-delay:-2.7s}
+@media(prefers-reduced-motion:reduce){.stat-card{animation:none}}
+.stat-label{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;text-align:center}
+.stat-value{font-size:26px;font-weight:200;color:var(--text);letter-spacing:-.03em;line-height:1;text-align:center}
+.stat-unit{font-size:var(--font-size-xs);color:var(--text-muted);font-weight:400;margin-left:2px}
+
+/* ── section pattern ────────────────────────────────────────────────────── */
+.st-sec{margin-bottom:30px}
+.st-h{display:flex;align-items:baseline;gap:8px;font-family:var(--mono);font-size:var(--font-size-xs);
+  color:var(--text);font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.st-h .n{color:var(--text-muted);font-weight:400;letter-spacing:.04em;text-transform:none}
+.st-h .tools{margin-left:auto;display:flex;gap:6px;text-transform:none;letter-spacing:0}
+.st-tgl{font-family:var(--mono);font-size:var(--font-size-xs);padding:3px 9px;border-radius:var(--radius-xs);
+  border:1px solid var(--border-mid);background:transparent;color:var(--text-muted);cursor:pointer}
+.st-tgl.on{border-color:var(--accent-border);background:var(--accent-dim);color:var(--accent)}
+
+/* ── bars ───────────────────────────────────────────────────────────────── */
+.st-row{display:flex;align-items:center;gap:14px;padding:6px 0}
+.st-lbl{flex:0 0 168px;font-size:var(--font-size-sm);color:var(--text);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.st-trk{flex:1;height:9px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.st-fil{height:100%;border-radius:5px;background:var(--text-muted)}
+.st-val{flex:0 0 auto;min-width:66px;text-align:right;font-family:var(--mono);
+  font-size:var(--font-size-sm);color:var(--text)}
+.st-val small{color:var(--text-muted)}
+.ratio{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:6px}
+.ratio.bad{color:var(--danger);font-weight:700}
+.ratio.ok{color:var(--success)}
+
+/* ── leader list ────────────────────────────────────────────────────────── */
+.st-lead{display:flex;align-items:baseline;padding:7px 0;font-size:var(--font-size-sm)}
+.st-lead .rk{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-dim);flex:0 0 22px}
+.st-lead .nm{color:var(--text)}
+.st-lead .dots{flex:1;border-bottom:1px dotted var(--border-mid);margin:0 10px;transform:translateY(-3px)}
+.st-lead .mv{font-family:var(--mono);color:var(--text);font-weight:600}
+
+/* ── donut ──────────────────────────────────────────────────────────────── */
+.st-band{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:30px}
+.st-band .st-sec{margin-bottom:0}
+.donut-wrap{display:flex;align-items:center;gap:18px}
+.donut{flex:0 0 132px;width:132px;height:132px;position:relative}
+.donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.donut-c .n{font-size:22px;font-weight:300;color:var(--text);line-height:1}
+.donut-c .l{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted);
+  letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+.dleg{flex:1;min-width:0}
+.dleg .lr{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:var(--font-size-sm)}
+.dleg .sw{flex:0 0 10px;width:10px;height:10px;border-radius:2px}
+.dleg .tn{flex:1;min-width:0;color:var(--text)}
+.dleg .ct{font-family:var(--mono);color:var(--text);font-weight:600;min-width:18px;text-align:right}
+
+/* ── SAC legend + cards ─────────────────────────────────────────────────── */
+.st-legend{display:flex;flex-wrap:wrap;gap:16px;font-family:var(--mono);font-size:var(--font-size-xs);
+  color:var(--text-muted);margin-top:12px}
+.st-legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px}
+.st-tsc{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.st-tsc .c{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:14px 16px 12px;position:relative;overflow:hidden}
+.st-tsc .cc{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text);letter-spacing:.09em;
+  text-transform:uppercase;font-weight:600;padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.st-tsc .sp{display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:var(--font-size-sm)}
+.st-tsc .sp .ct{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted)}
+
+.callout{border-left:3px solid var(--warn);background:rgba(233,138,106,0.10);
+  border-radius:0 var(--radius-md) var(--radius-md) 0;padding:12px 16px;margin:14px 0 20px;
+  font-size:var(--font-size-sm);color:var(--text)}
+.callout b{color:var(--text)}
+.cap{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-dim);
+  letter-spacing:.06em;text-transform:uppercase;margin:26px 0 8px}
+@media(max-width:680px){.stat-grid{grid-template-columns:repeat(2,1fr)}
+  .st-band{grid-template-columns:1fr}.st-tsc{grid-template-columns:1fr}.st-lbl{flex-basis:120px}}
+</style>
+</head>
+<body class="theme-harbour">
+<div class="wrap">
+
+<div class="note"><b>Stats — Harbour Night, app-wide.</b> This screen is where the tracked WCAG 1.4.11 failure lives:
+the dive-type bars had no dark override, so all ten hues sat against a track that flipped from light to dark while the
+ramp didn't. The lifted ramp fixes it with no separate bar treatment and no second copy of the ramp — which is exactly
+why the item was held until this pass. Before/after rendered below.</div>
+
+<div class="page-title">Statistics</div>
+<div class="page-sub">94 dives logged · 2019 – 2026</div>
+
+<div class="stat-grid">
+  <div class="stat-card"><div class="stat-label">Total dives</div><div class="stat-value">94</div></div>
+  <div class="stat-card"><div class="stat-label">Bottom time</div><div class="stat-value">118h 6m</div></div>
+  <div class="stat-card"><div class="stat-label">Deepest</div><div class="stat-value">38.4<span class="stat-unit">m</span></div></div>
+  <div class="stat-card"><div class="stat-label">Avg depth</div><div class="stat-value">17.2<span class="stat-unit">m</span></div></div>
+  <div class="stat-card"><div class="stat-label">Sites</div><div class="stat-value">38</div></div>
+  <div class="stat-card"><div class="stat-label">Species logged</div><div class="stat-value">211</div></div>
+</div>
+
+<!-- ── the fix ──────────────────────────────────────────────────────────── -->
+<div class="st-sec">
+  <div class="st-h">Dives by type <span class="n">— lifted ramp</span>
+    <span class="tools"><button class="st-tgl on">Count</button><button class="st-tgl">Time</button></span></div>
+
+  <div class="st-row"><span class="st-lbl">Boat</span><span class="st-trk"><span class="st-fil" style="width:82%;background:var(--type-Boat)"></span></span><span class="st-val">31<span class="ratio ok">3.42</span></span></div>
+  <div class="st-row"><span class="st-lbl">Reef</span><span class="st-trk"><span class="st-fil" style="width:68%;background:var(--type-Reef)"></span></span><span class="st-val">26<span class="ratio ok">4.13</span></span></div>
+  <div class="st-row"><span class="st-lbl">Drift</span><span class="st-trk"><span class="st-fil" style="width:47%;background:var(--type-Drift)"></span></span><span class="st-val">18<span class="ratio ok">4.80</span></span></div>
+  <div class="st-row"><span class="st-lbl">Wall</span><span class="st-trk"><span class="st-fil" style="width:34%;background:var(--type-Wall)"></span></span><span class="st-val">13<span class="ratio ok">3.41</span></span></div>
+  <div class="st-row"><span class="st-lbl">Night</span><span class="st-trk"><span class="st-fil" style="width:29%;background:var(--type-Night)"></span></span><span class="st-val">11<span class="ratio ok">3.41</span></span></div>
+  <div class="st-row"><span class="st-lbl">Wreck</span><span class="st-trk"><span class="st-fil" style="width:24%;background:var(--type-Wreck)"></span></span><span class="st-val">9<span class="ratio ok">3.41</span></span></div>
+  <div class="st-row"><span class="st-lbl">Shore</span><span class="st-trk"><span class="st-fil" style="width:21%;background:var(--type-Shore)"></span></span><span class="st-val">8<span class="ratio ok">4.24</span></span></div>
+  <div class="st-row"><span class="st-lbl">Pinnacle</span><span class="st-trk"><span class="st-fil" style="width:16%;background:var(--type-Pinnacle)"></span></span><span class="st-val">6<span class="ratio ok">3.41</span></span></div>
+  <div class="st-row"><span class="st-lbl">Muck</span><span class="st-trk"><span class="st-fil" style="width:13%;background:var(--type-Muck)"></span></span><span class="st-val">5<span class="ratio ok">3.42</span></span></div>
+  <div class="st-row"><span class="st-lbl">Cave</span><span class="st-trk"><span class="st-fil" style="width:8%;background:var(--type-Cave)"></span></span><span class="st-val">3<span class="ratio ok">3.41</span></span></div>
+</div>
+
+<div class="cap">Before — the <code>:root</code> ramp on this same dark track (what ships today)</div>
+<div class="st-sec">
+  <div class="st-row"><span class="st-lbl">Boat</span><span class="st-trk"><span class="st-fil" style="width:82%;background:var(--old-Boat)"></span></span><span class="st-val">31<span class="ratio bad">2.91</span></span></div>
+  <div class="st-row"><span class="st-lbl">Wall</span><span class="st-trk"><span class="st-fil" style="width:34%;background:var(--old-Wall)"></span></span><span class="st-val">13<span class="ratio bad">1.83</span></span></div>
+  <div class="st-row"><span class="st-lbl">Night</span><span class="st-trk"><span class="st-fil" style="width:29%;background:var(--old-Night)"></span></span><span class="st-val">11<span class="ratio bad">1.58</span></span></div>
+  <div class="st-row"><span class="st-lbl">Wreck</span><span class="st-trk"><span class="st-fil" style="width:24%;background:var(--old-Wreck)"></span></span><span class="st-val">9<span class="ratio bad">1.74</span></span></div>
+  <div class="st-row"><span class="st-lbl">Pinnacle</span><span class="st-trk"><span class="st-fil" style="width:16%;background:var(--old-Pinnacle)"></span></span><span class="st-val">6<span class="ratio bad">2.59</span></span></div>
+  <div class="st-row"><span class="st-lbl">Muck</span><span class="st-trk"><span class="st-fil" style="width:13%;background:var(--old-Muck)"></span></span><span class="st-val">5<span class="ratio bad">1.93</span></span></div>
+  <div class="st-row"><span class="st-lbl">Cave</span><span class="st-trk"><span class="st-fil" style="width:8%;background:var(--old-Cave)"></span></span><span class="st-val">3<span class="ratio bad">2.15</span></span></div>
+</div>
+
+<div class="callout"><b>Night at 1.58:1 and Wreck at 1.74:1 are the cases that make the point</b> — the fill and its own
+track are close enough to being the same colour that the bar stops encoding a length, which is the only job it has.
+Note also that Shore, Drift and Reef are absent from the "before" list: they already passed, and they're the three
+members the lifted ramp leaves untouched.</div>
+
+<!-- ── donut + leader ───────────────────────────────────────────────────── -->
+<div class="st-band">
+  <div class="st-sec">
+    <div class="st-h">Type mix</div>
+    <div class="donut-wrap">
+      <div class="donut">
+        <svg viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--surface2)" stroke-width="6"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--type-Boat)"     stroke-width="6" stroke-dasharray="33 67"  stroke-dashoffset="0"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--type-Reef)"     stroke-width="6" stroke-dasharray="28 72"  stroke-dashoffset="-33"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--type-Drift)"    stroke-width="6" stroke-dasharray="19 81"  stroke-dashoffset="-61"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--type-Wall)"     stroke-width="6" stroke-dasharray="10 90"  stroke-dashoffset="-80"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--type-Night)"    stroke-width="6" stroke-dasharray="6 94"   stroke-dashoffset="-90"/>
+          <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--type-Wreck)"    stroke-width="6" stroke-dasharray="4 96"   stroke-dashoffset="-96"/>
+        </svg>
+        <div class="donut-c"><span class="n">10</span><span class="l">types</span></div>
+      </div>
+      <div class="dleg">
+        <div class="lr"><span class="sw" style="background:var(--type-Boat)"></span><span class="tn">Boat</span><span class="ct">31</span></div>
+        <div class="lr"><span class="sw" style="background:var(--type-Reef)"></span><span class="tn">Reef</span><span class="ct">26</span></div>
+        <div class="lr"><span class="sw" style="background:var(--type-Drift)"></span><span class="tn">Drift</span><span class="ct">18</span></div>
+        <div class="lr"><span class="sw" style="background:var(--type-Wall)"></span><span class="tn">Wall</span><span class="ct">13</span></div>
+        <div class="lr"><span class="sw" style="background:var(--type-Night)"></span><span class="tn">Night</span><span class="ct">11</span></div>
+        <div class="lr"><span class="sw" style="background:var(--type-Wreck)"></span><span class="tn">Wreck</span><span class="ct">9</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="st-sec">
+    <div class="st-h">Deepest dives</div>
+    <div class="st-lead"><span class="rk">1</span><span class="nm">The Cathedral</span><span class="dots"></span><span class="mv">38.4 m</span></div>
+    <div class="st-lead"><span class="rk">2</span><span class="nm">SMS Köln</span><span class="dots"></span><span class="mv">36.1 m</span></div>
+    <div class="st-lead"><span class="rk">3</span><span class="nm">Hoxa Head</span><span class="dots"></span><span class="mv">31.4 m</span></div>
+    <div class="st-lead"><span class="rk">4</span><span class="nm">Crystal Bay</span><span class="dots"></span><span class="mv">29.8 m</span></div>
+    <div class="st-lead"><span class="rk">5</span><span class="nm">Batu Bolong</span><span class="dots"></span><span class="mv">24.6 m</span></div>
+  </div>
+</div>
+
+<!-- ── SAC ──────────────────────────────────────────────────────────────── -->
+<div class="st-sec">
+  <div class="st-h">SAC rate by dive type <span class="n">— L/min</span></div>
+  <div class="st-row"><span class="st-lbl">Shore</span><span class="st-trk"><span class="st-fil" style="width:88%;background:var(--danger)"></span></span><span class="st-val" style="color:var(--danger)">27.1</span></div>
+  <div class="st-row"><span class="st-lbl">Night</span><span class="st-trk"><span class="st-fil" style="width:70%;background:var(--text-muted)"></span></span><span class="st-val">21.4</span></div>
+  <div class="st-row"><span class="st-lbl">Boat</span><span class="st-trk"><span class="st-fil" style="width:62%;background:var(--text-muted)"></span></span><span class="st-val">19.0</span></div>
+  <div class="st-row"><span class="st-lbl">Drift</span><span class="st-trk"><span class="st-fil" style="width:52%;background:var(--success)"></span></span><span class="st-val" style="color:var(--success)">16.2</span></div>
+  <div class="st-legend">
+    <span><i style="background:var(--success)"></i>&lt; 18 good</span>
+    <span><i style="background:var(--text-muted)"></i>18–25 moderate</span>
+    <span><i style="background:var(--danger)"></i>&gt; 25 high</span>
+  </div>
+  <div class="note" style="margin-top:12px">The SAC bands are the one place <code>--danger</code>, <code>--success</code>
+  and a neutral sit on the same axis, so they're a good check on the lifted <code>--danger</code>:
+  <code>#E96E4C</code> reads 5.69:1 on the page here, against 4.81 for the value it replaces. "Moderate" stays neutral
+  on purpose — an unremarkable value carries no semantic colour.</div>
+</div>
+
+<div class="st-sec">
+  <div class="st-h">Top species by country</div>
+  <div class="st-tsc">
+    <div class="c"><div class="cc">Indonesia</div>
+      <div class="sp"><span>Green sea turtle</span><span class="ct">14</span></div>
+      <div class="sp"><span>Reef manta</span><span class="ct">9</span></div>
+      <div class="sp"><span>Bumphead parrotfish</span><span class="ct">7</span></div></div>
+    <div class="c"><div class="cc">Scotland</div>
+      <div class="sp"><span>Plumose anemone</span><span class="ct">6</span></div>
+      <div class="sp"><span>Ballan wrasse</span><span class="ct">5</span></div>
+      <div class="sp"><span>Common lobster</span><span class="ct">3</span></div></div>
+    <div class="c"><div class="cc">Egypt</div>
+      <div class="sp"><span>Napoleon wrasse</span><span class="ct">5</span></div>
+      <div class="sp"><span>Bluespotted ray</span><span class="ct">4</span></div>
+      <div class="sp"><span>Masked pufferfish</span><span class="ct">3</span></div></div>
+  </div>
+</div>
+
+<div class="note" style="margin-top:30px"><b>One thing the bubbles needed that isn't a token.</b> The caustics
+shimmer on <code>.stat-card</code> is specified as a <i>multiply</i>-blended warm layer, which on a light card pools
+light and improves contrast with the figure. Multiply against a dark card only removes what little light is there, so
+the effect disappears and the bubble flattens. Rendered above as an additive cool wash instead — same intent (dappled
+light on a data surface), inverted operation. Flagged as a texture-layer decision for implementation, not a colour-token
+one: it's the third instance of the same pattern this pass found, after <code>.iucn-CR</code>'s fill and
+<code>--profile-deco</code>.</div>
+
+</div>
+</body>
+</html>

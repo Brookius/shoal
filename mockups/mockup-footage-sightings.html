@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Footage — Sightings panel (merged B+C)</title>
+<style>
+  :root {
+    --bg:            #F5EBD8;
+    --surface:       #FAF6F1;
+    --surface2:      #EDE5D8;
+    --border:        rgba(28,48,48,0.10);
+    --border-mid:    rgba(28,48,48,0.18);
+    --border-strong: rgba(28,48,48,0.28);
+    --text:          #1C3030;
+    --text-muted:    #8B7B6A;
+    --text-dim:      #B5A898;
+    --accent:        #4A90B8;
+    --accent-dim:    rgba(74,144,184,0.10);
+    --accent-border: rgba(74,144,184,0.30);
+    --success:       #4F9D6B;
+    --danger:        #B0492E;
+    --pending:       #E0734F;
+    --mono: ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace;
+    --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --text-xs:   12px;
+    --text-sm:   14px;
+    --text-base: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body { background: #C8BAA6; font-family: var(--sans); color: var(--text);
+         display: flex; flex-direction: column; align-items: center;
+         gap: 48px; padding: 40px 24px 80px; }
+
+  h1 { font-family: var(--mono); font-size: var(--text-xs); color: rgba(28,48,48,0.45);
+       letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .mock-section { width: 100%; max-width: 1100px; display: flex;
+                  flex-direction: column; gap: 12px; }
+  .section-label { font-family: var(--mono); font-size: var(--text-xs);
+                   color: rgba(28,48,48,0.45); letter-spacing: 0.08em;
+                   text-transform: uppercase; }
+  .annotation { font-family: var(--mono); font-size: var(--text-xs); color: #5A4A3A;
+                background: rgba(255,255,255,0.45); border: 1px solid rgba(0,0,0,0.10);
+                border-radius: 4px; padding: 2px 8px; display: inline-block; }
+  .callout { background: rgba(74,144,184,0.08); border: 1px solid var(--accent-border);
+             border-radius: 8px; padding: 14px 18px; font-size: var(--text-sm);
+             color: var(--text-muted); max-width: 1100px; width: 100%; }
+  .callout strong { color: var(--text); }
+  .callout ul { margin: 8px 0 0 18px; display: flex; flex-direction: column; gap: 5px; }
+
+  /* ── Panel shell ─────────────────────────────────────────────────────────── */
+  .panel { background: var(--bg); border-radius: 12px;
+           box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+  .panel-head { font-family: var(--mono); font-size: var(--text-xs);
+                letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+                color: var(--text-muted); padding: 12px 16px 10px;
+                border-bottom: 1px solid var(--border); background: var(--surface);
+                display: flex; align-items: baseline; gap: 8px; }
+  .fm-sec-n { color: var(--text-dim); font-weight: 400; letter-spacing: 0.04em; text-transform: none; }
+  .panel-scroll { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+
+  /* ── Video panel (reference, unchanged) ──────────────────────────────────── */
+  .vid { background: var(--surface); border: 1px solid var(--border-mid);
+         border-radius: 10px; padding: 12px; }
+  .vid-head { display: flex; align-items: center; gap: 8px; }
+  .vid-icon { font-size: var(--text-sm); color: var(--text-muted); flex: 0 0 16px; }
+  .vid-name { font-family: var(--mono); font-size: var(--text-sm); color: var(--text);
+              font-weight: 600; flex: 1; min-width: 0; overflow: hidden;
+              text-overflow: ellipsis; white-space: nowrap; }
+  .vid-state { font-family: var(--mono); font-size: var(--text-xs); padding: 2px 8px;
+               border-radius: 4px; border: 1px solid transparent; background: none; flex-shrink: 0; }
+  .vid-state.done    { color: var(--success); border-color: rgba(79,157,107,0.30);
+                       background: rgba(79,157,107,0.08); }
+  .vid-state.pending { color: var(--pending); border-color: rgba(224,115,79,0.30);
+                       background: rgba(224,115,79,0.08); }
+  .vid-stamps { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-mid);
+                display: flex; flex-direction: column; gap: 1px; }
+  .vid-stamp-wrap { border-radius: 6px; }
+  .vid-stamp-wrap:hover { background: var(--accent-dim); }
+  .vid-stamp  { display: flex; align-items: baseline; gap: 10px; font-size: var(--text-sm);
+                padding: 5px 4px 2px; }
+  .vid-stamp .t   { font-family: var(--mono); font-size: var(--text-xs); color: var(--accent);
+                    flex-shrink: 0; min-width: 36px; }
+  .vid-stamp .nm  { color: var(--text); flex: 1; min-width: 0; overflow: hidden;
+                    text-overflow: ellipsis; white-space: nowrap; }
+  .vid-stamp-ab   { font-family: var(--mono); font-size: var(--text-xs); color: var(--accent);
+                    background: var(--accent-dim); border: 1px solid var(--accent-border);
+                    border-radius: 3px; padding: 1px 5px; flex-shrink: 0; }
+  .vid-stamp-acts { display: flex; gap: 2px; margin-left: auto; flex-shrink: 0; }
+  .vid-stamp-btn  { font-size: var(--text-xs); background: none; border: 1px solid var(--border);
+                    border-radius: 4px; color: var(--text-dim); padding: 1px 6px; line-height: 1.4; }
+  .vid-stamp-note { font-size: var(--text-xs); color: var(--text-muted); font-style: italic;
+                    padding: 0 4px 5px 50px; line-height: 1.4; }
+  .vid-add { display: flex; align-items: center; justify-content: center; gap: 5px;
+             margin-top: 8px; padding: 7px; border: 1px dashed var(--border-mid);
+             border-radius: 6px; font-family: var(--mono); font-size: var(--text-xs);
+             color: var(--text-dim); background: none; width: 100%; }
+
+  /* ═══════════════════════════════════════════════════════════════════════════
+     MERGED SIGHTINGS CARD (B layout + C structure, no colour rail)
+     ════════════════════════════════════════════════════════════════════════ */
+
+  /* Card — one per species sighting */
+  .sp-card { background: var(--surface); border: 1px solid var(--border-mid);
+             border-radius: 10px; padding: 12px; }
+  .sp-card.unlinked { border-color: rgba(224,115,79,0.22);
+                      background: rgba(224,115,79,0.03); }
+
+  /* Header row: emoji · species name (base) · abundance badge */
+  .sp-card-head { display: flex; align-items: center; gap: 9px; }
+  .sp-card-icon { font-size: var(--text-base); flex: 0 0 20px; }
+  .sp-card-nm   { font-size: var(--text-base); font-weight: 600; color: var(--text);
+                  flex: 1; min-width: 0; overflow: hidden;
+                  text-overflow: ellipsis; white-space: nowrap; }
+  .sp-card-ab   { font-family: var(--mono); font-size: var(--text-xs); font-weight: 700;
+                  color: var(--accent); background: var(--accent-dim);
+                  border: 1px solid var(--accent-border); border-radius: 3px;
+                  padding: 2px 7px; flex-shrink: 0; }
+
+  /* Separator line (Option C's clean divide) */
+  .sp-card-clips { margin-top: 10px; padding-top: 8px;
+                   border-top: 1px solid var(--border); }
+
+  /* Clip row — filename leads, timestamp follows */
+  .sp-clip-wrap { border-radius: 6px; }
+  .sp-clip-wrap:hover { background: var(--accent-dim); }
+
+  .sp-clip { display: flex; align-items: baseline; gap: 0;
+             padding: 4px 4px 2px; border-radius: 6px; }
+
+  /* Filename — the primary identifier, bigger, darker */
+  .sp-clip .f { font-family: var(--mono); font-size: var(--text-sm);
+                color: var(--text-muted); flex: 1; min-width: 0;
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Timestamp — secondary, smaller, dimmer */
+  /* VARIANT 1: --text-dim + smaller size (used in main design) */
+  .sp-clip .t { font-family: var(--mono); font-size: var(--text-xs);
+                color: var(--text-dim); flex-shrink: 0; padding-left: 10px; }
+
+  /* Note — italic, muted, indented to align under filename */
+  .sp-clip-note { font-size: var(--text-xs); color: var(--text-dim); font-style: italic;
+                  padding: 1px 4px 5px 4px; line-height: 1.5; }
+
+  /* Unlinked card action */
+  .sp-card-link { display: flex; align-items: center; justify-content: center;
+                  margin-top: 10px; padding: 7px; width: 100%;
+                  border: 1px dashed rgba(224,115,79,0.40); border-radius: 6px;
+                  font-family: var(--mono); font-size: var(--text-xs);
+                  color: var(--pending); background: none; }
+
+  /* ── Timestamp variant strip ─────────────────────────────────────────────── */
+  /* VARIANT 2: same --text-muted as filename but smaller */
+  .t-v2 { font-family: var(--mono); font-size: var(--text-xs);
+           color: var(--text-muted); flex-shrink: 0; padding-left: 10px; }
+  /* VARIANT 3: preceding · separator, both on same colour level */
+  .t-v3-sep { color: var(--text-dim); padding: 0 4px; }
+  .t-v3 { font-family: var(--mono); font-size: var(--text-xs); color: var(--text-dim); }
+
+</style>
+</head>
+<body>
+
+<h1>Footage — Sightings panel merged direction (B + C)</h1>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SECTION 1 — Full side-by-side (video panel reference + merged sightings)
+     ════════════════════════════════════════════════════════════════════════ -->
+
+<div class="mock-section">
+  <div class="section-label">Video panel (unchanged) alongside merged sightings panel</div>
+
+  <div style="display:flex;gap:0;border-radius:14px;overflow:hidden;
+              box-shadow:0 24px 60px rgba(0,0,0,0.26);background:var(--bg);">
+
+    <!-- LEFT: video panel (reference, no changes) -->
+    <div style="flex:1.1;border-right:1px solid var(--border-mid);display:flex;flex-direction:column;">
+      <div class="panel-head">Videos <span class="fm-sec-n">3 files · 1 unreviewed</span></div>
+      <div class="panel-scroll" style="gap:8px;">
+
+        <div class="vid">
+          <div class="vid-head">
+            <span class="vid-icon">🎬</span>
+            <span class="vid-name">GH010089.MP4</span>
+            <span class="vid-state done">✓ reviewed</span>
+          </div>
+          <div class="vid-stamps">
+            <div class="vid-stamp-wrap">
+              <div class="vid-stamp">
+                <span class="t">01:22</span>
+                <span class="nm">Whitetip Reef Shark</span>
+                <span class="vid-stamp-ab">R</span>
+                <div class="vid-stamp-acts">
+                  <button class="vid-stamp-btn">✏</button>
+                  <button class="vid-stamp-btn">✕</button>
+                </div>
+              </div>
+              <div class="vid-stamp-note">large male, scar on dorsal fin</div>
+            </div>
+            <div class="vid-stamp">
+              <span class="t">03:47</span>
+              <span class="nm">Green Sea Turtle</span>
+              <span class="vid-stamp-ab">R</span>
+              <div class="vid-stamp-acts">
+                <button class="vid-stamp-btn">✏</button>
+                <button class="vid-stamp-btn">✕</button>
+              </div>
+            </div>
+            <div class="vid-stamp-wrap">
+              <div class="vid-stamp">
+                <span class="t">07:15</span>
+                <span class="nm">Whale Shark</span>
+                <span class="vid-stamp-ab">R</span>
+                <div class="vid-stamp-acts">
+                  <button class="vid-stamp-btn">✏</button>
+                  <button class="vid-stamp-btn">✕</button>
+                </div>
+              </div>
+              <div class="vid-stamp-note">selfie, turned to face camera</div>
+            </div>
+          </div>
+          <button class="vid-add">+ sighting from this video</button>
+        </div>
+
+        <div class="vid">
+          <div class="vid-head">
+            <span class="vid-icon">🎬</span>
+            <span class="vid-name">GH010090.MP4</span>
+            <span class="vid-state done">✓ reviewed</span>
+          </div>
+          <div class="vid-stamps">
+            <div class="vid-stamp-wrap">
+              <div class="vid-stamp">
+                <span class="t">00:54</span>
+                <span class="nm">Whitetip Reef Shark</span>
+                <span class="vid-stamp-ab">R</span>
+                <div class="vid-stamp-acts">
+                  <button class="vid-stamp-btn">✏</button>
+                  <button class="vid-stamp-btn">✕</button>
+                </div>
+              </div>
+              <div class="vid-stamp-note">juvenile, resting on sand</div>
+            </div>
+            <div class="vid-stamp">
+              <span class="t">04:02</span>
+              <span class="nm">Napoleon Wrasse</span>
+              <span class="vid-stamp-ab">R</span>
+              <div class="vid-stamp-acts">
+                <button class="vid-stamp-btn">✏</button>
+                <button class="vid-stamp-btn">✕</button>
+              </div>
+            </div>
+          </div>
+          <button class="vid-add">+ sighting from this video</button>
+        </div>
+
+        <div class="vid">
+          <div class="vid-head">
+            <span class="vid-icon">🎬</span>
+            <span class="vid-name">GH010091.MP4</span>
+            <span class="vid-state pending">● unreviewed</span>
+          </div>
+          <div class="vid-stamps">
+            <div style="font-size:var(--text-sm);color:var(--text-dim);font-style:italic;padding:5px 4px;">
+              No sightings linked yet — review pending.</div>
+          </div>
+          <button class="vid-add">+ sighting from this video</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: merged sightings panel -->
+    <div style="flex:0.9;display:flex;flex-direction:column;">
+      <div class="panel-head">Sightings <span class="fm-sec-n">5 species · 4 linked</span></div>
+      <div class="panel-scroll">
+
+        <!-- 2 clips, both with notes -->
+        <div class="sp-card">
+          <div class="sp-card-head">
+            <span class="sp-card-icon">🦈</span>
+            <span class="sp-card-nm">Whitetip Reef Shark</span>
+            <span class="sp-card-ab">R</span>
+          </div>
+          <div class="sp-card-clips">
+            <div class="sp-clip-wrap">
+              <div class="sp-clip">
+                <span class="f">GH010089.MP4</span>
+                <span class="t">01:22</span>
+              </div>
+              <div class="sp-clip-note">large male, scar on dorsal fin</div>
+            </div>
+            <div class="sp-clip-wrap">
+              <div class="sp-clip">
+                <span class="f">GH010090.MP4</span>
+                <span class="t">00:54</span>
+              </div>
+              <div class="sp-clip-note">juvenile, resting on sand</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2 clips, one with note -->
+        <div class="sp-card">
+          <div class="sp-card-head">
+            <span class="sp-card-icon">🐋</span>
+            <span class="sp-card-nm">Whale Shark</span>
+            <span class="sp-card-ab">R</span>
+          </div>
+          <div class="sp-card-clips">
+            <div class="sp-clip-wrap">
+              <div class="sp-clip">
+                <span class="f">GH010089.MP4</span>
+                <span class="t">07:15</span>
+              </div>
+              <div class="sp-clip-note">selfie, turned to face camera</div>
+            </div>
+            <div class="sp-clip-wrap">
+              <div class="sp-clip">
+                <span class="f">GH010091.MP4</span>
+                <span class="t">02:10</span>
+              </div>
+              <div class="sp-clip-note">two together, circling the baitball</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1 clip with note -->
+        <div class="sp-card">
+          <div class="sp-card-head">
+            <span class="sp-card-icon">🐢</span>
+            <span class="sp-card-nm">Green Sea Turtle</span>
+            <span class="sp-card-ab">R</span>
+          </div>
+          <div class="sp-card-clips">
+            <div class="sp-clip-wrap">
+              <div class="sp-clip">
+                <span class="f">GH010089.MP4</span>
+                <span class="t">03:47</span>
+              </div>
+              <div class="sp-clip-note">feeding on coral, let me get very close</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1 clip, no note -->
+        <div class="sp-card">
+          <div class="sp-card-head">
+            <span class="sp-card-icon">🐟</span>
+            <span class="sp-card-nm">Napoleon Wrasse</span>
+            <span class="sp-card-ab">R</span>
+          </div>
+          <div class="sp-card-clips">
+            <div class="sp-clip">
+              <span class="f">GH010090.MP4</span>
+              <span class="t">04:02</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unlinked -->
+        <div class="sp-card unlinked">
+          <div class="sp-card-head">
+            <span class="sp-card-icon">🐟</span>
+            <span class="sp-card-nm">Bumphead Parrotfish</span>
+            <span class="sp-card-ab">O</span>
+          </div>
+          <button class="sp-card-link">Link to a video…</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SECTION 2 — Timestamp colour: three treatments side by side
+     ════════════════════════════════════════════════════════════════════════ -->
+
+<div class="mock-section">
+  <div class="section-label">Timestamp colour — three options (filename always primary)</div>
+
+  <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+
+    <!-- V1: --text-dim (lightest) -->
+    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px;">
+      <div class="annotation">V1 — timestamp in --text-dim (lightest warm grey)</div>
+      <div class="panel" style="max-width:300px;">
+        <div class="panel-head">Sightings</div>
+        <div class="panel-scroll">
+          <div class="sp-card">
+            <div class="sp-card-head">
+              <span class="sp-card-icon">🦈</span>
+              <span class="sp-card-nm">Whitetip Reef Shark</span>
+              <span class="sp-card-ab">R</span>
+            </div>
+            <div class="sp-card-clips">
+              <div class="sp-clip-wrap">
+                <div class="sp-clip">
+                  <span class="f">GH010089.MP4</span>
+                  <!-- t in --text-dim -->
+                  <span class="t">01:22</span>
+                </div>
+                <div class="sp-clip-note">large male, scar on dorsal fin</div>
+              </div>
+              <div class="sp-clip-wrap">
+                <div class="sp-clip">
+                  <span class="f">GH010090.MP4</span>
+                  <span class="t">00:54</span>
+                </div>
+                <div class="sp-clip-note">juvenile, resting on sand</div>
+              </div>
+            </div>
+          </div>
+          <div class="sp-card">
+            <div class="sp-card-head">
+              <span class="sp-card-icon">🐟</span>
+              <span class="sp-card-nm">Napoleon Wrasse</span>
+              <span class="sp-card-ab">R</span>
+            </div>
+            <div class="sp-card-clips">
+              <div class="sp-clip">
+                <span class="f">GH010090.MP4</span>
+                <span class="t">04:02</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:var(--text-xs);color:rgba(28,48,48,0.5);line-height:1.5;max-width:280px;">
+        Filename (#8B7B6A) → timestamp (#B5A898). Maximum separation. Timestamp almost recedes into background — you register it but don't linger on it.
+      </div>
+    </div>
+
+    <!-- V2: --text-muted (same as filename, smaller only) -->
+    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px;">
+      <div class="annotation">V2 — timestamp in --text-muted (same as filename, size only)</div>
+      <div class="panel" style="max-width:300px;">
+        <div class="panel-head">Sightings</div>
+        <div class="panel-scroll">
+          <div class="sp-card">
+            <div class="sp-card-head">
+              <span class="sp-card-icon">🦈</span>
+              <span class="sp-card-nm">Whitetip Reef Shark</span>
+              <span class="sp-card-ab">R</span>
+            </div>
+            <div class="sp-card-clips">
+              <div class="sp-clip-wrap">
+                <div class="sp-clip">
+                  <span class="f">GH010089.MP4</span>
+                  <!-- t in --text-muted same as filename -->
+                  <span class="t-v2">01:22</span>
+                </div>
+                <div class="sp-clip-note">large male, scar on dorsal fin</div>
+              </div>
+              <div class="sp-clip-wrap">
+                <div class="sp-clip">
+                  <span class="f">GH010090.MP4</span>
+                  <span class="t-v2">00:54</span>
+                </div>
+                <div class="sp-clip-note">juvenile, resting on sand</div>
+              </div>
+            </div>
+          </div>
+          <div class="sp-card">
+            <div class="sp-card-head">
+              <span class="sp-card-icon">🐟</span>
+              <span class="sp-card-nm">Napoleon Wrasse</span>
+              <span class="sp-card-ab">R</span>
+            </div>
+            <div class="sp-card-clips">
+              <div class="sp-clip">
+                <span class="f">GH010090.MP4</span>
+                <span class="t-v2">04:02</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:var(--text-xs);color:rgba(28,48,48,0.5);line-height:1.5;max-width:280px;">
+        Both filename and timestamp at #8B7B6A — separated only by size (14px vs 12px). More unified feel. Relies on your eye catching the size difference to know which is which.
+      </div>
+    </div>
+
+    <!-- V3: · separator, timestamp same dim as note -->
+    <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px;">
+      <div class="annotation">V3 — filename · timestamp as a single unit, dot separator</div>
+      <div class="panel" style="max-width:300px;">
+        <div class="panel-head">Sightings</div>
+        <div class="panel-scroll">
+          <div class="sp-card">
+            <div class="sp-card-head">
+              <span class="sp-card-icon">🦈</span>
+              <span class="sp-card-nm">Whitetip Reef Shark</span>
+              <span class="sp-card-ab">R</span>
+            </div>
+            <div class="sp-card-clips">
+              <div class="sp-clip-wrap">
+                <!-- One span, same size, dot separator makes them a single unit -->
+                <div class="sp-clip" style="align-items:baseline;gap:0;">
+                  <span class="f">GH010089.MP4</span>
+                  <span class="t-v3-sep">·</span>
+                  <span class="t-v3">01:22</span>
+                </div>
+                <div class="sp-clip-note">large male, scar on dorsal fin</div>
+              </div>
+              <div class="sp-clip-wrap">
+                <div class="sp-clip" style="align-items:baseline;gap:0;">
+                  <span class="f">GH010090.MP4</span>
+                  <span class="t-v3-sep">·</span>
+                  <span class="t-v3">00:54</span>
+                </div>
+                <div class="sp-clip-note">juvenile, resting on sand</div>
+              </div>
+            </div>
+          </div>
+          <div class="sp-card">
+            <div class="sp-card-head">
+              <span class="sp-card-icon">🐟</span>
+              <span class="sp-card-nm">Napoleon Wrasse</span>
+              <span class="sp-card-ab">R</span>
+            </div>
+            <div class="sp-card-clips">
+              <div class="sp-clip" style="gap:0;">
+                <span class="f">GH010090.MP4</span>
+                <span class="t-v3-sep">·</span>
+                <span class="t-v3">04:02</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:var(--text-xs);color:rgba(28,48,48,0.5);line-height:1.5;max-width:280px;">
+        Filename and timestamp at same size (14px). The · makes them a compound label — "which video, at what point." The timestamp doesn't need to be smaller because it reads as part of the file reference.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     SECTION 3 — Anatomy close-up
+     ════════════════════════════════════════════════════════════════════════ -->
+
+<div class="mock-section">
+  <div class="section-label">Anatomy — reading flow within a sighting card</div>
+
+  <div style="display:flex;gap:24px;align-items:flex-start;">
+
+    <!-- Annotated card -->
+    <div style="flex:0 0 320px;">
+      <div class="sp-card" style="background:var(--surface);border:1px solid var(--border-mid);border-radius:10px;">
+        <div class="sp-card-head">
+          <span class="sp-card-icon">🦈</span>
+          <span class="sp-card-nm">Whitetip Reef Shark</span>
+          <span class="sp-card-ab">R</span>
+        </div>
+        <div class="sp-card-clips">
+          <div class="sp-clip-wrap">
+            <div class="sp-clip">
+              <span class="f">GH010089.MP4</span>
+              <span class="t">01:22</span>
+            </div>
+            <div class="sp-clip-note">large male, scar on dorsal fin</div>
+          </div>
+          <div class="sp-clip-wrap">
+            <div class="sp-clip">
+              <span class="f">GH010090.MP4</span>
+              <span class="t">00:54</span>
+            </div>
+            <div class="sp-clip-note">juvenile, resting on sand</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reading flow description -->
+    <div style="flex:1;display:flex;flex-direction:column;gap:14px;padding-top:4px;">
+      <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.6;">
+        Reading flow, top to bottom:
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-family:var(--mono);font-size:var(--text-xs);color:var(--accent);
+                       background:var(--accent-dim);border:1px solid var(--accent-border);
+                       border-radius:4px;padding:2px 8px;flex-shrink:0;">1</span>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.5;">
+            <strong style="color:var(--text);">🦈 Whitetip Reef Shark  [R]</strong><br>
+            Species name at 16px — what animal. Emoji is fast-read taxonomy. Abundance badge is unobtrusive.
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-family:var(--mono);font-size:var(--text-xs);color:var(--accent);
+                       background:var(--accent-dim);border:1px solid var(--accent-border);
+                       border-radius:4px;padding:2px 8px;flex-shrink:0;">2</span>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.5;">
+            <strong style="color:var(--text);">GH010089.MP4</strong> &nbsp;<span style="color:var(--text-dim);font-family:var(--mono);font-size:var(--text-xs);">01:22</span><br>
+            Filename at 14px — which video file to open. Timestamp at 12px dim — where in that file. You read left to right: file → timestamp.
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-family:var(--mono);font-size:var(--text-xs);color:var(--accent);
+                       background:var(--accent-dim);border:1px solid var(--accent-border);
+                       border-radius:4px;padding:2px 8px;flex-shrink:0;">3</span>
+          <div style="font-size:var(--text-sm);color:var(--text-muted);line-height:1.5;">
+            <em style="color:var(--text-dim);">large male, scar on dorsal fin</em><br>
+            Note at 12px italic dim — context about this specific clip. Lowest visual weight; skippable.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     Notes
+     ════════════════════════════════════════════════════════════════════════ -->
+
+<div class="callout">
+  <strong>Decisions baked in — ready for sign-off:</strong>
+  <ul>
+    <li><strong>Card per species, no clip count in header.</strong> The clips below are the count — no need to summarise what's visible.</li>
+    <li><strong>Species name at --text-base (16px)</strong> — same weight as video filenames in the video panel. The two columns now feel balanced as a pair.</li>
+    <li><strong>Filename first, timestamp second.</strong> Filename is the primary reference (which file to open). Timestamp is secondary context (where in that file). This mirrors the video panel's logic: video card is the heading, timestamps are what's inside it.</li>
+    <li><strong>Blue removed from timestamps.</strong> Three alternatives shown in Section 2 — pick V1 (most differentiated), V2 (most unified), or V3 (dot-separator). V1 is the main design above.</li>
+    <li><strong>Unlinked card</strong> has a subtle amber border tint — "needs attention" without being loud. Link button matches the vid-add dashed style.</li>
+    <li><strong>Group emoji</strong> provides instant taxonomy scan (🦈 vs 🐢 vs 🐟) — same role as 🎬 in the video panel.</li>
+  </ul>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark mode (app-wide) — token set &amp; decisions</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   HARBOUR NIGHT, APP-WIDE — the locked token set.
+
+   Option A "Harbour Night" was decided in mockup-dark-mode.html and shipped
+   scoped to #footage-modal. This file takes that same direction to <body>
+   scope and records what had to change to survive the trip, with measured
+   ratios for everything. Sibling screen mockups (mockup-dark-history.html,
+   -log-form, -species, -stats, -dive-file) render these tokens on the real
+   current markup.
+
+   Nothing here edits css/styles.css. Mockups only.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root{
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --serif:Georgia,serif;
+  --font-size-xs:12px; --font-size-sm:14px; --font-size-base:16px;
+  --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-full:999px;
+}
+
+/* ── The theme class, exactly as it would be written in css/styles.css ───── */
+.theme-harbour{
+  /* RULE 6 — every theme class must declare this or unstyled descendants
+     inherit body's computed LIGHT ink and bypass the overrides entirely.
+     (The bug this prevents: the unreadable "Footage" modal title.) */
+  color: var(--text);
+
+  /* Surface ladder — all five rungs, never just the three legacy aliases.
+     UNCHANGED from the shipped .theme-harbour; re-verified at app scope. */
+  --surface-lowest:#091010; --surface-low:#182827; --surface-base:#111E1D;
+  --surface-high:#20312F;   --surface-highest:#2E3E3B;
+  --bg:var(--surface-base); --surface:var(--surface-low); --surface2:var(--surface-high);
+
+  --border:rgba(237,230,218,0.08);
+  --border-mid:rgba(237,230,218,0.17);
+  --border-strong:rgba(237,230,218,0.28);
+
+  --text:#EDE6DA; --text-muted:#BFB3A2; --text-dim:#857D70;
+  --taupe-dim:rgba(191,179,162,0.1); --taupe-border:rgba(191,179,162,0.28);
+
+  /* Interactive ink — CONFIRMED at app scale, see decision 1 */
+  --accent:#74B3D8;                         /* strokes, tints, non-text fills */
+  --accent-text:#74B3D8;                    /* the light ink/text SPLIT collapses here — decision 1c */
+  --accent-fill:#407DA0;                    /* constant across themes — verified, see decision 1b */
+  --accent-dim:rgba(116,179,216,0.12);
+  --accent-border:rgba(116,179,216,0.36);
+
+  --success:#5FB180; --success-dim:rgba(95,177,128,0.12);
+  --warn:#E98A6A;
+  --danger:#E96E4C;                         /* CHANGED from #D26A4D — see decision 2 */
+  --gold:#D9B45C;                           /* untouched, per brief */
+  --violet-soft:#BCA9DE; --violet-deep:#A98BD6;
+
+  /* on-* pairs. The --on-surface* trio resolves through --text/-muted/-dim and
+     so re-points for free. The FILL pairs do not: three of them have to flip
+     from white ink to deep ink on dark, because the fill itself moved into a
+     lightness band white can no longer sit on. See decision 2b. */
+  --on-surface:var(--text); --on-surface-variant:var(--text-muted); --on-surface-dim:var(--text-dim);
+  --on-accent:#FFFFFF;      /* 4.51 — unchanged, the fill didn't move */
+  --on-danger:#091010;      /* 6.22 — was #FFFFFF (3.01 on the lifted danger) */
+  --on-success:#091010;     /* 7.40 — was #FFFFFF (2.60) */
+  --on-warn:#091010;        /* 7.60 — was #FFFFFF (2.35) */
+  --on-type:#091010;        /* 4.80 min — NEW pair, see decision 3b */
+  --on-inverse:var(--surface-low);
+
+  /* Categorical dive-type ramp — lifted variants. Hue held to <=1.0 degree;
+     only lightness/saturation moved. Shore, Drift and Reef are ABSENT on
+     purpose: they already clear both dark floors at their :root values, so
+     they inherit rather than being restated. See decision 3. */
+  --type-Boat:#2A8B9C;  --type-Night:#6A7EB4;    --type-Cave:#748094;
+  --type-Wreck:#A1765B; --type-Wall:#B36888;     --type-Pinnacle:#5F8A54;
+  --type-Muck:#868150;
+  /* inherited unchanged: --type-Shore #B0894F, --type-Drift #3FA9A0, --type-Reef #C97A4A */
+
+  /* Dive-profile chart — the water column and the locked-deco shade both
+     invert their derivation on dark. See decision 7. */
+  --profile-calm:#89B7D1;          /* kept */
+  --profile-warn:#E0734F;          /* kept */
+  --profile-deco:#E14752;          /* was #6A2C1C (1.45 on card = invisible) */
+  --profile-fill-top:#1F3337;      /* was #C0D8E6 */
+  --profile-fill-bottom:#233740;   /* was #65A1C3 */
+}
+
+/* IUCN chips hard-code colour globally, so each theme ships its own scoped
+   set. The shipped .theme-harbour block covers CR/EN/VU/EW only — the four
+   the footage modal happens to render. All eight, corrected: */
+.theme-harbour .iucn-CR{ background:rgba(9,16,16,0.55); color:#A98BD6;
+                         border-color:rgba(169,139,214,0.55); font-weight:800; }
+.theme-harbour .iucn-EN{ background:rgba(188,169,222,0.13); color:#BCA9DE; border-color:rgba(188,169,222,0.32); }
+/* VU: off gold, onto full neutral ink + a stronger tint/border — see decision 5b */
+.theme-harbour .iucn-VU{ background:rgba(237,230,218,0.12); color:var(--text); border-color:rgba(237,230,218,0.30); }
+/* NT/LC/DD recede; this is also the FALLBACK any unrecognised status lands on */
+.theme-harbour .iucn,
+.theme-harbour .iucn-badge,
+.theme-harbour .iucn-NT,
+.theme-harbour .iucn-LC,
+.theme-harbour .iucn-DD{ background:var(--taupe-dim); color:var(--text-muted); border-color:var(--border-mid); }
+/* EW/EX deleted — zero rows in a 1,275-species sightings DB. See decision 5b. */
+
+/* ── page chrome for this reference sheet ───────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);
+     line-height:1.55;padding:34px 20px 90px;font-size:var(--font-size-base)}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-size:24px;font-weight:600;letter-spacing:-0.02em}
+.sub{font-family:var(--mono);font-size:var(--font-size-sm);color:var(--text-muted);margin:6px 0 8px}
+.intro{font-size:var(--font-size-sm);color:var(--text-muted);max-width:76ch;margin-bottom:34px}
+.intro b{color:var(--text)}
+h2{font-family:var(--mono);font-size:var(--font-size-xs);letter-spacing:0.1em;text-transform:uppercase;
+   font-weight:600;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border);
+   margin:38px 0 14px;display:flex;align-items:baseline;gap:10px}
+h2 .n{font-weight:400;letter-spacing:0.04em;text-transform:none;color:var(--text-muted)}
+p{font-size:var(--font-size-sm);color:var(--text-muted);max-width:78ch;margin-bottom:10px}
+p b,li b{color:var(--text)}
+ul{margin:0 0 12px 18px}
+li{font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:6px;max-width:76ch}
+code,.m{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text)}
+table{border-collapse:collapse;width:100%;margin:6px 0 16px;font-size:var(--font-size-sm)}
+th{font-family:var(--mono);font-size:var(--font-size-xs);text-transform:uppercase;letter-spacing:0.07em;
+   color:var(--text-muted);font-weight:600;text-align:left;padding:7px 10px;border-bottom:1px solid var(--border-mid)}
+td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+td.mono,th.mono{font-family:var(--mono);font-size:var(--font-size-xs)}
+.pass{color:var(--success);font-family:var(--mono);font-size:var(--font-size-xs)}
+.fail{color:var(--danger);font-family:var(--mono);font-size:var(--font-size-xs);font-weight:700}
+.resid{color:var(--warn);font-family:var(--mono);font-size:var(--font-size-xs)}
+.dot{display:inline-block;width:26px;height:14px;border-radius:var(--radius-xs);
+     border:1px solid var(--border-mid);vertical-align:-2px;margin-right:7px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+      padding:16px 18px;margin-bottom:14px}
+.callout{border-left:3px solid var(--accent);background:var(--accent-dim);
+         border-radius:0 var(--radius-md) var(--radius-md) 0;padding:12px 16px;margin:12px 0 18px}
+.callout.warnbox{border-left-color:var(--warn);background:rgba(233,138,106,0.10)}
+.callout p{margin:0;color:var(--text)}
+.callout p+p{margin-top:8px}
+
+/* spine + bar demos */
+.spines{display:flex;gap:6px;flex-wrap:wrap}
+.spv{width:34px;height:78px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center}
+.spv span{writing-mode:vertical-rl;font-family:var(--mono);font-size:10px;font-weight:700;
+          letter-spacing:0.12em;text-transform:uppercase;color:var(--on-type)}
+.spv.white span{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,0.18)}
+.barrow{display:flex;align-items:center;gap:12px;padding:5px 0}
+.barlbl{flex:0 0 92px;font-size:var(--font-size-sm)}
+.bartrk{flex:1;height:9px;background:var(--surface2);border-radius:5px;overflow:hidden}
+.barfil{height:100%;border-radius:5px}
+.barval{flex:0 0 62px;text-align:right;font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted)}
+.iucn{font-family:var(--mono);font-size:var(--font-size-xs);font-weight:700;padding:2px 7px;
+      border-radius:var(--radius-xs);border:1px solid transparent;display:inline-block}
+.chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.swgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.sw{border-radius:var(--radius-md);overflow:hidden;border:1px solid var(--border)}
+.sw .c{height:46px}
+.sw .l{font-family:var(--mono);font-size:10px;padding:5px 7px 6px;background:var(--surface);
+       color:var(--text-muted);line-height:1.5}
+.sw .l b{color:var(--text);font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="theme-harbour">
+<div class="wrap">
+
+<h1>Dark mode, app-wide — token set &amp; decisions</h1>
+<div class="sub">Harbour Night · <span class="m">.theme-harbour</span> moved from <span class="m">#footage-modal</span> to <span class="m">&lt;body&gt;</span></div>
+<p class="intro">Option A was already locked; this pass asks what breaks when it stops being modal-scoped. Six things did.
+Every ratio below is computed against the real tokens (WCAG 2.x relative luminance), and every perceptual distance is
+<b>ΔEok</b> in OKLab — used only for <i>separation</i> questions, never as a stand-in for contrast. The rule I held
+throughout: <b>hue identity is fixed, lightness and saturation may move.</b> Sibling files render these tokens on the
+real screens.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>Decision 1 <span class="n">— <code>--accent</code> at app scale: the value holds</span></h2>
+<p>The modal only ever put <code>--accent</code> on two rungs. At app scale it has to clear all five. It does, with room:</p>
+<table>
+<tr><th>Rung</th><th class="mono">-lowest</th><th class="mono">-low</th><th class="mono">-base</th><th class="mono">-high</th><th class="mono">-highest</th><th>verdict</th></tr>
+<tr><td><code>#74B3D8</code> as text</td><td class="mono">8.40</td><td class="mono">6.69</td><td class="mono">7.48</td><td class="mono">5.96</td><td class="mono">4.91</td><td><span class="pass">min 4.91 — AA on every rung</span></td></tr>
+</table>
+<p>So the answer to "is <code>#74B3D8</code> a genuine choice or a modal patch" is: <b>a genuine choice.</b> It needs no
+change. Worth noting <i>why</i> it survives where the light token doesn't — light <code>--accent</code> <code>#4A90B8</code>
+is 3.27:1 as text and is still a tracked open item; the dark theme has already solved for itself the exact problem light
+mode hasn't.</p>
+
+<div class="callout warnbox">
+<p><b>But it exposed one real bug, which app scale is what surfaces.</b> <code>--accent</code> is documented as
+interactive <i>ink</i>, and is nearly always used that way — yet it also fills five things. Four are bare bars, dots and
+underlines with nothing on them (<code>.tc-fill</code>, <code>#lf-ble-progress-fill</code>, the track's stop dot,
+<code>.df-seg-btn.active::after</code>) and are unaffected. The fifth,
+<code>.dD-select-box.checked</code>, fills with <code>var(--accent)</code> and strokes a <b>white tick</b> across it.</p>
+<p>On light that's 3.52:1 — thin but a graphical object, so it passes 1.4.11. On dark the lift makes it
+<b>2.29:1</b> and it fails. The fix is a one-line component change, not a token change: that checkbox should fill with
+<code>--accent-fill</code> (the pair that <i>owns</i> white ink) rather than <code>--accent</code>. Every other
+<code>--accent</code> fill stays as-is.</p>
+</div>
+
+<h2>Decision 1c <span class="n">— <code>--accent-text</code>: the split collapses on dark</span></h2>
+<p>Light mode split the accent in two on 2026-08-04, mid-way through this pass: <code>--accent</code> keeps strokes,
+tints and non-text fills, and a darkened <b><code>--accent-text</code> <code>#397191</code></b> takes text, which is how
+the long-tracked 3.27:1 cerulean-as-text problem was finally closed. It applies to <b>65 declarations</b>.</p>
+<p>A theme that doesn't redeclare it inherits that light value, and it fails on <b>every</b> dark rung:</p>
+<table>
+<tr><th>Value</th><th class="mono">-lowest</th><th class="mono">-low</th><th class="mono">-base</th><th class="mono">-high</th><th class="mono">-highest</th></tr>
+<tr><td><code>#397191</code> (light, unthemed)</td><td class="mono"><span class="fail">3.61</span></td><td class="mono"><span class="fail">2.88</span></td><td class="mono"><span class="fail">3.21</span></td><td class="mono"><span class="fail">2.56</span></td><td class="mono"><span class="fail">2.11</span></td></tr>
+<tr><td><code>#74B3D8</code> (dark)</td><td class="mono"><span class="pass">8.40</span></td><td class="mono"><span class="pass">6.69</span></td><td class="mono"><span class="pass">7.48</span></td><td class="mono"><span class="pass">5.96</span></td><td class="mono"><span class="pass">4.91</span></td></tr>
+</table>
+<p>The dark value is simply <code>--accent</code> itself: <b>the two tokens are identical on dark, and deliberately
+so.</b> The split exists because on a light page the value that reads well as a stroke is too light to read as text, so
+text has to be darkened away from it. On a dark page the lift already carried <code>--accent</code> past the text floor
+in the same direction — there is no second value left to derive. Declaring <code>--accent-text</code> anyway, rather
+than leaving it to inherit, is the whole point: the token has to be <i>named</i> in the theme block or it silently keeps
+the light hex. This is the same failure mode as the 40 hardcoded light hexes in decision 6, arriving through a token
+instead of a literal, and it is worth watching for on <b>every</b> future token added to <code>:root</code> — a theme
+block is not automatically kept in step with the palette it overrides.</p>
+
+<h2>Decision 1b <span class="n">— <code>--accent-fill</code> stays constant, and that survives dark. Two other fills don't.</span></h2>
+<p>"Primary actions look identical in every theme" is a stated rule, so <code>--accent-fill</code> <code>#407DA0</code>
+was checked rather than assumed. It holds: <b>3.40:1</b> against the dark card (clears 1.4.11's 3:1 for a control) and
+white ink on it is still <b>4.51:1</b>. Unchanged.</p>
+<p>The same test fails for the other two semantic fills, which is what forces decision 2b below:</p>
+<table>
+<tr><th>Fill</th><th>Light hex</th><th class="mono">vs dark card</th><th>Result</th></tr>
+<tr><td><code>--accent-fill</code></td><td class="mono">#407DA0</td><td class="mono">3.40</td><td><span class="pass">survives — stays constant</span></td></tr>
+<tr><td><code>--danger</code> (light)</td><td class="mono">#B0492E</td><td class="mono">2.80</td><td><span class="fail">a dark rust button on a dark canvas</span></td></tr>
+<tr><td><code>--success</code> (light)</td><td class="mono">#3B7650</td><td class="mono">2.84</td><td><span class="fail">same</span></td></tr>
+</table>
+<p>The difference is simply that <code>--accent-fill</code> is a <i>mid-tone</i> and the other two are dark-tones.
+That's why the constancy rule can hold for one and not the others — worth recording, because "fill pairs are constant
+across themes" reads like it should apply to all three.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>Decision 2 <span class="n">— <code>--danger</code>: adjusted, <code>#D26A4D</code> → <code>#E96E4C</code></span></h2>
+<p>The shipped dark <code>--danger</code> was verified against the modal's rungs only. Across the full ladder it under-runs:</p>
+<table>
+<tr><th>Value</th><th class="mono">-lowest</th><th class="mono">-low (cards)</th><th class="mono">-base (page)</th><th class="mono">-high</th></tr>
+<tr><td><code>#D26A4D</code> shipped</td><td class="mono">5.41</td><td class="mono"><span class="fail">4.31</span></td><td class="mono">4.81</td><td class="mono"><span class="fail">3.83</span></td></tr>
+<tr><td><code>#E96E4C</code> locked</td><td class="mono">6.39</td><td class="mono"><span class="pass">4.96</span></td><td class="mono">5.69</td><td class="mono"><span class="resid">4.41</span></td></tr>
+</table>
+<p>Sized against <b><code>--surface-low</code></b>, not the page — inverting light mode's choice, and deliberately.
+Delete controls and SAC-high figures sit on <i>cards</i>, and on dark the card rung is <i>lighter</i> than the page
+(<code>#182827</code> vs <code>#111E1D</code>), so the card is the worst realistic case here where the page was the
+worst case in light. The <code>-high</code> residual at 4.41 is the same class of accepted shortfall light mode
+records at 4.30–4.32, for the same reason: that rung carries troughs and tracks, not status text.
+<code>-highest</code> is excluded by the existing "full ink only" rule.</p>
+
+<div class="callout">
+<p><b>The interesting part isn't the lift, it's what the lift collided with.</b> Holding hue <i>and</i> chroma and just
+raising lightness lands on <code>#D66E51</code> — which clears the floor but sits <b>ΔEok 0.038</b> from
+<code>--type-Reef</code>. That is closer than any two colours this palette deliberately ships: light mode's own
+<code>--warn</code>/<code>--danger</code> pair, the tightest intentional gap in the system, is <b>0.050</b> after a
+dedicated fix. A reserved semantic landing inside a categorical ramp member is exactly the class-2/class-3 blur the
+three-class model exists to prevent.</p>
+<p><b>Why it happens:</b> in light mode Reef and danger are separated almost entirely by <i>lightness</i>
+(ΔEok 0.125; Reef sits at L 0.655, danger at L 0.537) — they were never far apart in hue, 15°. Dark mode's contrast
+floor forces danger up into the readable band, which is precisely where Reef already lives. The orange band gets
+compressed and three tokens want it: Reef, <code>--danger</code>, <code>--warn</code>.</p>
+<p><b>Resolution:</b> spend the remaining budget on <i>chroma</i> rather than more lightness. <code>#E96E4C</code>
+holds hue at 36.5° and raises chroma to 0.160, which restores <b>ΔEok 0.060 to Reef</b> and <b>0.061 to
+<code>--warn</code></b> — both at or above the system's own demonstrated tolerance. Pushing lightness further instead
+was tried and rejected: it buys Reef separation only by walking into <code>--warn</code> (at L 0.72 the two are
+ΔEok 0.016 apart, i.e. the same colour).</p>
+</div>
+
+<h2>Decision 2a <span class="n">— <code>--warn</code>, <code>--success</code>, the violets and <code>--gold</code>: no change needed</span></h2>
+<p>All were re-measured across the full ladder rather than assumed. Against <code>--surface-high</code>, the worst rung
+that carries status text: <code>--warn</code> 5.39, <code>--success</code> 5.25, <code>--violet-deep</code> 4.77,
+<code>--violet-soft</code> 6.40, <code>--gold</code> 6.90. All pass. <code>--gold</code> is untouched per brief.</p>
+<div class="callout">
+<p><b>One thing I expected to have to fix and didn't</b> — worth recording because the reasoning inverts light mode's.
+Dark <code>--warn</code> <code>#E98A6A</code> and <code>--danger</code> sit only <b>2.8° of hue</b> apart with warn the
+<i>less</i> saturated of the two: geometrically the identical shape as the pre-2026-07-30 light pair that a whole
+correction pass was spent unpicking. But measured, they're <b>ΔEok 0.088</b> apart — comfortably better than the
+0.050 light ships. The separation is doing its work through <b>lightness</b> (0.727 vs 0.641), the axis light mode
+couldn't use: on a light page both had to be dark enough to clear 4.5:1, which pinned them to the same lightness and
+left hue as the only lever. A dark canvas hands that lever back. So dark mode gets to solve this the way light mode
+wanted to and couldn't, and <code>--warn</code> needs no hue rotation here.</p>
+</div>
+
+<h2>Decision 2b <span class="n">— three <code>on-*</code> fill pairs flip to deep ink</span></h2>
+<p>Direct consequence of 1b and 2: these fills now sit in a lightness band white can't be read on. Rather than invent
+<code>--danger-fill</code>/<code>--success-fill</code> tokens, the <i>ink</i> re-points — which is the cheaper change
+and is what the <code>on-*</code> structure is for.</p>
+<table>
+<tr><th>Pair</th><th>Light</th><th>Dark, as shipped</th><th>Dark, locked</th></tr>
+<tr><td><code>--on-accent</code></td><td class="mono">#FFFFFF · 4.51</td><td class="mono">#FFFFFF · 4.51</td><td class="mono"><span class="pass">#FFFFFF · 4.51 unchanged</span></td></tr>
+<tr><td><code>--on-danger</code></td><td class="mono">#FFFFFF · 5.47</td><td class="mono"><span class="fail">#FFFFFF · 3.01</span></td><td class="mono"><span class="pass">#091010 · 6.22</span></td></tr>
+<tr><td><code>--on-success</code></td><td class="mono">#FFFFFF · 5.39</td><td class="mono"><span class="fail">#FFFFFF · 2.60</span></td><td class="mono"><span class="pass">#091010 · 7.40</span></td></tr>
+<tr><td><code>--on-warn</code></td><td class="mono">#FFFFFF · 5.37</td><td class="mono"><span class="fail">#FFFFFF · 2.35</span></td><td class="mono"><span class="pass">#091010 · 7.60</span></td></tr>
+</table>
+<p><code>--on-warn</code> still has no call site (all four <code>--warn</code> fills are dots and spines carrying no
+text) and is kept only so a future fill inherits a defined pair — same reasoning as light.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>Decision 3 <span class="n">— the dive-type ramp: 7 lifted, 3 left alone</span></h2>
+<p>Method matters more than the values here, because three different methods give three different ramps.</p>
+<table>
+<tr><th>Method</th><th>What it does</th><th>Tightest pair (ΔEok)</th><th>Verdict</th></tr>
+<tr><td>Light ramp (baseline)</td><td>— what ships today —</td><td class="mono">0.053 Shore/Reef</td><td class="m">the bar to match</td></tr>
+<tr><td>A · <code>_hexLerp</code> toward white</td><td>the house method, used for the surface rungs and <code>--profile-*</code></td><td class="mono"><span class="fail">0.033 Night/Cave</span></td><td><span class="fail">rejected</span></td></tr>
+<tr><td>B · uniform lightness</td><td>flatten all ten to one L so hue alone discriminates</td><td class="mono"><span class="fail">0.037 Shore/Wreck</span></td><td><span class="fail">rejected</span></td></tr>
+<tr><td>C · minimum lift + margin</td><td>raise each member only as far as the floors need</td><td class="mono"><span class="pass">0.053 Shore/Reef</span></td><td><span class="pass">locked</span></td></tr>
+</table>
+<p><b>A was rejected because lerping toward white desaturates</b>, and it desaturates hardest exactly the members that
+need the most lift — Night lost 33% of its chroma, Wreck 28%, Wall 27% — collapsing Night/Cave to 0.033, tighter than
+any pair the light ramp ships. This is the one place the project's own house derivation is the wrong tool: it was
+chosen for <i>neutrals</i>, where losing chroma costs nothing, and a categorical ramp is the opposite case.</p>
+<p><b>B was rejected more narrowly.</b> Flattening to one lightness sounds right for a categorical scale — let hue do
+all the work — but it discards lightness relationships that are currently <i>carrying</i> distinctions. Shore and Wreck
+are 22° apart in hue and told apart in light almost entirely by Wreck being much darker; at a common lightness they
+converge to 0.037.</p>
+<p><b>C keeps relative lightness ordering intact</b> by lifting each member only to the floor plus a margin, so
+Wreck stays darker than Shore, Night stays darker than Cave, and the ramp's internal structure is preserved. It lands
+at exactly the light ramp's own tightest pair — 0.053, same pair — meaning the dark ramp is <b>as distinct as the one
+already shipping</b>, not merely adequate.</p>
+<p>Three members needed nothing at all: <b>Shore, Drift and Reef already clear both dark floors at their <code>:root</code>
+values.</b> They're deliberately omitted from the theme block rather than restated — a restated-but-identical value is
+the first step toward the four-contradictory-copies history this ramp already has.</p>
+
+<table>
+<tr><th>Type</th><th>Light</th><th>Dark</th><th>hue drift</th><th class="mono">L</th><th class="mono">bar vs track</th><th class="mono">spine vs ink</th></tr>
+<tr><td><span class="dot" style="background:#2F7E8C"></span>Boat</td><td class="mono">#2F7E8C</td><td class="mono">#2A8B9C</td><td class="mono">+0.6°</td><td class="mono">.55→.59</td><td class="mono"><span class="pass">3.42</span></td><td class="mono">4.82</td></tr>
+<tr><td><span class="dot" style="background:#B0894F"></span>Shore</td><td class="mono">#B0894F</td><td class="mono">#B0894F <span class="m">kept</span></td><td class="mono">—</td><td class="mono">.65</td><td class="mono"><span class="pass">4.24</span></td><td class="mono">5.98</td></tr>
+<tr><td><span class="dot" style="background:#3FA9A0"></span>Drift</td><td class="mono">#3FA9A0</td><td class="mono">#3FA9A0 <span class="m">kept</span></td><td class="mono">—</td><td class="mono">.67</td><td class="mono"><span class="pass">4.80</span></td><td class="mono">6.76</td></tr>
+<tr><td><span class="dot" style="background:#3A4A7A"></span>Night</td><td class="mono">#3A4A7A</td><td class="mono">#6A7EB4</td><td class="mono">−0.5°</td><td class="mono">.42→.60</td><td class="mono"><span class="pass">3.41</span></td><td class="mono">4.81</td></tr>
+<tr><td><span class="dot" style="background:#566071"></span>Cave</td><td class="mono">#566071</td><td class="mono">#748094</td><td class="mono">−0.4°</td><td class="mono">.49→.60</td><td class="mono"><span class="pass">3.41</span></td><td class="mono">4.81</td></tr>
+<tr><td><span class="dot" style="background:#6E4A33"></span>Wreck</td><td class="mono">#6E4A33</td><td class="mono">#A1765B</td><td class="mono">+0.1°</td><td class="mono">.44→.60</td><td class="mono"><span class="pass">3.41</span></td><td class="mono">4.81</td></tr>
+<tr><td><span class="dot" style="background:#C97A4A"></span>Reef</td><td class="mono">#C97A4A</td><td class="mono">#C97A4A <span class="m">kept</span></td><td class="mono">—</td><td class="mono">.65</td><td class="mono"><span class="pass">4.13</span></td><td class="mono">5.82</td></tr>
+<tr><td><span class="dot" style="background:#863C5E"></span>Wall</td><td class="mono">#863C5E</td><td class="mono">#B36888</td><td class="mono">+0.1°</td><td class="mono">.46→.61</td><td class="mono"><span class="pass">3.41</span></td><td class="mono">4.80</td></tr>
+<tr><td><span class="dot" style="background:#517548"></span>Pinnacle</td><td class="mono">#517548</td><td class="mono">#5F8A54</td><td class="mono">−0.1°</td><td class="mono">.52→.59</td><td class="mono"><span class="pass">3.41</span></td><td class="mono">4.80</td></tr>
+<tr><td><span class="dot" style="background:#5E5A31"></span>Muck</td><td class="mono">#5E5A31</td><td class="mono">#868150</td><td class="mono">−0.4°</td><td class="mono">.46→.60</td><td class="mono"><span class="pass">3.42</span></td><td class="mono">4.82</td></tr>
+</table>
+<p>Maximum hue drift across all ten is <b>0.6°</b> — the mnemonics survive intact. Night is still indigo, Wall still
+gorgonian rose, Wreck still umber; they are the same colours seen in different light, which is the whole premise of
+"a theme shifts lightness and saturation, never hue."</p>
+
+<div class="card">
+  <div class="m" style="color:var(--text-muted);margin-bottom:10px">Spine, dark ramp + <code>--on-type</code> deep ink</div>
+  <div class="spines">
+    <div class="spv" style="background:#2A8B9C"><span>Boat</span></div>
+    <div class="spv" style="background:#B0894F"><span>Shore</span></div>
+    <div class="spv" style="background:#3FA9A0"><span>Drift</span></div>
+    <div class="spv" style="background:#6A7EB4"><span>Night</span></div>
+    <div class="spv" style="background:#748094"><span>Cave</span></div>
+    <div class="spv" style="background:#A1765B"><span>Wreck</span></div>
+    <div class="spv" style="background:#C97A4A"><span>Reef</span></div>
+    <div class="spv" style="background:#B36888"><span>Wall</span></div>
+    <div class="spv" style="background:#5F8A54"><span>Pinnacle</span></div>
+    <div class="spv" style="background:#868150"><span>Muck</span></div>
+  </div>
+  <div class="m" style="color:var(--text-muted);margin:16px 0 10px">The same ten with white ink — what it would look like if <code>--on-type</code> didn't exist</div>
+  <div class="spines">
+    <div class="spv white" style="background:#2A8B9C"><span>Boat</span></div>
+    <div class="spv white" style="background:#B0894F"><span>Shore</span></div>
+    <div class="spv white" style="background:#3FA9A0"><span>Drift</span></div>
+    <div class="spv white" style="background:#6A7EB4"><span>Night</span></div>
+    <div class="spv white" style="background:#748094"><span>Cave</span></div>
+    <div class="spv white" style="background:#A1765B"><span>Wreck</span></div>
+    <div class="spv white" style="background:#C97A4A"><span>Reef</span></div>
+    <div class="spv white" style="background:#B36888"><span>Wall</span></div>
+    <div class="spv white" style="background:#5F8A54"><span>Pinnacle</span></div>
+    <div class="spv white" style="background:#868150"><span>Muck</span></div>
+  </div>
+</div>
+
+<h2>Decision 3b <span class="n">— <code>--on-type</code>, a new pair the ramp always needed</span></h2>
+<p>Lifting the ramp breaks white ink on it. Two components draw text directly on a type colour —
+<code>.dD-spine span</code> (the timeline's vertical caps) and <code>.lf-type-chip.sel</code> (the log form's selected
+dive-type chip) — and both hardcode <code>#fff</code>. On the lifted ramp that runs 1.6–2.4:1.</p>
+<p>So the ramp gets a named foreground partner like every other container colour:
+<b><code>--on-type</code></b> — <code>#FFFFFF</code> in light, <code>#091010</code> in dark, <b>4.80:1 minimum</b>
+across all ten. Conceptually this is the ink↔paper swap reaching the last part of the palette it hadn't:
+on dark the type chip becomes a bright block with dark type on it.</p>
+<div class="callout warnbox">
+<p><b>Measuring this turned up a pre-existing light-mode failure, unrelated to dark mode.</b> White on the <i>light</i>
+ramp already fails for three members: <b>Shore 3.21, Drift 2.84, Reef 3.30</b> — the spine's own type word, which the
+history design brief calls "the legend… no separate key needed", is under AA on those three today. It's the same three
+that fail the stats bar, and for the same reason: they're the lightest members. Recorded, not fixed here — it's a light-mode
+bug and this pass is scoped to dark. But <code>--on-type</code> is the seam it would be fixed through.</p>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>Decision 4 <span class="n">— stats dive-type bars: fixed, not re-noted</span></h2>
+<p>The tracked failure was 7 of 10 hues under 1.4.11's 3:1 floor against the dark <code>--surface2</code> track, as low
+as 1.58:1. The lifted ramp resolves it directly — <b>no separate bar treatment, no second ramp copy</b>, which was the
+whole reason for holding this until now:</p>
+<table>
+<tr><th>Type</th><th class="mono">was (light ramp on dark track)</th><th class="mono">now</th><th></th></tr>
+<tr><td>Night</td><td class="mono"><span class="fail">1.58</span></td><td class="mono">3.41</td><td><span class="pass">✓</span></td></tr>
+<tr><td>Wreck</td><td class="mono"><span class="fail">1.74</span></td><td class="mono">3.41</td><td><span class="pass">✓</span></td></tr>
+<tr><td>Wall</td><td class="mono"><span class="fail">1.83</span></td><td class="mono">3.41</td><td><span class="pass">✓</span></td></tr>
+<tr><td>Muck</td><td class="mono"><span class="fail">1.93</span></td><td class="mono">3.42</td><td><span class="pass">✓</span></td></tr>
+<tr><td>Cave</td><td class="mono"><span class="fail">2.15</span></td><td class="mono">3.41</td><td><span class="pass">✓</span></td></tr>
+<tr><td>Pinnacle</td><td class="mono"><span class="fail">2.59</span></td><td class="mono">3.41</td><td><span class="pass">✓</span></td></tr>
+<tr><td>Boat</td><td class="mono"><span class="fail">2.91</span></td><td class="mono">3.42</td><td><span class="pass">✓</span></td></tr>
+<tr><td>Shore · Drift · Reef</td><td class="mono">4.24 · 4.80 · 4.13</td><td class="mono">unchanged</td><td><span class="pass">already passed</span></td></tr>
+</table>
+<div class="card">
+  <div class="m" style="color:var(--text-muted);margin-bottom:8px">Dark, lifted ramp — <code>.st-fil</code> on <code>.st-trk</code></div>
+  <div class="barrow"><span class="barlbl">Boat</span><span class="bartrk"><span class="barfil" style="width:72%;background:#2A8B9C"></span></span><span class="barval">3.42</span></div>
+  <div class="barrow"><span class="barlbl">Night</span><span class="bartrk"><span class="barfil" style="width:54%;background:#6A7EB4"></span></span><span class="barval">3.41</span></div>
+  <div class="barrow"><span class="barlbl">Wreck</span><span class="bartrk"><span class="barfil" style="width:41%;background:#A1765B"></span></span><span class="barval">3.41</span></div>
+  <div class="barrow"><span class="barlbl">Wall</span><span class="bartrk"><span class="barfil" style="width:33%;background:#B36888"></span></span><span class="barval">3.41</span></div>
+  <div class="barrow"><span class="barlbl">Muck</span><span class="bartrk"><span class="barfil" style="width:22%;background:#868150"></span></span><span class="barval">3.42</span></div>
+  <div class="m" style="color:var(--text-dim);margin-top:12px">Compare — the same five with the unlifted <code>:root</code> ramp on this track:</div>
+  <div class="barrow"><span class="barlbl">Boat</span><span class="bartrk"><span class="barfil" style="width:72%;background:#2F7E8C"></span></span><span class="barval">2.91</span></div>
+  <div class="barrow"><span class="barlbl">Night</span><span class="bartrk"><span class="barfil" style="width:54%;background:#3A4A7A"></span></span><span class="barval">1.58</span></div>
+  <div class="barrow"><span class="barlbl">Wreck</span><span class="bartrk"><span class="barfil" style="width:41%;background:#6E4A33"></span></span><span class="barval">1.74</span></div>
+  <div class="barrow"><span class="barlbl">Wall</span><span class="bartrk"><span class="barfil" style="width:33%;background:#863C5E"></span></span><span class="barval">1.83</span></div>
+  <div class="barrow"><span class="barlbl">Muck</span><span class="bartrk"><span class="barfil" style="width:22%;background:#5E5A31"></span></span><span class="barval">1.93</span></div>
+</div>
+<p>The <b>light-mode</b> half of that same tracked item (Shore 2.57, Drift 2.27, Reef 2.64 against the light track)
+is <i>not</i> fixed by this, since the light ramp is untouched. It needs a boundary rather than a colour change: a 1px
+inset hairline in <code>--text</code> measures 4.20–4.88:1 against those three fills and 11.09:1 against the track,
+satisfying 1.4.11 through the bar's visual boundary. Noted for the light pass; it is not a dark-mode decision and
+guessing at it here would be the piecemeal patching this item was held back to avoid.</p>
+
+<h2>Decision 4b <span class="n">— colourblind distinctness, previously unverified</span></h2>
+<p>Flagged as an open question and never measured, so it was measured. Under simulated deuteranopia the dark ramp's
+tightest pair is <b>Wreck/Muck at 0.014</b>; the light ramp's is the same pair at <b>0.011</b>. Protanopia:
+0.015 dark. <b>Dark is marginally better than light, and neither is good</b> — Wreck/Muck and Shore/Reef are close to
+indistinguishable without colour vision in both themes. That's a pre-existing property of the ramp, not something dark
+mode introduces, and it is not solvable by lightness/saturation moves alone. Recorded here so the next person doesn't
+have to re-derive it; the real fix is non-colour redundancy, which the spine already has (the type word is written on it).</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>Decision 5 <span class="n">— IUCN chips: all eight ranks, and two were broken</span></h2>
+<p>The shipped <code>.theme-harbour</code> block covers CR, EN, VU and EW — the four the footage modal happens to
+render. At app scope the species album and log form show all eight. Checking them found two real problems, not just
+four missing declarations.</p>
+<table>
+<tr><th>Rank</th><th>Dark treatment</th><th class="mono">ratio</th><th>Status</th></tr>
+<tr><td><span class="iucn iucn-CR">CR</span></td><td class="mono">rgba(9,16,16,.55) fill · #A98BD6 · w800</td><td class="mono">6.16</td><td><span class="fail">shipped value was 3.74 — fixed</span></td></tr>
+<tr><td><span class="iucn iucn-EN">EN</span></td><td class="mono">rgba(188,169,222,.13) · #BCA9DE</td><td class="mono">5.58</td><td><span class="pass">as shipped</span></td></tr>
+<tr><td><span class="iucn iucn-VU">VU</span></td><td class="mono">rgba(237,230,218,.12) · <b>var(--text)</b></td><td class="mono">8.86</td><td><span class="fail">off gold — see 5b</span></td></tr>
+<tr><td><span class="iucn iucn-NT">NT</span></td><td class="mono">--taupe-dim · --text-muted</td><td class="mono">6.10</td><td><span class="resid">was missing</span></td></tr>
+<tr><td><span class="iucn iucn-LC">LC</span></td><td class="mono">--taupe-dim · --text-muted</td><td class="mono">6.10</td><td><span class="resid">was missing</span></td></tr>
+<tr><td><span class="iucn iucn-DD">DD</span></td><td class="mono">--taupe-dim · --text-muted</td><td class="mono">6.10</td><td><span class="resid">was missing</span></td></tr>
+<tr><td class="mono">EW · EX</td><td class="mono">—</td><td class="mono">—</td><td><span class="pass">deleted — 0 rows in the DB</span></td></tr>
+<tr><td class="mono">anything else</td><td class="mono">--taupe-dim · --text-muted (fallback)</td><td class="mono">6.10</td><td><span class="fail">had NO rule at all — see 5c</span></td></tr>
+</table>
+
+<div class="callout warnbox">
+<p><b>CR failed AA at the value that shipped.</b> "CR holds rank through weight + stronger fill on dark, not through
+darkness" is the right instinct, but the specific implementation of "stronger fill" — a <i>brighter</i> violet tint at
+α0.22 — lifts the chip's background toward its own text and lands CR at <b>3.74:1</b>. Dropping the alpha fixes contrast
+(α0.10 → 4.59) but then CR is <i>less</i> filled than EN and the rank signal inverts.</p>
+<p>Resolution: on dark, "stronger fill" means a <b>deeper</b> fill, not a brighter one — <code>rgba(9,16,16,0.55)</code>,
+the theme's own deepest tone, which pushes the chip away from its violet ink instead of toward it. CR reads
+<b>6.16:1</b>, still visibly denser and heavier than EN's light tint, with the rank order intact. <b>On dark, emphasis
+inverts direction:</b> adding weight to something means taking light away from it, not adding more.</p>
+</div>
+
+<h2>Decision 5b <span class="n">— VU comes off gold, and EW/EX pay for it</span></h2>
+<p>Shoal logs <b>sightings</b>, so EW (extinct in the wild) and EX (extinct) can never legitimately be recorded.
+Checked rather than assumed: of the 1,275 rows in <code>data/species-db.js</code>, <b>zero</b> carry either status
+(LC 709, blank 376, VU 60, EN 39, NT 34, DD 33, CR 22). Two dead chip treatments, and the tracked "gold leaks into VU"
+item wanting a home.</p>
+<p><b>VU takes the treatment EW was holding</b> — full neutral ink on a stronger tint and border — not EX's solid pale
+fill, which reads far louder than CR or EN and would invert the rank order visually. And measuring it turned up
+something the gold-leak item never recorded:</p>
+<table>
+<tr><th>VU</th><th>Light</th><th class="mono">ratio</th><th>Dark</th><th class="mono">ratio</th></tr>
+<tr><td>today (gold)</td><td class="mono">#a07a10 on rgba(212,168,67,.15)</td><td class="mono"><span class="fail">3.33</span></td><td class="mono">#D9B45C on rgba(217,180,92,.14)</td><td class="mono">5.82</td></tr>
+<tr><td>proposed</td><td class="mono">var(--text) on rgba(28,48,48,.12)</td><td class="mono"><span class="pass">10.30</span></td><td class="mono">var(--text) on rgba(237,230,218,.12)</td><td class="mono"><span class="pass">8.86</span></td></tr>
+</table>
+<p><b>Light-mode VU is 3.33:1 today — it fails AA outright.</b> The open item recorded this as a token-hygiene problem
+("reads as compliant to a <code>var()</code> grep, isn't"); it is also a live contrast failure that nobody had put a
+number on. Fixing the leak fixes the contrast as a side effect.</p>
+<p>It also settles a place where the doc and the code have quietly disagreed. The strict rule says <i>"VU/NT/LC IUCN
+tiers stay plain Deep Water text (only CR/EN get violet) — too many dived species are VU; colouring them dilutes the
+signal."</i> The code gives VU gold and NT/LC <code>--text-muted</code>: neither matches. The proposal puts VU on
+plain <code>--text</code> exactly as written, and leaves NT/LC/DD muted — which draws the hierarchy along the line
+IUCN itself draws, since <b>CR/EN/VU are the three "threatened" categories and NT/LC/DD are not</b>:</p>
+<ul>
+<li><b>CR</b> — deep violet, deep fill, weight 800</li>
+<li><b>EN</b> — soft violet, light tint</li>
+<li><b>VU</b> — no hue, but full ink and a stronger border: still marked, no longer competing</li>
+<li><b>NT / LC / DD</b> — muted ink, faint tint: recede</li>
+</ul>
+<p>VU is comfortably distinct from the tier below it (ΔEok 0.228 light / 0.155 dark against <code>--text-muted</code>)
+and from the violets above (0.183 vs EN, 0.266 vs CR). It <i>measures</i> higher contrast than CR — 8.86 vs 6.16 — but
+contrast isn't salience: a neutral chip among violet ones reads as unmarked, not emphasised. Worth watching on a real
+screen, and the fill alpha is the dial if it needs calming.</p>
+
+<h2>Decision 5c <span class="n">— the deleted rules become a fallback, because two statuses have none</span></h2>
+<div class="callout warnbox">
+<p><b>Found while confirming EW/EX were unused: two species render with no chip styling at all.</b> The DB contains one
+<code>LR/nt</code> and one <code>NA</code> — legacy IUCN codes that survived the AphiaID audit.
+<code>album.js:269</code> builds the class as <code>'iucn-' + iucn</code>, so those become
+<code>.iucn-LR/nt</code> (not even a valid selector — the <code>/</code>) and <code>.iucn-NA</code> (simply
+undefined). Both fall through to the base <code>.iucn-badge</code>, which sets <b>no background, no border and no
+colour</b> — bare text where every neighbour is a chip.</p>
+<p>So rather than delete EW/EX outright, their slot becomes a <b>default</b>: the neutral treatment moves onto the base
+<code>.iucn</code>/<code>.iucn-badge</code> classes, and the six real ranks override it. Every unrecognised status —
+<code>LR/nt</code>, <code>NA</code>, and a future EW/EX if a species batch ever introduces one — lands on the neutral
+chip instead of nothing. This is strictly better than either keeping or deleting the dead rules: it fixes a live bug,
+removes two dead ones, and closes the silent-fallthrough class of failure rather than one instance of it.</p>
+</div>
+<div class="card">
+  <div class="m" style="color:var(--text-muted);margin-bottom:10px">The six real ranks + the fallback, on a card</div>
+  <div class="chips">
+    <span class="iucn iucn-CR">CR</span><span class="iucn iucn-EN">EN</span><span class="iucn iucn-VU">VU</span>
+    <span class="iucn iucn-NT">NT</span><span class="iucn iucn-LC">LC</span><span class="iucn iucn-DD">DD</span>
+    <span class="iucn">LR/nt</span><span class="iucn">NA</span>
+  </div>
+</div>
+<p><code>--gold</code> itself is untouched and now has <b>no call site outside its charter</b> — the achievement badge
+it was always reserved for. That closes the open item rather than inheriting it.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>Decision 6 <span class="n">— <code>color: var(--text)</code> on the theme class</span></h2>
+<p>Present, first line, and the reason is worth keeping next to it rather than in a changelog: a descendant with no
+explicit <code>color</code> inherits <code>body</code>'s <i>computed</i> value, which is the light ink resolved before
+the theme class ever applied. Token overrides don't retroactively re-resolve it. At modal scope this cost one
+unreadable title; at <code>&lt;body&gt;</code> scope it would be most of the app.</p>
+<p>App-wide scope adds a second version of the same trap that the modal never hit: <b>40 declarations in
+<code>css/styles.css</code> hardcode a light-mode hex</b> (<code>#1C3030</code>, <code>#FAF6F1</code>,
+<code>#F5EBD8</code>, <code>rgba(28,48,48,…)</code>) instead of a token. Every one is invisible to a theme class for
+exactly the same reason. Two are already known and patched in the shipped block (the coral hover literals);
+<code>.iucn-EX</code>'s <code>#1C3030</code> fill was a third, now deleted outright by decision 5b rather than themed.
+The rest are an implementation-time sweep, not a colour decision — but they are the thing most likely to make an
+otherwise-correct theme look broken. <code>--accent-text</code> (decision 1c) is the same failure arriving through a
+token instead of a literal, which is the more dangerous version: a literal at least looks wrong when you read it.</p>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<h2>Decision 7 <span class="n">— dive-profile chart: two derivations invert</span></h2>
+<p>These tokens are read by <code>renderProfileChart</code> through <code>getComputedStyle</code>, so they re-theme
+automatically — which means they re-theme automatically into nonsense unless they're re-derived. Both of the ones
+defined as "lerp toward black/white" break, and they break in opposite directions.</p>
+<table>
+<tr><th>Token</th><th>Light</th><th>Dark</th><th>Why</th></tr>
+<tr><td><code>--profile-calm</code></td><td class="mono">#89B7D1</td><td class="mono">#89B7D1 <span class="m">kept</span></td><td class="m">6.15 / 5.77 over the dark fills — already right</td></tr>
+<tr><td><code>--profile-warn</code></td><td class="mono">#E0734F</td><td class="mono">#E0734F <span class="m">kept</span></td><td class="m">4.24 / 3.98 — already right</td></tr>
+<tr><td><code>--profile-deco</code></td><td class="mono">#6A2C1C</td><td class="mono">#E14752</td><td class="m">"danger darkened 40%" = <span class="fail">1.45:1</span>, invisible</td></tr>
+<tr><td><code>--profile-fill-top</code></td><td class="mono">#C0D8E6</td><td class="mono">#1F3337</td><td class="m">"accent + 65% white" = a glowing white block</td></tr>
+<tr><td><code>--profile-fill-bottom</code></td><td class="mono">#65A1C3</td><td class="mono">#233740</td><td class="m">same</td></tr>
+</table>
+<p><b>The water column</b> is a lerp toward white, so on dark it has to become a lerp toward the canvas instead —
+<code>--accent</code> 86% / 76% toward <code>--surface-base</code> / <code>--surface-lowest</code>. The gradient's
+meaning is unchanged (lighter at the surface, deepening with depth); only its anchor moves from white to the dark
+canvas. Each of the three curve colours clears 3:1 against both ends.</p>
+<p><b>Locked-deco is the interesting one.</b> It's defined as <code>--danger</code> darkened 40% toward black, encoding
+"worse than warn" as <i>darker</i> — which works on a light page and is exactly backwards on a dark one, where darker
+means <i>less</i> visible. Every darkened candidate failed: 2.04–2.69:1 against the water column, i.e. a state the
+chart exists to make unmissable, rendered nearly invisible. On dark, "deeper" has to mean <b>more saturated and pushed
+redder</b>, not darker: <code>#E14752</code> sits 18° red of <code>--profile-warn</code> at chroma 0.19, clears
+3.29 / 3.09 against the fills, and holds ΔEok 0.088 from warn — a wider gap than the two have in light mode. Same
+principle as CR and EX above, a third time: <b>on dark, intensity is the axis that darkness was in light.</b></p>
+
+<h2>What needed no change at all</h2>
+<ul>
+<li><b>The surface ladder.</b> All five rungs re-measured at app scope; <code>--text</code> runs 9.06–15.49 across them, matching the shipped figures exactly.</li>
+<li><b>The mobile bottom nav and desktop sidebar.</b> Both are already permanently dark and already run on
+<code>--accent-on-dark</code> <code>#97C6E2</code>, a constant derived from dark-mode <code>--accent</code> in the first
+place. An app-wide dark theme is the case they were accidentally built for; they need nothing.</li>
+<li><b><code>--gold</code>, and every ramp hue's identity.</b> Out of scope per brief and untouched — maximum hue drift
+across the ten types is 0.6°.</li>
+<li><b><code>--text-dim</code> at 2.76:1 on <code>--surface-highest</code>.</b> Below AA, and correct — the pair is
+documented as decorative-only and cannot pass by design.</li>
+</ul>
+
+<h2>Residuals, disclosed</h2>
+<ul>
+<li><code>--danger</code> is <b>4.41:1 on <code>--surface-high</code></b>, under 4.5. Same class of accepted shortfall as light mode's 4.30–4.32 on the same rung, and for the same reason: that rung carries troughs and tracks, not status text.</li>
+<li><code>--danger</code> to <code>--type-Reef</code> is <b>ΔEok 0.060</b> against light's 0.125. Improved from 0.038 but still tighter than light, because dark mode's contrast floor compresses the orange band. Above the system's own demonstrated tolerance (0.050) but worth knowing.</li>
+<li><b>Light-mode</b> white-on-spine fails for Shore (3.21), Drift (2.84) and Reef (3.30), and the light stats bars still fail for the same three. Found by this pass, out of its scope.</li>
+<li>The <b>40 hardcoded light hexes</b> in <code>css/styles.css</code> are an implementation-time sweep this mockup can't stand in for.</li>
+</ul>
+
+<h2>Full swatch</h2>
+<div class="swgrid">
+  <div class="sw"><div class="c" style="background:#091010"></div><div class="l"><b>surface-lowest</b><br>#091010</div></div>
+  <div class="sw"><div class="c" style="background:#182827"></div><div class="l"><b>surface-low</b><br>#182827</div></div>
+  <div class="sw"><div class="c" style="background:#111E1D"></div><div class="l"><b>surface-base</b><br>#111E1D</div></div>
+  <div class="sw"><div class="c" style="background:#20312F"></div><div class="l"><b>surface-high</b><br>#20312F</div></div>
+  <div class="sw"><div class="c" style="background:#2E3E3B"></div><div class="l"><b>surface-highest</b><br>#2E3E3B</div></div>
+  <div class="sw"><div class="c" style="background:#EDE6DA"></div><div class="l"><b>text</b><br>#EDE6DA</div></div>
+  <div class="sw"><div class="c" style="background:#BFB3A2"></div><div class="l"><b>text-muted</b><br>#BFB3A2</div></div>
+  <div class="sw"><div class="c" style="background:#857D70"></div><div class="l"><b>text-dim</b><br>#857D70</div></div>
+  <div class="sw"><div class="c" style="background:#74B3D8"></div><div class="l"><b>accent</b> (ink)<br>#74B3D8</div></div>
+  <div class="sw"><div class="c" style="background:#407DA0"></div><div class="l"><b>accent-fill</b> const<br>#407DA0</div></div>
+  <div class="sw"><div class="c" style="background:#5FB180"></div><div class="l"><b>success</b><br>#5FB180</div></div>
+  <div class="sw"><div class="c" style="background:#E98A6A"></div><div class="l"><b>warn</b><br>#E98A6A</div></div>
+  <div class="sw"><div class="c" style="background:#E96E4C"></div><div class="l"><b>danger</b> ←changed<br>#E96E4C</div></div>
+  <div class="sw"><div class="c" style="background:#D9B45C"></div><div class="l"><b>gold</b><br>#D9B45C</div></div>
+  <div class="sw"><div class="c" style="background:#A98BD6"></div><div class="l"><b>violet-deep</b> CR<br>#A98BD6</div></div>
+  <div class="sw"><div class="c" style="background:#BCA9DE"></div><div class="l"><b>violet-soft</b> EN<br>#BCA9DE</div></div>
+</div>
+
+</div>
+</body>
+</html>

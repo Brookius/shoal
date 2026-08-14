@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dark mode — Species Album &amp; profile</title>
+<style>
+/* Harbour Night on the Species panel. This is the screen that renders all
+   eight IUCN ranks, so it's where the chip overrides had to be completed —
+   the shipped .theme-harbour block covers only the four the footage modal
+   happens to show. Token reasoning: mockups/mockup-dark-tokens.html. */
+:root{
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --display:Georgia,serif;
+  --font-size-xs:12px; --font-size-sm:14px; --font-size-base:16px;
+  --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --radius-full:999px;
+}
+.theme-harbour{
+  color:var(--text);
+  --surface-lowest:#091010; --surface-low:#182827; --surface-base:#111E1D;
+  --surface-high:#20312F; --surface-highest:#2E3E3B;
+  --bg:var(--surface-base); --surface:var(--surface-low); --surface2:var(--surface-high);
+  --border:rgba(237,230,218,0.08); --border-mid:rgba(237,230,218,0.17);
+  --text:#EDE6DA; --text-muted:#BFB3A2; --text-dim:#857D70;
+  --taupe-dim:rgba(191,179,162,0.1); --taupe-border:rgba(191,179,162,0.28);
+  --accent:#74B3D8; --accent-fill:#407DA0;
+  /* the light theme's accent ink/text SPLIT collapses on dark: #74B3D8 already
+     clears 4.91:1 at worst as text, so no second darkened value is needed.
+     Leaving --accent-text at its light #397191 fails on every rung (2.11–3.61). */
+  --accent-text:#74B3D8;
+  --accent-dim:rgba(116,179,216,0.12); --accent-border:rgba(116,179,216,0.36);
+  --success:#5FB180; --warn:#E98A6A; --danger:#E96E4C; --gold:#D9B45C;
+  --violet-soft:#BCA9DE; --violet-deep:#A98BD6;
+  --on-accent:#FFFFFF;
+}
+/* ── IUCN chips: the complete eight, scoped to the theme ─────────────────── */
+.theme-harbour .iucn-CR{background:rgba(9,16,16,.55);color:var(--violet-deep);
+  border-color:rgba(169,139,214,.55);font-weight:800}
+.theme-harbour .iucn-EN{background:rgba(188,169,222,.13);color:var(--violet-soft);border-color:rgba(188,169,222,.32)}
+/* VU off gold: full neutral ink + stronger tint/border (8.86:1; was 5.82 on gold,
+   and 3.33:1 in LIGHT mode — a live AA failure the gold-leak item never measured) */
+.theme-harbour .iucn-VU{background:rgba(237,230,218,.12);color:var(--text);border-color:rgba(237,230,218,.30)}
+/* also the FALLBACK: album.js builds 'iucn-'+status, so LR/nt and NA (1 row each
+   in the DB) currently hit no rule at all and render as bare text */
+.theme-harbour .iucn-badge,
+.theme-harbour .iucn-NT,
+.theme-harbour .iucn-LC,
+.theme-harbour .iucn-DD{background:var(--taupe-dim);color:var(--text-muted);border-color:var(--border-mid)}
+/* EW/EX deleted — 0 of 1,275 rows carry either; this app logs sightings */
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);
+     font-size:var(--font-size-base);line-height:1.55;padding:28px 20px 80px}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.9;
+  background:linear-gradient(180deg,#182827 0%,#111E1D 42%,#0B1616 100%)}
+.wrap{max-width:980px;margin:0 auto}
+.note{font-size:var(--font-size-sm);color:var(--text-muted);margin-bottom:24px;max-width:78ch}
+.note b{color:var(--text)} code{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text)}
+.page-title{font-family:var(--display);font-size:22px;font-weight:500;letter-spacing:-.02em}
+.page-sub{font-size:var(--font-size-sm);color:var(--text-muted);font-family:var(--mono);margin-bottom:1.5rem}
+
+.iucn-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 6px;
+  border-radius:var(--radius-xs);border:1px solid transparent;display:inline-block;letter-spacing:.04em}
+
+/* ── search + category pills ────────────────────────────────────────────── */
+.sp-search{display:flex;align-items:center;gap:9px;background:var(--surface2);border:1px solid var(--border-mid);
+  border-radius:var(--radius-md);padding:10px 13px;margin-bottom:14px}
+.sp-search span{color:var(--accent)}
+.sp-search input{flex:1;background:transparent;border:none;outline:none;color:var(--text);
+  font-family:var(--sans);font-size:var(--font-size-base)}
+.sp-search input::placeholder{color:var(--text-dim)}
+.cat-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px}
+.cat-pill{font-family:var(--mono);font-size:var(--font-size-xs);padding:5px 12px;border-radius:var(--radius-full);
+  border:1px solid var(--border-mid);background:var(--surface);color:var(--text-muted);cursor:pointer}
+.cat-pill:hover{color:var(--accent);border-color:var(--accent-border);background:var(--accent-dim)}
+.cat-pill[aria-disabled=true]{opacity:.4;pointer-events:none;color:var(--text-dim)}
+
+/* ── album strips ───────────────────────────────────────────────────────── */
+.grp{margin-bottom:30px}
+.grp-h{display:flex;align-items:baseline;gap:8px;font-family:var(--mono);font-size:var(--font-size-xs);
+  color:var(--text);font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.grp-h .n{color:var(--text-muted);font-weight:400;letter-spacing:.04em;text-transform:none}
+.strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px}
+.sp-cell{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+  overflow:hidden;cursor:pointer}
+.sp-cell:hover{border-color:var(--border-mid)}
+.sp-cell .ph{aspect-ratio:1;background:var(--surface2);position:relative}
+.sp-cell .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.sp-cell .ph .b{position:absolute;right:5px;top:5px}
+.sp-cell .cap{padding:7px 9px 9px}
+.sp-cell .cn{font-size:var(--font-size-sm);line-height:1.25;color:var(--text)}
+.sp-cell .ct{font-family:var(--mono);font-size:10px;color:var(--text-muted);margin-top:3px}
+
+/* ── profile modal ──────────────────────────────────────────────────────── */
+.modal-overlay{background:rgba(6,12,12,.72);border-radius:var(--radius-lg);padding:22px;margin-top:34px}
+.modal{background:var(--surface);border:1px solid var(--border-mid);border-radius:var(--radius-lg);
+  overflow:hidden;max-width:660px;margin:0 auto;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.sp-hero{position:relative;aspect-ratio:16/8;background:var(--surface2)}
+.sp-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.sp-hero-grad{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(9,16,16,0) 38%,rgba(9,16,16,.88) 100%)}
+.sp-hero-txt{position:absolute;left:18px;right:18px;bottom:14px}
+.sp-hero-txt .nm{font-size:20px;font-weight:700;color:#EDE6DA;letter-spacing:-.01em}
+.sp-hero-txt .sci{font-family:var(--mono);font-size:var(--font-size-xs);
+  color:rgba(237,230,218,.72);font-style:italic;margin-top:2px}
+.sp-close{position:absolute;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
+  width:30px;height:30px;border-radius:50%;background:rgba(9,16,16,.6);border:1px solid rgba(237,230,218,.25);
+  color:#EDE6DA;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sp-body{padding:16px 18px 20px}
+.sp-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:6px}
+.sp-found{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted);margin-bottom:16px}
+.sp-found b{color:var(--text);font-weight:600}
+.sp-sech{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text);font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;padding-bottom:7px;border-bottom:1px solid var(--border);
+  margin:18px 0 10px}
+.sp-map{height:120px;border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;
+  position:relative;background:var(--surface2)}
+.sp-map-fake{position:absolute;inset:0;
+  background:radial-gradient(circle at 34% 40%,rgba(116,179,216,.32) 0 4px,transparent 5px),
+             radial-gradient(circle at 58% 58%,rgba(116,179,216,.32) 0 4px,transparent 5px),
+             linear-gradient(150deg,#1B2E31,#122023)}
+.sp-sighting-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);
+  cursor:pointer;font-size:var(--font-size-sm)}
+.sp-sighting-row:last-child{border-bottom:none}
+.sp-sighting-row:hover{color:var(--accent)}
+.sp-sighting-row .dn{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-muted);flex:0 0 44px}
+.sp-sighting-row .st{flex:1;min-width:0}
+.sp-sighting-row .pin{color:var(--accent)}
+.sp-sighting-row .ab{font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 6px;
+  border-radius:var(--radius-xs);background:var(--taupe-dim);color:var(--text-muted);border:1px solid var(--border-mid)}
+.sp-video-ref{display:flex;align-items:center;gap:8px;padding:8px 10px;margin-top:8px;
+  border:1px solid var(--border-mid);border-radius:var(--radius-sm);background:var(--surface2);
+  font-family:var(--mono);font-size:var(--font-size-xs);color:var(--accent);cursor:pointer}
+
+.chiprow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.cap2{font-family:var(--mono);font-size:var(--font-size-xs);color:var(--text-dim);
+  letter-spacing:.06em;text-transform:uppercase;margin:30px 0 10px}
+</style>
+</head>
+<body class="theme-harbour">
+<div class="wrap">
+
+<div class="note"><b>Species Album — Harbour Night, app-wide.</b> The album and its profile modal render every IUCN rank,
+which is what makes this the screen where the chip overrides had to be finished. Two of them were genuinely broken on
+dark, not merely missing — see the strip at the bottom.</div>
+
+<div class="page-title">Species album</div>
+<div class="page-sub">211 species logged · 1,275 in database</div>
+
+<div class="sp-search"><span>🔍</span><input type="text" placeholder="Search your species…"></div>
+<div class="cat-pills">
+  <span class="cat-pill">Fish 96</span><span class="cat-pill">Shark 7</span><span class="cat-pill">Ray 6</span>
+  <span class="cat-pill">Cephalopod 11</span><span class="cat-pill">Crustacean 14</span>
+  <span class="cat-pill">Echinoderm 9</span><span class="cat-pill">Coral 28</span>
+  <span class="cat-pill">Reptile 3</span><span class="cat-pill">Mammal 2</span>
+  <span class="cat-pill" aria-disabled="true">Tunicate 0</span>
+</div>
+
+<div class="grp">
+  <div class="grp-h">Reptile <span class="n">3 species</span></div>
+  <div class="strip">
+    <div class="sp-cell"><div class="ph"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/medium.jpg" alt=""><span class="b iucn-badge iucn-CR">CR</span></div>
+      <div class="cap"><div class="cn">Hawksbill turtle</div><div class="ct">6 dives</div></div></div>
+    <div class="sp-cell"><div class="ph"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/medium.jpg" alt=""><span class="b iucn-badge iucn-EN">EN</span></div>
+      <div class="cap"><div class="cn">Green sea turtle</div><div class="ct">14 dives</div></div></div>
+    <div class="sp-cell"><div class="ph"><span class="b iucn-badge iucn-VU">VU</span></div>
+      <div class="cap"><div class="cn">Olive ridley</div><div class="ct">1 dive</div></div></div>
+  </div>
+</div>
+
+<div class="grp">
+  <div class="grp-h">Shark <span class="n">7 species</span></div>
+  <div class="strip">
+    <div class="sp-cell"><div class="ph"><img src="https://inaturalist-open-data.s3.amazonaws.com/photos/4675175/medium.jpg" alt=""><span class="b iucn-badge iucn-VU">VU</span></div>
+      <div class="cap"><div class="cn">Whitetip reef shark</div><div class="ct">9 dives</div></div></div>
+    <div class="sp-cell"><div class="ph"><span class="b iucn-badge iucn-EN">EN</span></div>
+      <div class="cap"><div class="cn">Scalloped hammerhead</div><div class="ct">2 dives</div></div></div>
+    <div class="sp-cell"><div class="ph"><span class="b iucn-badge iucn-NT">NT</span></div>
+      <div class="cap"><div class="cn">Tawny nurse shark</div><div class="ct">4 dives</div></div></div>
+    <div class="sp-cell"><div class="ph"><span class="b iucn-badge iucn-LC">LC</span></div>
+      <div class="cap"><div class="cn">Blacktip reef shark</div><div class="ct">11 dives</div></div></div>
+    <div class="sp-cell"><div class="ph"><span class="b iucn-badge iucn-DD">DD</span></div>
+      <div class="cap"><div class="cn">Coral catshark</div><div class="ct">1 dive</div></div></div>
+  </div>
+</div>
+
+<!-- ── species profile modal ────────────────────────────────────────────── -->
+<div class="cap2">Species profile (overlay)</div>
+<div class="modal-overlay">
+  <div class="modal">
+    <div class="sp-hero">
+      <img src="https://inaturalist-open-data.s3.amazonaws.com/photos/9696846/large.jpg" alt="">
+      <div class="sp-hero-grad"></div>
+      <button class="sp-close">✕</button>
+      <div class="sp-hero-txt">
+        <div class="nm">Hawksbill turtle</div>
+        <div class="sci">Eretmochelys imbricata</div>
+      </div>
+    </div>
+    <div class="sp-body">
+      <div class="sp-meta">
+        <span class="iucn-badge iucn-CR">CR — Critically endangered</span>
+        <span class="sp-sighting-row" style="border:none;padding:0"><span class="ab">6 dives</span></span>
+      </div>
+      <div class="sp-found">Found in <b>Indo-Pacific · SE Asia · Red Sea · Caribbean</b></div>
+
+      <div class="sp-sech">Where you've seen it</div>
+      <div class="sp-map"><div class="sp-map-fake"></div></div>
+
+      <div class="sp-sech">Dive log</div>
+      <div class="sp-sighting-row"><span class="dn">#128</span><span class="st">Batu Bolong <span class="pin">📍</span></span><span class="ab">R</span></div>
+      <div class="sp-sighting-row"><span class="dn">#121</span><span class="st">Crystal Bay <span class="pin">📍</span></span><span class="ab">O</span></div>
+      <div class="sp-sighting-row"><span class="dn">#114</span><span class="st">Manta Point</span><span class="ab">R</span></div>
+      <div class="sp-video-ref">▶ GX010128.MP4 · 06:12 — close pass</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── the chips ────────────────────────────────────────────────────────── -->
+<div class="cap2">The six ranks this app can actually record — plus the fallback</div>
+<div class="chiprow">
+  <span class="iucn-badge iucn-CR">CR</span><span class="iucn-badge iucn-EN">EN</span>
+  <span class="iucn-badge iucn-VU">VU</span><span class="iucn-badge iucn-NT">NT</span>
+  <span class="iucn-badge iucn-LC">LC</span><span class="iucn-badge iucn-DD">DD</span>
+  <span class="iucn-badge">LR/nt</span><span class="iucn-badge">NA</span>
+</div>
+
+<div class="note" style="margin-top:18px">
+<b>EW and EX are gone, and VU took their place.</b> This app logs <i>sightings</i>, so "extinct in the wild" and
+"extinct" can never legitimately be recorded — confirmed against the data rather than assumed: <b>zero of the 1,275
+rows</b> in <code>data/species-db.js</code> carry either (LC 709, blank 376, VU 60, EN 39, NT 34, DD 33, CR 22). VU
+inherits EW's treatment — full neutral ink on a stronger tint — rather than EX's solid pale fill, which reads far
+louder than CR or EN and would invert the rank order visually.<br><br>
+<b>That fixes a live AA failure, not just the token hygiene.</b> The tracked item recorded VU's gold as "reads as
+compliant to a <code>var()</code> grep, isn't." Measured, <b>light-mode VU is 3.33:1</b> — under AA outright. The
+neutral treatment takes it to 10.30:1 light / 8.86:1 dark. It also settles a disagreement between doc and code: the
+strict rule says VU stays plain Deep Water text, and neither the gold nor NT/LC's muted grey matched it. The hierarchy
+now follows the line IUCN itself draws — CR/EN/VU are the three <i>threatened</i> categories, NT/LC/DD are not — with
+CR and EN carrying hue, VU carrying full ink weight without hue, and the rest receding.<br><br>
+<b>The vacated slot becomes a fallback, because two statuses had no rule at all.</b> The DB holds one
+<code>LR/nt</code> and one <code>NA</code>. <code>album.js:269</code> builds the class as
+<code>'iucn-' + iucn</code>, giving <code>.iucn-LR/nt</code> — not even a valid selector, thanks to the
+<code>/</code> — and <code>.iucn-NA</code>, which is simply undefined. Both fall through to the base
+<code>.iucn-badge</code>, which sets no background, no border and no colour: bare text among chips. Moving the
+neutral treatment onto the base class fixes those two, removes the two dead rules, and closes the whole
+silent-fallthrough failure mode rather than one instance of it.<br><br>
+<b>CR failed AA at the value that shipped.</b> "CR holds rank through weight + stronger fill, not through darkness" is
+right, but implementing "stronger" as a <i>brighter</i> violet tint at α0.22 lifts the chip's background toward its own
+violet text and lands it at <b>3.74:1</b>. Just dropping the alpha fixes contrast and inverts the rank signal (CR would
+be less filled than EN). Making the fill <i>deeper</i> instead — <code>rgba(9,16,16,0.55)</code>, the theme's own
+darkest tone — gives <b>6.16:1</b> and reads visibly denser and heavier than EN's light tint. On dark, emphasis is
+subtraction of light, not addition.<br><br>
+<b>NT, LC and DD were simply absent</b> from the shipped block, and are fine once added — 6.10:1. Their light-mode
+counterparts hardcode <code>rgba(139,123,106,0.1)</code>, a light-taupe literal that reads as compliant to a
+<code>var()</code> grep and isn't — the same class of bug the VU leak was, now the only one of that class left.
+</div>
+
+</div>
+</body>
+</html>

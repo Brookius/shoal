@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Stats redesign</title>
+<style>
+  :root {
+    --bg:#F5EBD8; --surface:#FAF6F1; --surface2:#EDE5D8;
+    --border:rgba(28,48,48,0.1); --border-mid:rgba(28,48,48,0.18);
+    --text:#1C3030; --text-muted:#8B7B6A; --text-dim:#B5A898;
+    --accent:#4A90B8; --accent-dim:rgba(74,144,184,0.1); --accent-border:rgba(74,144,184,0.3);
+    --success:#3A9450; --gold:#D4A843; --warn:#E0734F;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --text-xs:12px; --text-sm:14px; --text-base:16px;
+
+    /* ONE dive-type palette — would be promoted to :root in the real build
+       and consumed by BOTH .tl-type-* (timeline) and the stats chart so the
+       two pages can never disagree again. Primaries match the timeline. */
+    --type-Boat:#4A90B8; --type-Drift:#C9922A; --type-Night:#6A4A9A;
+    --type-Shore:#3A9450; --type-Wreck:#9C7A3C; --type-Reef:#2F8F8F;
+    --type-Pinnacle:#A65A3A; --type-Cave:#5C5C6E; --type-Wall:#7A6CA8;
+    --type-Muck:#7E7363;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);line-height:1.45;
+        padding:32px 16px 80px}
+
+  .note{max-width:860px;margin:0 auto 22px;font-size:var(--text-sm);color:var(--text-muted)}
+  .note b{color:var(--text)}
+
+  /* Same reading constraint as History (860px) — the single biggest fix */
+  .wrap{max-width:860px;margin:0 auto}
+
+  h1{font-size:22px;font-weight:600;letter-spacing:-0.01em}
+  .sub{font-family:var(--mono);font-size:var(--text-sm);color:var(--text-muted);margin:4px 0 26px}
+
+  /* Hero stat cards — kept (on-brand), number/unit hierarchy fixed */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:34px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+        padding:18px 18px 16px;box-shadow:0 1px 3px rgba(28,48,48,0.06)}
+  .k{font-family:var(--mono);font-size:var(--text-xs);color:var(--text-dim);
+     letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px}
+  .v{font-size:38px;font-weight:300;letter-spacing:-0.03em;line-height:1;color:var(--text)}
+  .u{font-size:var(--text-sm);font-weight:400;color:var(--text-muted);margin-left:3px}
+
+  /* ONE section pattern everywhere — mirrors the expanded dive card:
+     small-caps mono label + hairline rule + content */
+  .sec{margin-bottom:30px}
+  .sec-head{display:flex;align-items:baseline;gap:8px;font-family:var(--mono);
+            font-size:var(--text-xs);color:var(--accent);font-weight:600;
+            letter-spacing:0.1em;text-transform:uppercase;
+            padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:14px}
+  .sec-note{color:var(--text-dim);font-weight:400;letter-spacing:0.04em;text-transform:none}
+  .sec-tools{margin-left:auto;display:flex;gap:6px;text-transform:none;letter-spacing:0}
+  .tgl{font-family:var(--mono);font-size:var(--text-xs);padding:3px 9px;border-radius:4px;
+       border:1px solid var(--border-mid);background:transparent;color:var(--text-muted);cursor:pointer}
+  .tgl.on{border-color:var(--accent-border);background:var(--accent-dim);color:var(--accent)}
+
+  /* Bars — thicker so they read as DATA, not underlines */
+  .row{display:flex;align-items:center;gap:14px;padding:6px 0}
+  .lbl{flex:0 0 168px;font-size:var(--text-sm);color:var(--text);
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lbl em{font-style:italic;color:var(--text-muted)}      /* sci name only */
+  .trk{flex:1;height:9px;background:var(--surface2);border-radius:5px;overflow:hidden}
+  .fil{height:100%;border-radius:5px;background:var(--accent)}
+  .val{flex:0 0 auto;min-width:54px;text-align:right;font-family:var(--mono);
+       font-size:var(--text-sm);color:var(--text)}
+  .val small{color:var(--text-dim)}
+
+  /* Value-led leader list — for clustered data where a 0-based bar would
+     be dishonest (every bar ~97% full). Carries the trip-header dot-leader. */
+  .lead{display:flex;align-items:baseline;gap:0;padding:7px 0;font-size:var(--text-sm)}
+  .lead .nm{color:var(--text)}
+  .lead .rk{font-family:var(--mono);font-size:var(--text-xs);color:var(--text-dim);
+            width:22px;flex:0 0 22px}
+  .lead .dots{flex:1;border-bottom:1px dotted var(--border-mid);margin:0 10px;
+              transform:translateY(-3px)}
+  .lead .mv{font-family:var(--mono);color:var(--text);font-weight:600}
+
+  /* Top species by country — kept as cards, refined */
+  .tsc{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .tsc .card{padding:14px 16px 12px}
+  .tsc .cc{font-family:var(--mono);font-size:var(--text-xs);color:var(--accent);
+           letter-spacing:0.09em;text-transform:uppercase;font-weight:600;
+           padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:8px}
+  .tsc .sp{display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:var(--text-sm)}
+  .tsc .sp .ct{font-family:var(--mono);font-size:var(--text-xs);color:var(--text-dim)}
+
+  .legend{display:flex;gap:16px;font-family:var(--mono);font-size:var(--text-xs);
+          color:var(--text-dim);margin-top:12px}
+  .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:0}
+
+  /* Two-column band: pair the compact summaries (depth ranking + type mix) */
+  .band{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:30px}
+  .band .sec{margin-bottom:0}
+
+  /* Donut + ranked legend — shape for the gestalt, legend for precision */
+  .donut-wrap{display:flex;align-items:center;gap:18px}
+  .donut{flex:0 0 132px;width:132px;height:132px;position:relative}
+  .donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .donut-c{position:absolute;inset:0;display:flex;flex-direction:column;
+           align-items:center;justify-content:center;text-align:center}
+  .donut-c .n{font-size:22px;font-weight:300;color:var(--text);line-height:1}
+  .donut-c .l{font-family:var(--mono);font-size:var(--text-xs);color:var(--text-dim);
+              letter-spacing:0.06em;text-transform:uppercase;margin-top:2px}
+  .dleg{flex:1;min-width:0}
+  /* >6 types → 2 short columns so the band stays balanced, nothing hidden */
+  .dleg.multi{display:grid;grid-template-columns:1fr 1fr;column-gap:22px}
+  .dleg .lr{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:var(--text-sm)}
+  .dleg .sw{flex:0 0 9px;width:9px;height:9px;border-radius:2px}
+  .dleg .tn{flex:1;min-width:0;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dleg .ct{font-family:var(--mono);color:var(--text);font-weight:600;min-width:18px;text-align:right}
+  .dleg .pc{font-family:var(--mono);font-size:var(--text-xs);color:var(--text-dim);
+            min-width:34px;text-align:right}
+
+  @media (max-width:680px){
+    .grid{grid-template-columns:repeat(2,1fr)}
+    .tsc{grid-template-columns:1fr}
+    .band{grid-template-columns:1fr;gap:30px}
+    .lbl{flex-basis:120px}
+  }
+</style>
+</head>
+<body>
+
+<div class="note">
+  <b>Mockup — Stats redesign.</b> Same 860px reading width as History · one
+  section pattern (mono label + hairline) everywhere · unified dive-type
+  colours that match the timeline · honest encoding (clustered data → leader
+  list, not fake bars) · italic reserved for scientific names · SAC coloured
+  by the real green/amber/red thresholds. Resize narrow for mobile.
+</div>
+
+<div class="wrap">
+  <h1>Stats</h1>
+  <div class="sub">Running totals across all logged dives</div>
+
+  <!-- Hero cards -->
+  <div class="grid">
+    <div class="card"><div class="k">Total dives</div><div class="v">26</div></div>
+    <div class="card"><div class="k">Time underwater</div><div class="v">24<span class="u">h</span> 15<span class="u">m</span></div></div>
+    <div class="card"><div class="k">Deepest dive</div><div class="v">27<span class="u">m</span></div></div>
+    <div class="card"><div class="k">Avg depth</div><div class="v">19.8<span class="u">m</span></div></div>
+    <div class="card"><div class="k">Sites visited</div><div class="v">24</div></div>
+    <div class="card"><div class="k">Species logged</div><div class="v">92</div></div>
+  </div>
+
+  <!-- Compact summaries paired in a 2-col band: depth ranking + type mix -->
+  <div class="band">
+    <!-- Deepest dives — leader list (24.4–27 m: a 0-based bar says nothing) -->
+    <div class="sec">
+      <div class="sec-head">Deepest dives</div>
+      <div>
+        <div class="lead"><span class="rk">1</span><span class="nm">Gili Banta Bay</span><span class="dots"></span><span class="mv">27.0 m</span></div>
+        <div class="lead"><span class="rk">2</span><span class="nm">Castle Rock</span><span class="dots"></span><span class="mv">26.4 m</span></div>
+        <div class="lead"><span class="rk">3</span><span class="nm">Manta Alley</span><span class="dots"></span><span class="mv">24.6 m</span></div>
+        <div class="lead"><span class="rk">4</span><span class="nm">Hot Rocks</span><span class="dots"></span><span class="mv">24.6 m</span></div>
+        <div class="lead"><span class="rk">5</span><span class="nm">Little Angel</span><span class="dots"></span><span class="mv">24.4 m</span></div>
+      </div>
+    </div>
+
+    <!-- Dive type breakdown — donut (gestalt) + ranked legend (precision).
+         Colour MEANS the type, matched to the timeline palette. -->
+    <div class="sec">
+      <div class="sec-head">Dive type breakdown</div>
+      <div class="donut-wrap">
+        <div class="donut">
+          <svg viewBox="0 0 42 42" id="donut-svg"></svg>
+          <div class="donut-c"><span class="n">26</span><span class="l">dives</span></div>
+        </div>
+        <div class="dleg" id="dleg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Most frequently seen — bars honest here (4–9, zero-based is real) -->
+  <div class="sec">
+    <div class="sec-head">Most frequently seen species <span class="sec-note">(dives where seen)</span></div>
+    <div id="freq"></div>
+  </div>
+
+  <!-- Top species by country -->
+  <div class="sec">
+    <div class="sec-head">Top species by country</div>
+    <div class="tsc">
+      <div class="card">
+        <div class="cc">Indonesia</div>
+        <div class="sp"><span>Blue-spotted stingray</span><span class="ct">×9</span></div>
+        <div class="sp"><span>Green sea turtle</span><span class="ct">×6</span></div>
+        <div class="sp"><span>Moray eel</span><span class="ct">×6</span></div>
+      </div>
+      <div class="card">
+        <div class="cc">United Kingdom</div>
+        <div class="sp"><span>Conger eel</span><span class="ct">×1</span></div>
+        <div class="sp"><span>Velvet crab</span><span class="ct">×1</span></div>
+        <div class="sp"><span>Ballan wrasse</span><span class="ct">×1</span></div>
+      </div>
+      <div class="card">
+        <div class="cc">Thailand</div>
+        <div class="sp"><span>Green sea turtle</span><span class="ct">×1</span></div>
+        <div class="sp"><span>Harlequin shrimp</span><span class="ct">×1</span></div>
+        <div class="sp"><span>Scorpionfish</span><span class="ct">×1</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diving activity — 2025:0 shown (a zero year is real information) -->
+  <div class="sec">
+    <div class="sec-head">Diving activity
+      <span class="sec-tools"><span class="tgl on">By year</span><span class="tgl">By month</span></span>
+    </div>
+    <div id="activity"></div>
+  </div>
+
+  <!-- SAC — coloured by the real sacClass thresholds (single source) -->
+  <div class="sec">
+    <div class="sec-head">SAC rate by dive type <span class="sec-note">(L/min — lower is more efficient)</span></div>
+    <div id="sac"></div>
+    <div class="legend">
+      <span><i style="background:var(--success)"></i>&lt; 18 efficient</span>
+      <span><i style="background:var(--gold)"></i>18–25 moderate</span>
+      <span><i style="background:var(--warn)"></i>&gt; 25 high</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  const bar = (label, frac, val, sub, colour) => `
+    <div class="row">
+      <div class="lbl">${label}</div>
+      <div class="trk"><div class="fil" style="width:${Math.round(frac*100)}%;${colour?`background:${colour}`:''}"></div></div>
+      <div class="val">${val}${sub?` <small>${sub}</small>`:''}</div>
+    </div>`;
+
+  // Frequency — zero-based is honest (count of 0 = 0)
+  const freq = [['Blue-spotted stingray',9],['Green sea turtle',7],['Scorpionfish',6],
+    ['Moray eel',6],['Trevally',5],['Trumpetfish',5],['Whitetip reef shark',4]];
+  const fmax = freq[0][1];
+  document.getElementById('freq').innerHTML =
+    freq.map(([n,c]) => bar(n, c/fmax, c, c===1?'dive':'dives', 'var(--text-muted)')).join('');
+
+  // Activity — 2025 shown as 0 (a gap year is real signal, not noise)
+  const act = [['2024',1],['2025',0],['2026',25]];
+  const amax = Math.max(...act.map(a=>a[1]));
+  document.getElementById('activity').innerHTML =
+    act.map(([y,c]) => bar(y, amax?c/amax:0, c, c===1?'dive':'dives','var(--accent)')).join('');
+
+  // Dive type — donut (gestalt) + ranked legend (precision). Colour = the
+  // type, identical to the timeline palette. Arcs from exact counts.
+  // WORST CASE: all 10 types present, sorted descending, nothing grouped.
+  const dt = [['Boat',11],['Drift',3],['Night',3],['Reef',2],['Wreck',2],
+    ['Wall',1],['Shore',1],['Muck',1],['Cave',1],['Pinnacle',1]]
+    .sort((a,b) => b[1] - a[1]);
+  const dtot = dt.reduce((s,[,n]) => s+n, 0);
+  // r chosen so circumference ≈ 100 → dasharray maps directly to %
+  const R = 15.91549, C = 2 * Math.PI * R;
+  let offset = 0;
+  const arcs = dt.map(([t,n]) => {
+    const pct = n / dtot * 100;
+    const seg = `<circle cx="21" cy="21" r="${R}" fill="none"
+      stroke="var(--type-${t})" stroke-width="6"
+      stroke-dasharray="${(pct/100*C).toFixed(3)} ${(C - pct/100*C).toFixed(3)}"
+      stroke-dashoffset="${(-offset/100*C).toFixed(3)}"></circle>`;
+    offset += pct;
+    return seg;
+  }).join('');
+  document.getElementById('donut-svg').innerHTML = arcs;
+  document.querySelector('.donut-c .n').textContent = dtot;
+  const dleg = document.getElementById('dleg');
+  if (dt.length > 6) dleg.classList.add('multi');   // 2 short columns
+  dleg.innerHTML = dt.map(([t,n]) => {
+    const pct = Math.round(n / dtot * 100);
+    return `<div class="lr">
+      <span class="sw" style="background:var(--type-${t})"></span>
+      <span class="tn">${t}</span>
+      <span class="ct">${n}</span><span class="pc">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  // SAC — coloured by the real sacClass thresholds (one source of truth)
+  const sac = [['Boat',14.5,16],['Night',15.0,3]];
+  const smax = 25; // anchor scale to the "moderate" ceiling for context
+  const sCol = v => v < 18 ? 'var(--success)' : v < 25 ? 'var(--gold)' : 'var(--warn)';
+  document.getElementById('sac').innerHTML = sac.map(([t,v,n]) =>
+    bar(t, Math.min(v/smax,1), v.toFixed(1), `${n} dives`, sCol(v))).join('');
+</script>
+</body>
+</html>

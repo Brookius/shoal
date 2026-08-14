@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Colour system v2 (three-class model)</title>
+<style>
+  :root{
+    /* ── 1. NEUTRAL / STRUCTURAL — no meaning, freely reusable ───────── */
+    --bg:#F5EBD8; --surface:#FAF6F1; --surface2:#EDE5D8;
+    --text:#1C3030; --text-muted:#8B7B6A; --text-dim:#B5A898;
+    --border:rgba(28,48,48,0.10); --border-mid:rgba(28,48,48,0.18);
+
+    /* ── 2. RESERVED SEMANTIC — one colour, one meaning, never reused ── */
+    --accent:#4A90B8;        /* interactive */
+    --gold:#D4A843;          /* earned / achievement ONLY */
+    --success:#4F9D6B;       /* scale-good (measured "good", e.g. SAC) */
+    --success-dim:rgba(79,157,107,0.12);
+    --violet-soft:#9B7EC8;   /* IUCN EN — the lesser-rare */
+    --violet-deep:#6A4A9A;   /* IUCN CR — the rare / unexpected */
+    --danger:#B0492E;        /* DANGER — rust-red, destructive / hazard */
+    --pending:#E0734F;       /* PENDING — needs attention, not an error */
+
+    /* ── 3. CATEGORICAL — dive-type ramp (meaning = which member) ────── */
+    --type-Boat:#2F7E8C;     /* deep teal — open blue water */
+    --type-Shore:#B0894F;    /* sand / khaki — beach entry */
+    --type-Drift:#3FA9A0;    /* aqua — moving water */
+    --type-Night:#3A4A7A;    /* indigo — chosen (reads as a code at text size) */
+    --type-Night-alt:#181C28;/* near-black — rejected (collapses into body ink) */
+    --type-Cave:#566071;     /* charcoal slate — enclosed */
+    --type-Wreck:#6E4A33;    /* deep umber — iron decay (NOT rust) */
+    --type-Reef:#C97A4A;     /* warm terracotta — reef */
+    --type-Wall:#27567E;     /* deep navy — the blue dropoff */
+    --type-Pinnacle:#5C7355; /* deep sage — rock spire (off violet now) */
+    --type-Muck:#7E7B45;     /* olive sediment */
+
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    --xs:12px; --sm:14px; --base:16px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);
+        line-height:1.45;padding:36px 18px 90px}
+  .wrap{max-width:920px;margin:0 auto}
+  h1{font-size:22px;font-weight:600;letter-spacing:-0.01em}
+  .sub{font-family:var(--mono);font-size:var(--sm);color:var(--text-muted);margin:4px 0 30px}
+  .sec{margin-bottom:34px}
+  .sec-h{display:flex;align-items:baseline;gap:8px;font-family:var(--mono);
+         font-size:var(--xs);color:var(--accent);font-weight:600;letter-spacing:0.1em;
+         text-transform:uppercase;padding-bottom:8px;border-bottom:1px solid var(--border);
+         margin-bottom:16px}
+  .sec-h .n{color:var(--text-dim);font-weight:400;letter-spacing:0.04em;text-transform:none}
+  .row{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+  .sw{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .chip{height:58px}
+  .meta{padding:8px 10px 9px}
+  .nm{font-size:var(--sm);font-weight:600}
+  .hx{font-family:var(--mono);font-size:var(--xs);color:var(--text-muted);margin-top:1px}
+  .rl{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim);margin-top:3px;line-height:1.35}
+  .ctx{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+  .tlr{display:flex;align-items:baseline;gap:8px;padding:7px 0;border-bottom:1px solid rgba(28,48,48,0.05)}
+  .tlr .dn{font-family:var(--mono);font-size:var(--xs);color:var(--text-muted);width:26px}
+  .tlr .st{font-size:var(--base);font-weight:600}
+  .tlr .ty{font-weight:600;font-size:var(--sm)}
+  .tlr .mt{font-size:var(--sm);color:var(--text-muted)}
+  .donut{width:150px;height:150px;position:relative;margin:0 auto}
+  .donut svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .donut-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut-c .v{font-size:22px;font-weight:300}
+  .donut-c .l{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em}
+  .dleg{display:grid;grid-template-columns:1fr 1fr;column-gap:18px;margin-top:14px}
+  .dleg .lr{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:var(--sm)}
+  .dleg .s{width:9px;height:9px;border-radius:2px;flex:0 0 9px}
+  .dleg .t{flex:1}
+  .dleg .c{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim)}
+  .sac .br{display:flex;align-items:center;gap:14px;padding:6px 0;max-width:520px}
+  .sac .br>.l{flex:0 0 64px;font-size:var(--sm)}
+  .sac .tk{flex:1;height:9px;background:var(--surface2);border-radius:5px;overflow:hidden}
+  .sac .fl{height:100%;border-radius:5px}
+  .sac .vv{font-family:var(--mono);font-size:var(--sm)}
+  .coll{display:flex;flex-wrap:wrap;gap:8px}
+  .cc{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);
+      border-radius:8px;padding:6px 11px 6px 8px;font-size:var(--sm)}
+  .cc .d{width:14px;height:14px;border-radius:3px;flex:0 0 14px}
+  .cc.res{border-color:var(--border-mid);background:var(--surface2)}
+  .cc small{font-family:var(--mono);font-size:var(--xs);color:var(--text-dim)}
+  .nb{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:560px}
+  .nb .sw .chip{height:46px}
+  .flag{background:var(--surface);border:1px solid var(--border-mid);border-left:3px solid var(--danger);
+        border-radius:8px;padding:12px 16px;font-size:var(--sm);color:var(--text-muted);margin-top:14px}
+  .flag b{color:var(--text)}
+  @media(max-width:680px){.ctx,.nb{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Colour system — v2</h1>
+  <div class="sub">Three classes · Green=scale Gold=earned · Danger=Rust · Coral held spare</div>
+
+  <div class="sec">
+    <div class="sec-h">1 · Neutral / structural <span class="n">no meaning — freely reusable anywhere it reads</span></div>
+    <div class="row" id="neut"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">2 · Reserved semantic <span class="n">one colour = one meaning, never reused</span></div>
+    <div class="row" id="res"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">SAC bands <span class="n">green good → neutral moderate → rust high · no gold (gold = earned only)</span></div>
+    <div class="sac">
+      <div class="br"><span class="l">Boat</span><div class="tk"><div class="fl" style="width:58%;background:var(--success)"></div></div><span class="vv">14.5</span></div>
+      <div class="br"><span class="l">Drift</span><div class="tk"><div class="fl" style="width:84%;background:var(--text-muted)"></div></div><span class="vv">21.0</span></div>
+      <div class="br"><span class="l">Night</span><div class="tk"><div class="fl" style="width:100%;background:var(--danger)"></div></div><span class="vv">27.5</span></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">Night — recommended vs near-black <span class="n">judge on YOUR screen, at timeline size</span></div>
+    <div class="nb">
+      <div class="sw"><div class="chip" style="background:var(--type-Night)"></div>
+        <div class="meta"><div class="nm">Indigo — chosen</div><div class="hx">#3A4A7A</div>
+          <div class="rl">visibly a colour-code at text size</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--type-Night-alt)"></div>
+        <div class="meta"><div class="nm">Near-black — rejected</div><div class="hx">#181C28</div>
+          <div class="rl">≈ body ink → code collapses in timeline</div></div></div>
+    </div>
+    <div style="margin-top:14px;font-size:var(--sm)">
+      <span class="tlr" style="border:0;display:inline-flex">
+        <span class="st">Liberty Wreck</span>
+        <span class="ty" style="color:var(--type-Night)">Night</span>
+        <span class="mt">· vs body ink</span>
+        <span class="ty" style="color:var(--type-Night-alt);margin-left:14px">Night</span>
+        <span class="mt">· near-black (note how it reads as plain text)</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">3 · Categorical — dive-type ramp <span class="n">10 hues, muted field-guide register</span></div>
+    <div class="row" id="ramp"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">In context <span class="n">timeline + donut on parchment</span></div>
+    <div class="ctx">
+      <div id="tl"></div>
+      <div>
+        <div class="donut"><svg viewBox="0 0 42 42" id="dsvg"></svg>
+          <div class="donut-c"><span class="v">26</span><span class="l">dives</span></div></div>
+        <div class="dleg" id="dleg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h">Collision check <span class="n">ramp (left) must never read as a reserved meaning (right)</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:26px">
+      <div><div class="rl" style="margin-bottom:8px">CATEGORICAL</div><div class="coll" id="cA"></div></div>
+      <div><div class="rl" style="margin-bottom:8px">RESERVED</div><div class="coll" id="cB"></div></div>
+    </div>
+    <div class="flag">
+      <b>Watch:</b> Boat-teal vs Cerulean-interactive (split by chroma/depth) ·
+      the four cool blues Boat/Night/Wall/Cave staying separable in the donut tail ·
+      Wreck-umber vs Danger-rust (Wreck is browner, lower chroma) ·
+      Reef-terracotta vs Danger-rust vs Coral-spare (three warm reds — the
+      tightest cluster; Pinnacle moved to sage to free pressure here).
+    </div>
+  </div>
+</div>
+
+<script>
+  const sw=(n,h,r)=>`<div class="sw"><div class="chip" style="background:${h}"></div>
+    <div class="meta"><div class="nm">${n}</div><div class="hx">${h}</div><div class="rl">${r}</div></div></div>`;
+
+  document.getElementById('neut').innerHTML=[
+    ['Driftwood','#F5EBD8','app bg · reusable'],['Warm White','#FAF6F1','cards/inputs · reusable'],
+    ['Surface 2','#EDE5D8','tracks/fills · reusable'],['Deep Water','#1C3030','sidebar · body text · button fills'],
+    ['Warm Taupe','#8B7B6A','meta text · SAC-moderate · reusable'],['Text Dim','#B5A898','tertiary · leaders · reusable'],
+  ].map(a=>sw(...a)).join('');
+
+  document.getElementById('res').innerHTML=[
+    ['Dusty Cerulean','#4A90B8','INTERACTIVE only'],
+    ['Bioluminescence','#D4A843','EARNED / achievement only'],
+    ['Success','#4F9D6B','SCALE-GOOD (measured good, e.g. SAC)'],
+    ['Soft Violet','#9B7EC8','IUCN EN — lesser-rare'],
+    ['Deep Violet','#6A4A9A','IUCN CR — rare / unexpected'],
+    ['Danger','#B0492E','DANGER — rust · destructive (delete)'],
+    ['Pending','#E0734F','PENDING — unsynced dive · unvalidated species'],
+  ].map(a=>sw(...a)).join('');
+
+  const TYPES=[['Boat','#2F7E8C'],['Shore','#B0894F'],['Drift','#3FA9A0'],
+    ['Night','#222A44'],['Cave','#566071'],['Wreck','#6E4A33'],['Reef','#C97A4A'],
+    ['Wall','#27567E'],['Pinnacle','#5C7355'],['Muck','#7E7B45']];
+  const HINT={Boat:'open blue water',Shore:'sand / beach',Drift:'moving water',
+    Night:'midnight blue',Cave:'enclosed slate',Wreck:'iron decay',Reef:'reef terracotta',
+    Wall:'deep dropoff',Pinnacle:'rock — sage',Muck:'silt sediment'};
+  document.getElementById('ramp').innerHTML=TYPES.map(([n,h])=>sw(n,h,'--type-'+n+' · '+HINT[n])).join('');
+
+  const tc=Object.fromEntries(TYPES);
+  const TL=[['142','Batu Bolong','Drift','↓ 24 m · 55 min'],['141','Liberty Wreck','Wreck','↓ 28 m · 47 min'],
+    ['140','Manta Point','Boat','↓ 18 m · 60 min'],['139','Seraya','Muck','↓ 12 m · 71 min'],
+    ['138','Blue Corner','Wall','↓ 33 m · 41 min'],['137','Crystal Bay','Night','↓ 19 m · 52 min']];
+  document.getElementById('tl').innerHTML=TL.map(([d,s,t,m])=>
+    `<div class="tlr"><span class="dn">${d}</span><span class="st">${s}</span>
+     <span class="ty" style="color:${tc[t]}">${t}</span><span class="mt">· ${m}</span></div>`).join('');
+
+  const DT=[['Boat',11],['Drift',3],['Night',3],['Reef',2],['Wreck',2],
+    ['Wall',1],['Shore',1],['Muck',1],['Cave',1],['Pinnacle',1]].sort((a,b)=>b[1]-a[1]);
+  const tot=DT.reduce((s,[,n])=>s+n,0),R=15.9155,C=2*Math.PI*R;let o=0;
+  document.getElementById('dsvg').innerHTML=DT.map(([t,n])=>{
+    const p=n/tot*100,s=`<circle cx="21" cy="21" r="${R}" fill="none" stroke="${tc[t]}" stroke-width="6"
+      stroke-dasharray="${(p/100*C).toFixed(2)} ${(C-p/100*C).toFixed(2)}"
+      stroke-dashoffset="${(-o/100*C).toFixed(2)}"></circle>`;o+=p;return s;}).join('');
+  document.getElementById('dleg').innerHTML=DT.map(([t,n])=>
+    `<div class="lr"><span class="s" style="background:${tc[t]}"></span><span class="t">${t}</span><span class="c">${n}</span></div>`).join('');
+
+  document.getElementById('cA').innerHTML=TYPES.map(([n,h])=>
+    `<div class="cc"><span class="d" style="background:${h}"></span>${n} <small>${h}</small></div>`).join('');
+  document.getElementById('cB').innerHTML=[['Interactive','#4A90B8'],['Earned','#D4A843'],
+    ['Success','#4F9D6B'],['IUCN EN','#9B7EC8'],['IUCN CR','#6A4A9A'],['Danger','#B0492E'],['Pending','#E0734F']]
+    .map(([n,h])=>`<div class="cc res"><span class="d" style="background:${h}"></span>${n} <small>${h}</small></div>`).join('');
+</script>
+</body>
+</html>
