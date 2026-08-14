@@ -216,12 +216,18 @@ For viewing full dive history on the phone (including dives logged on the Mac), 
   silently ignore it** (this exact ordering mistake happened once while
   building this, caught by re-reading the CSS spec, not by testing). Both
   generated files are committed to git (not `.gitignore`d) so landing works
-  even before the step below is configured; regenerate by re-running the
-  script, or set Cloudflare's **landing** Pages project's Build command to
-  `bash landing/prepare-shared.sh` so every push refreshes them automatically
-  — **that one dashboard setting is still outstanding, not something this
-  repo's contents can configure.**
-- GitHub repo: **`Brookius/dive-log`** (private)
+  even if the build step is ever unset. The **landing** Pages project's Build
+  command is `bash landing/prepare-shared.sh` (configured 2026-08-14), so
+  every push refreshes them automatically; you can still regenerate by hand
+  by running the script. **Run it by hand after changing `css/styles.css`'s
+  `:root` block if you want to see the result locally** — the generated file
+  is only rebuilt on deploy otherwise, and a stale copy is invisible until
+  you go looking for a token that isn't there. That happened once: the
+  landing page missed `--accent-text` for two days, leaving every link at
+  2.97:1 against the page background instead of 4.50:1.
+- GitHub repo: **`Brookius/shoal`** (public, AGPL-3.0). The old private
+  `Brookius/dive-log` still holds the pre-1.0 history and is not the source
+  of the live deployments.
 - Must work fully offline after first load
 - Primary target: Android Chrome. iOS has PWA quirks, not a priority.
 

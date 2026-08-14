@@ -37,6 +37,25 @@ if [ ! -d "$APP_DIR/Shoal.app" ]; then
   ~/.cargo/bin/cargo tauri build 2>&1 | grep -v "bundle_dmg.sh" || true
 fi
 
+# Hard gate. Every bundling step above ends in `|| true` or a pipe into grep,
+# both of which discard the real exit status — deliberately, because the dmg
+# sub-step is EXPECTED to fail (see the header). The cost is that a genuine
+# build failure sails straight through and the script "succeeds" having
+# produced nothing. This happened for real after the repo folder was renamed:
+# Cargo caches absolute paths, 154 stale ones pointed at the old directory,
+# the build failed, and release.sh still exited 0. Check for the artefact
+# itself rather than trusting an exit code that was thrown away.
+if [ ! -d "$APP_DIR/Shoal.app" ]; then
+  echo ""
+  echo "✗ Build failed — no Shoal.app was produced."
+  echo "  Scroll up for the real cargo error."
+  echo "  If it names a path that isn't this directory ($REPO_ROOT),"
+  echo "  the build cache is stale: run"
+  echo "      ~/.cargo/bin/cargo clean --manifest-path src-tauri/Cargo.toml"
+  echo "  and re-run this script (expect a slow first rebuild)."
+  exit 1
+fi
+
 echo "==> Creating .dmg…"
 mkdir -p "$DMG_DIR"
 rm -f "$DMG_DIR/$DMG_NAME"
@@ -53,6 +72,12 @@ create-dmg \
   --skip-jenkins \
   "$DMG_DIR/$DMG_NAME" \
   "$APP_DIR/"
+
+if [ ! -f "$DMG_DIR/$DMG_NAME" ]; then
+  echo ""
+  echo "✗ create-dmg produced no $DMG_NAME — see its output above."
+  exit 1
+fi
 
 echo ""
 echo "✓ Done: $DMG_DIR/$DMG_NAME"
