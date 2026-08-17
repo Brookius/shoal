@@ -4152,6 +4152,12 @@
   .ss-banner { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-sm); padding: 8px 12px; margin-bottom: 10px; }
   .ss-banner.ss-ok   { color: var(--text); background: var(--success-dim); border-color: rgba(59,118,80,0.3); }
   .ss-banner.ss-warn { color: var(--text); background: rgba(156,86,33,0.12); border-color: rgba(156,86,33,0.32); }
+  /* 'muted' pre-dated this rule but only ever ran in a no-banner branch, so it
+     never actually rendered. The ejected/no-folder state is the first one that
+     shows a muted banner: neutral, because nothing is wrong — the folder is
+     simply not mounted. Keeps --text-dim's dot (inherited from .ss-dot) and a
+     plain surface rather than borrowing --warn's alarm. */
+  .ss-banner.ss-muted { color: var(--text-muted); background: var(--surface2); border-color: var(--border-mid); }
   .ss-banner .ss-dot { width: 9px; height: 9px; }
   .ss-banner .ss-act { margin-left: auto; }
   @media (min-width: 601px) { .ss-banner { display: none !important; } }
@@ -6235,6 +6241,23 @@
     font-family: var(--sans); font-size: var(--font-size-base);
     line-height: 1.5; color: var(--text);
   }
+  /* chooseAction()'s N-way choice list — same overlay/box as confirmAction,
+     stacked full-width rows instead of a yes/no pair. Each row carries a
+     one-line explanation, because the whole reason this replaced three flat
+     ⋯-menu items was that their labels alone didn't say how they differed. */
+  .choose-acts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .choose-item {
+    display: flex; flex-direction: column; gap: 2px; width: 100%;
+    text-align: left; cursor: pointer;
+    padding: 11px 13px; border-radius: var(--radius-md);
+    border: 1px solid var(--border-mid); background: var(--surface);
+    font-family: var(--sans);
+  }
+  .choose-item:hover { border-color: var(--accent-border); background: var(--accent-dim); }
+  .choose-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .choose-t { font-size: var(--font-size-base); font-weight: 600; color: var(--text); }
+  .choose-d { font-size: var(--font-size-xs); color: var(--text-muted); line-height: 1.45; }
+
   .confirm-acts { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
   .confirm-acts button {
     min-height: 44px; padding: 0 20px;

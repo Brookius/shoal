@@ -2316,3 +2316,106 @@ testing before committing to it, not assumed from the docs.
 **The known cost, still unresolved:** OBIS area IDs are whole-country EEZs,
 which is too coarse for large countries — see ROADMAP.md → "In progress" for
 the `au` region matching 75% of the database.
+
+---
+
+## Folder eject, and one mount at a time (2026-08-15)
+
+### Ejecting a folder detaches the dives too
+**Decision:** the dive folder is the source of truth and the app is a viewer
+over it, so unmounting the folder unmounts the dives. Ejecting touches no
+files — the log is safe where it lives.
+
+**The invariant this establishes:** *at most one folder is mounted, and
+mounting always begins from an empty `dives[]`.* Everything else follows from
+it. `importDivesFromFiles` merging into `[]` is a clean load, so its dedup
+logic needed no change at all — no replace-vs-merge flag, no second import
+path.
+
+**What it fixed.** Two live bugs shared one root cause: folder B being mounted
+on top of folder A's in-memory state.
+- `setDiveFolder` → `syncFromFolder` → `migrateLegacyFootage(dives)` walked the
+  whole array and wrote the *previous* folder's sidecars and `.md` files into
+  the newly-picked one. Automatic, on pick, no gesture. Boot repeated it.
+- `syncFromFolder` merges rather than replaces, and its dedup falls back to
+  `divenum + date` — so a buddy's dive #47 on the same date silently
+  overwrote yours, in precisely the situation where you'd compare logs.
+
+**Refuse rather than confirm while dives are unsynced.** A `_pendingSync` dive
+exists only in localStorage, so ejecting would destroy it. A sync takes
+moments, so "wait, then eject" is a real instruction; an "eject anyway" button
+would only ever be a way to lose work.
+
+**Order within the eject matters:** clear the write *target* before the data,
+so a `writeToFolder` still in flight from a recent save finds no folder and
+no-ops instead of racing the teardown.
+
+**Kept, not cleared:** `divelog-sync-mode` (the chosen *backend*, not a folder
+— setting it to `'none'` would claim "browser only", a different and wrong
+statement), the autocomplete cache, the custom-species registry, BLE
+fingerprints, proxy folders, preferences. Those belong to the user, not the
+folder.
+
+**The Android cursor needed two fixes, not one.** It is keyed on the folder's
+`uri`, so a *different* folder self-invalidates — but eject-then-remount of the
+**same** folder left it warm, so `android_list_md_files` reported "nothing
+changed" and the log came back empty. Both the eject clears it, and
+`syncFromFolder` now only trusts a cursor while `dives.length` is non-zero.
+The second guard also self-heals a user clearing site data.
+
+---
+
+### Shared dives carry intent, not permission
+**Decision:** a shared dive file carries `shared_intent: view | copy` in its
+frontmatter. The receiving Shoal honours it — `view` is not added to the log,
+`copy` offers to adopt it with a fresh `uid` and the next free dive number.
+
+**Enforcement is impossible here, and deliberately so.** Whoever holds the
+file holds the bytes; a flag inside it is advisory. Real enforcement needs
+DRM — encryption, key management, and a server deciding who may decrypt.
+Shoal has no server, and "plain files you own, readable in any text editor" is
+its central promise. **Those are the same property**: an app that could stop a
+recipient reading a file could equally stop the owner reading their own dives.
+So the flag is a social contract between two people running the same app, and
+the UI says as much rather than implying a lock. (Google Docs' "view only"
+works the same way — it removes the Edit button, not the screenshot.)
+
+**Rejected: letting the recipient copy a viewed dive into their own log.** The
+sender decides; a viewer shouldn't be able to promote a view-only dive. It
+would also need two folders mounted at once, contradicting the one-mount
+invariant above.
+
+**What travels is an allow-list, not "everything minus the journal".** The
+first version destructured four fields out and spread the rest, and a security
+review found that leaked two things immediately: `marine[].clips` and `videos`,
+which `applySidecarToDive` merges onto the in-memory dive, and which
+`generateMD` then emits as a `## Footage` table. So a shared file carried the
+sender's local video paths (disclosing folder and trip naming) **and every
+free-text clip note** — authored prose, precisely what stripping `title`/`notes`
+exists to protect. A deny-list also leaks whatever field is added to the dive
+model next.
+
+`_SHAREABLE_FIELDS` (`js/app.js`) now lists what may travel. Deliberately
+excluded: the journal (`title`/`notes`), footage (`clips`, `videos`), identity
+and sync state (`uid`, `id`, `_filename`, `_pendingSync` — the recipient mints
+their own), and **`signoff`/`certnum`** — an instructor's name and certification
+number are a third party's identifiers, not the sender's to pass on. Stripping
+is done on a copy; `dives[]` is never mutated by a share.
+
+**`shared_intent` is allow-listed on read, not just escaped on write.**
+`frontmatterToDive` accepts only `'view'` or `'copy'` and coerces anything else
+to empty, so junk from another person's file can never sit on a dive object or
+round-trip back out into a YAML scalar. The emitter also quotes it through
+`yamlStr()` like every neighbouring field. Two independent guards, because this
+is the one value in the frontmatter block that originates from someone else's
+file.
+
+**Both read paths honour the intent.** `syncFromObsidian` originally adopted
+shared files silently — it has no `shared_intent` check of its own — which
+ignored the sender's choice and carried the marker into every later
+re-serialisation of the user's own vault file. It now skips them, so the only
+way a shared dive enters a log is the deliberate, prompted Import.
+
+**The footage sidecar is not shared** (it references video files on the
+sender's disk), but the **profile sidecar is** — the depth/time chart is real
+dive data and survives the trip.

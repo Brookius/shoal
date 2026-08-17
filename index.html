@@ -744,7 +744,9 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <button class="btn-ghost" id="dive-folder-set" onclick="setDiveFolder()">Set folder</button>
             <button class="btn-ghost" id="folder-sync-btn" onclick="syncFromFolder()" style="display:none">↻ Sync from folder</button>
-            <button class="btn-ghost" id="dive-folder-clear" onclick="clearDiveFolder()" style="display:none;color:var(--warn);border-color:rgba(224,115,79,0.3)">✕ Clear</button>
+            <!-- "Eject", not "Clear" — clearing reads as "delete my dives", and
+                 the whole point is that they stay safe in the folder. -->
+            <button class="btn-ghost" id="dive-folder-clear" onclick="detachDiveFolder()" style="display:none;color:var(--warn);border-color:rgba(224,115,79,0.3)">⏏ Eject</button>
           </div>
           <div id="folder-sync-status" style="font-size: var(--font-size-sm);color:var(--text-muted);margin-top:8px"></div>
         </div>

@@ -45,6 +45,29 @@ function _setAndroidFolder(handle) {
   else localStorage.removeItem('divelog-android-folder');
 }
 
+// A comparable token for whichever folder is mounted right now. Same principle
+// as the sync cursor's uri keying below: identity comes from the folder's own
+// handle, so "did this change?" is a string compare and a mismatch simply
+// reads as a different folder. Shell only — the browser compares handles with
+// isSameEntry() instead, since a FileSystemDirectoryHandle has no stable
+// serialisable identity.
+function _mountedFolderIdentity() {
+  if (isAndroidShell()) return (_androidFolder() || {}).uri || '';
+  if (isDesktopShell())  return localStorage.getItem('divelog-shell-vault-path') || '';
+  return '';
+}
+
+// Is a dive folder mounted at all? Deliberately ignores whether its write
+// permission is currently good — that's _folderNeedsReconnect's job, and a
+// folder that needs reconnecting is still mounted. _bleHasSyncDestination()
+// (js/computer-sync.js) asks the stricter "can I write RIGHT NOW" question
+// and layers the permission check on top of this one.
+function _hasFolderMounted() {
+  if (isAndroidShell()) return !!_androidFolder();
+  if (isDesktopShell()) return !!localStorage.getItem('divelog-shell-vault-path');
+  return !!_folderHandleCache;
+}
+
 // Incremental-sync cursor for android_list_md_files (src-tauri/src/androidfs.rs)
 // — the newest per-file `last_modified` (ms since epoch) that sync has
 // already seen for THIS folder. Keyed on the folder's own `uri`, not stored
@@ -103,15 +126,20 @@ async function _refreshAndroidFolderName() {
 // Reduce Settings → "Where your dives live" to the one backend Android can
 // actually use. The three-way Browser/Folder/Obsidian choice is a desktop
 // concept: presenting two dead ends as options only invites picking one.
-// "Clear" goes too — on a platform where folder sync is the sole backup path,
-// disconnecting isn't a setting worth offering, and the first-dive prompt
-// (above) would just re-fire anyway. "Sync from folder" stays: pulling in
-// dives logged on another device is a real, deliberate action.
+// "Sync from folder" stays: pulling in dives logged on another device is a
+// real, deliberate action.
+//
+// Eject used to be hidden here too, on the reasoning that the first-dive
+// prompt "would just re-fire anyway". That stopped being true once eject
+// clears dives[] as well as the folder pointer: _androidFolderRequired() is
+// `dives.length > 0 && !_androidFolder()`, so after an eject it's false and
+// the prompt correctly stays dormant until a new dive is actually logged.
+// Ejecting is also the only way to look at a different folder on Android, so
+// hiding it left the platform with no path out at all.
 function _applyAndroidSyncUI() {
   if (!isAndroidShell()) return;
   const hide = id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
   hide('sync-mode-row');
-  hide('dive-folder-clear');
   const cfg = document.getElementById('sync-folder-config');
   if (cfg) cfg.style.display = ''; // no mode buttons left to reveal it
 
@@ -1842,7 +1870,16 @@ function renderSyncStatus() {
       action = `<button class="ss-act" onclick="show('obsidian')">Back up</button>`;
     }
   } else { // folder
-    if (_folderNeedsReconnect) {
+    if (!_hasFolderMounted()) {
+      // Folder mode with nothing mounted — after an eject, or before the first
+      // pick. Previously fell through to "Synced to your folder", which was a
+      // flat lie. 'muted' rather than 'warn' because nothing is wrong; it's
+      // also not 'ok', so the 30s auto-hide below leaves it in place.
+      tone = 'muted';
+      text = dives.length ? 'In your browser only' : 'No folder connected';
+      action = `<button class="ss-act" onclick="setDiveFolder()">Set folder</button>`;
+      showBanner = !!dives.length;
+    } else if (_folderNeedsReconnect) {
       tone = 'warn'; mark = 'warn';
       text = 'Folder sync disconnected';
       action = `<button class="ss-act" onclick="reconnectDiveFolder(this)">Reconnect</button>`;
@@ -1901,10 +1938,21 @@ async function reconnectDiveFolder(btn) {
   // File System Access API — it has no shell equivalent and just returns null
   // there, which is why this button did nothing at all in the desktop app.
   if (isShell()) {
+    // "Reconnect" opens a full folder picker, so the user can land on ANY
+    // folder — including someone else's. Flushing pending dives into whatever
+    // came back would write this log into that folder. Only flush if the pick
+    // resolved to the same folder we were already mounted on; a different one
+    // is a remount, and setDiveFolder has already handled it.
+    const before = _mountedFolderIdentity();
     const picked = await setDiveFolder();
     if (picked) {
       _folderNeedsReconnect = false;
-      for (const d of dives.filter(d => d._pendingSync)) await writeToFolder(d);
+      if (_mountedFolderIdentity() === before) {
+        for (const d of dives.filter(d => d._pendingSync)) await writeToFolder(d);
+      } else {
+        showToast('Reconnected to a different folder — nothing was written to it.',
+                  { variant: 'warning' });
+      }
     }
     if (btn) { btn.disabled = false; btn.textContent = 'Reconnect'; }
     renderSyncStatus();
@@ -2003,6 +2051,12 @@ async function setDiveFolder() {
       return null;
     });
     if (!folder) return false; // cancelled — same contract as the desktop branch
+    // Mounting a different folder ejects the current one first, so we never
+    // merge two people's histories. Eject can refuse (unsynced work), and that
+    // refusal must abort the repoint rather than silently proceed.
+    if (dives.length && folder.uri !== _mountedFolderIdentity()) {
+      if (!await detachDiveFolder()) return false;
+    }
     _setAndroidFolder(folder);
     const name = await _androidFolderDisplayName(folder);
     localStorage.setItem('divelog-folder-name', name);
@@ -2021,6 +2075,10 @@ async function setDiveFolder() {
     const defaultPath = localStorage.getItem('divelog-shell-vault-path') || undefined;
     const result = await window.__TAURI__.core.invoke('pick_folder', { title: 'Select dive vault folder', defaultPath }).catch(() => null);
     if (!result) return false; // cancelled — callers must not treat this as reconnected
+    // See the Android branch: a different folder is a remount, not a repoint.
+    if (dives.length && result !== _mountedFolderIdentity()) {
+      if (!await detachDiveFolder()) return false;
+    }
     localStorage.setItem('divelog-shell-vault-path', result);
     const name = result.split('/').pop() || result;
     localStorage.setItem('divelog-folder-name', name);
@@ -2036,6 +2094,15 @@ async function setDiveFolder() {
   }
   try {
     const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+    // See the shell branches: a different folder is a remount, not a repoint.
+    // A directory handle has no stable serialisable id, so identity is
+    // isSameEntry(). A throw is treated as "different" — that's the safe
+    // direction (eject rather than silently merge two histories).
+    if (dives.length && _folderHandleCache) {
+      let same = false;
+      try { same = await _folderHandleCache.isSameEntry(handle); } catch (e) { same = false; }
+      if (!same && !await detachDiveFolder()) return false;
+    }
     await saveFolderHandle(handle);
     _folderHandleCache = handle;
     _folderNeedsReconnect = false;
@@ -2077,7 +2144,11 @@ async function syncFromFolder(verbose = true) {
     // this call still read all 94 dive files' CONTENT sequentially every time,
     // measured at 62.5 s of the 119.5 s Drive baseline. See
     // android_list_md_files' own comment (src-tauri/src/androidfs.rs).
-    const sinceMs = android ? _androidFolderSyncCursor(folder) : null;
+    // A cursor only means anything while we still hold the data it describes.
+    // After an eject dives[] is empty, so an untouched folder must be read in
+    // full rather than reported as "nothing changed" — otherwise re-mounting
+    // the same folder loads nothing. Also self-heals a user clearing site data.
+    const sinceMs = (android && dives.length) ? _androidFolderSyncCursor(folder) : null;
 
     let result;
     try {
@@ -2124,7 +2195,15 @@ async function syncFromFolder(verbose = true) {
     await loadAllSidecars(dives);
     await loadAllProfileSidecars(dives);
     applyAllSidecars(dives);
-    await migrateLegacyFootage(dives);
+    // Only dives THIS sync actually read. migrateLegacyFootage is a
+    // read-repair ("the sidecar for this dive is missing, rebuild it"), so its
+    // precondition is that the dive came from the backend just read. Handed
+    // the whole array it would rebuild the PREVIOUS folder's sidecars into
+    // this one — which is exactly what picking a second folder used to do,
+    // silently, with no save and no prompt. The loads above stay on the full
+    // array: those are reads, and narrowing them would break sidecar loading
+    // for unchanged dives on Android's incremental path.
+    await migrateLegacyFootage(dives.filter(d => _lastImportFilenames.has(d._filename)));
     localStorage.setItem('divelog-dives', JSON.stringify(dives));
     renderHistory();
     // Advances the cursor on a first full sync too (sinceMs was null), so the
@@ -2176,7 +2255,9 @@ async function syncFromFolder(verbose = true) {
   await loadAllSidecars(dives);
   await loadAllProfileSidecars(dives);
   applyAllSidecars(dives);
-  await migrateLegacyFootage(dives);
+  // Repair only what this sync read — see the matching comment in the shell
+  // branch above for why the full array is wrong here.
+  await migrateLegacyFootage(dives.filter(d => _lastImportFilenames.has(d._filename)));
   localStorage.setItem('divelog-dives', JSON.stringify(dives));
   renderHistory();
 
@@ -2187,14 +2268,62 @@ async function syncFromFolder(verbose = true) {
   if (btn) { btn.disabled = false; btn.textContent = '↻ Sync from folder'; }
 }
 
-async function clearDiveFolder() {
+// Eject — unmount the dive folder the way you'd unmount a drive. The folder
+// is the source of truth; the app is a viewer over it. So detaching the folder
+// also detaches the dives, leaving the files themselves completely untouched.
+//
+// This is what makes swapping folders safe: mounting always starts from an
+// empty dives[], so importDivesFromFiles merges into nothing and its
+// divenum+date dedup can't silently overwrite one person's dive with another's.
+// Without that, pointing Shoal at a second folder UNIONED two histories.
+//
+// Order matters. Clear the write TARGET before the data: any writeToFolder
+// still in flight from a save moments ago then finds no folder and no-ops,
+// rather than racing the teardown and landing in a half-detached state.
+async function detachDiveFolder() {
+  const pending = dives.filter(d => d._pendingSync).length;
+  if (pending) {
+    // Refuse rather than offering "eject anyway". A pending dive exists ONLY
+    // in localStorage, so ejecting would destroy it — and a sync normally
+    // takes moments, so waiting is a real option rather than a dead end.
+    showToast(
+      `${pending} dive${pending !== 1 ? 's are' : ' is'} still being written to the folder. ` +
+      `Give it a moment, then eject.`, { variant: 'warning' });
+    return false;
+  }
+
+  // 1. The write target.
   await clearFolderHandle();
   _folderHandleCache = null;
   _setAndroidFolder(null);   // SAF handle lives in localStorage, not IndexedDB
-  _folderNeedsReconnect = false;
+  localStorage.removeItem('divelog-shell-vault-path');
   localStorage.removeItem('divelog-folder-name');
+  // The cursor describes data we're about to drop. Leaving it warm would make
+  // a re-mount of this SAME folder report "nothing changed since" and load an
+  // empty log — the uri keying below only protects against a DIFFERENT folder.
+  localStorage.removeItem('divelog-android-folder-sync-cursor');
+  localStorage.removeItem('divelog-last-sync');
+  _folderNeedsReconnect = false;
+
+  // 2. Then the data. Deliberately NOT cleared: divelog-sync-mode (the chosen
+  // backend, not a folder — setting it to 'none' would claim "browser only",
+  // which is a different and wrong statement), the autocomplete cache, the
+  // custom-species registry, BLE fingerprints, proxy folders and every
+  // preference. Those are the user's, not the folder's.
+  dives = [];
+  localStorage.removeItem('divelog-dives');
+  if (typeof _sidecars !== 'undefined') _sidecars.clear();
+  if (typeof _profiles !== 'undefined') _profiles.clear();
+  _siteHistory = {};
+
+  // 3. Re-render.
   updateFolderUI(null);
+  buildSiteHistory();
+  renderHistory();
+  updateCount();
   renderSyncStatus();
+  showToast('Folder ejected. Your dives are safe in the folder.');
+  return true;
 }
 
 function updateFolderUI(folderName) {
@@ -2351,6 +2480,192 @@ async function exportAllDives(btn) {
 // sidecar under the same basename (the join convention). Mints a uid when a
 // sidecar needs one — mint happens before generateMD so the frontmatter and
 // sidecar carry the same uid. Caller persists dives once if any .minted.
+// ── Share a dive with a buddy (v1.1) ─────────────────────────────────────────
+// The sender chooses what the receiving Shoal does with it: 'view' (don't add
+// it to your log) or 'copy' (offer to add it). That flag is a social contract
+// between two people running the same app, NOT a permission — a recipient
+// holding the file can open it in any text editor. Enforcing it would need
+// DRM and a server, which is the opposite of "plain files you own". See
+// DECISIONS.md → "Shared dives carry intent, not permission".
+//
+// The journal never travels. `title` and `notes` are the diver's own writing,
+// not dive data, and are stripped from every shared copy in both modes.
+// Stripping happens on a COPY — dives[] is never mutated.
+// ALLOW-LIST, not a deny-list. The first version destructured four fields out
+// and spread the rest, which leaked whatever got added to the dive model next —
+// and already leaked two things: `marine[].clips` and `videos`, applied onto the
+// in-memory dive by applySidecarToDive (js/video.js). generateMD emits those as
+// a "## Footage" table, so a shared file carried the sender's local video paths
+// (disclosing folder and trip naming) plus every free-text clip NOTE — authored
+// prose, exactly what stripping title/notes exists to protect. Listing what may
+// travel makes that class of leak impossible rather than remembered.
+const _SHAREABLE_FIELDS = [
+  'divenum', 'date', 'site', 'trip', 'region', 'location', 'gps_lat', 'gps_lng',
+  'watertype', 'vis', 'temp', 'current', 'weather',
+  'depth', 'avgdepth', 'time', 'entrytime', 'exittime', 'entry', 'liveaboard',
+  'pstart', 'pend', 'gas', 'suit', 'weight', 'tanktype', 'tanksize', 'buddy',
+  'safety_stop_depth', 'safety_stop_time', 'deco_stop_depth', 'deco_stop_time'
+];
+// Deliberately NOT shared: `title`/`notes` (the journal), `marine[].clips` and
+// `videos` (footage refs + clip notes), `uid`/`id`/`_filename`/`_pendingSync`
+// (identity and sync state — the recipient mints their own), and
+// `signoff`/`certnum` (an instructor's name and certification number: a third
+// party's identifiers, not the sender's to pass on).
+function _shareableDive(d, intent) {
+  const out = { shared_intent: intent };
+  for (const k of _SHAREABLE_FIELDS) {
+    if (d[k] !== undefined && d[k] !== null && d[k] !== '') out[k] = d[k];
+  }
+  // Species travel, but stripped back to the identification itself — no clips.
+  out.marine = (d.marine || []).map(m => {
+    const { clips, video, time, note, ...keep } = m;
+    return keep;
+  });
+  return out;
+}
+
+// NOTE ON CALL ORDER: this must be reachable from a click with no await in
+// between, or iOS drops the transient activation navigator.share() needs (see
+// shareOrDownload). That's why the chooser passes an onPick callback which
+// fires inside the button's own click handler, rather than resolving a promise
+// the caller then acts on.
+async function shareDive(id, intent) {
+  const d = dives.find(x => x.id === id);
+  if (!d) return;
+  const shared = _shareableDive(d, intent);
+  const base = canonicalFilename(d).replace(/\.md$/i, '');
+  const md = generateFrontmatter(shared) + '\n' + generateMD(shared);
+
+  // A profile sidecar rides along — the depth/time chart is real dive data and
+  // is worth carrying. The FOOTAGE sidecar deliberately does not: it references
+  // video files on the sender's disk that the recipient doesn't have, so it
+  // would only produce broken references.
+  const profile = (typeof _profiles !== 'undefined' && d.uid) ? _profiles.get(d.uid) : null;
+
+  // The Tauri shell needs its own path: downloadBlob()'s <a download> trick
+  // silently no-ops in WKWebView, so without this branch sharing a dive from
+  // the desktop app would appear to succeed and produce nothing. Same
+  // three-backend split as exportUnvalidatedSpecies (js/species.js).
+  // One dialog, for the .md — the profile sidecar is then written beside it
+  // under the matching basename, which is the sidecar convention anyway.
+  if (isShell()) {
+    const path = await window.__TAURI__.core.invoke('save_file_dialog',
+      { title: 'Share dive', defaultName: base + '.md' }).catch(() => null);
+    if (!path) return; // cancelled
+    const writeText = async (p, content) => {
+      if (isAndroidShell()) await window.__TAURI__.core.invoke('android_write_uri', { uri: p, content });
+      else                  await window.__TAURI__.core.invoke('write_text_file', { path: p, content });
+    };
+    try {
+      await writeText(path, md);
+      // Android returns a content:// URI, which has no derivable sibling path —
+      // so the sidecar only travels on desktop, where the path is a real one.
+      if (profile && !isAndroidShell()) {
+        // Strip whatever extension the user actually typed, not just `.md`.
+        // `save_file_dialog` sets a default name but never adds a filter, so
+        // macOS lets them save as "Blue Corner" or "dive.markdown" — against
+        // which a /\.md$/ replace is a silent no-op, and this second write
+        // would then overwrite the dive markdown with profile JSON at the SAME
+        // path, while the toast below still reported success.
+        const stem = path.replace(/\.[^./\\]*$/, '');
+        const sidecarPath = stem + '.profile.json';
+        // Belt and braces: if the derivation somehow still collides with the
+        // file just written, skip the sidecar rather than destroy the dive.
+        if (sidecarPath !== path) {
+          await writeText(sidecarPath, JSON.stringify(profile, null, 2));
+        }
+      }
+    } catch (e) {
+      showToast('Could not save the file: ' + e, { variant: 'error' });
+      return;
+    }
+    showToast('Dive saved — send it however you like.', { variant: 'success' });
+    return;
+  }
+
+  if (!profile) { downloadMd(base + '.md', md); return; }
+  const enc = new TextEncoder();
+  await shareOrDownload(base + '.zip', buildZip([
+    { name: base + '.md',           data: enc.encode(md) },
+    { name: base + '.profile.json', data: enc.encode(JSON.stringify(profile, null, 2)) }
+  ]));
+}
+
+// One entry point for every "get this dive out of Shoal" action, replacing
+// three separate ⋯-menu items that gave no clue how they differed. Each choice
+// fires inside its own button's click handler — see shareDive's note on why
+// that matters for iOS.
+function shareDiveMenu(id) {
+  chooseAction('Share this dive', [
+    { label: 'For viewing',
+      detail: "They can look at it, but Shoal won't add it to their log.",
+      onPick: () => shareDive(id, 'view') },
+    { label: 'Theirs to keep',
+      detail: 'Shoal offers to add it to their own log, renumbered so it fits.',
+      onPick: () => shareDive(id, 'copy') },
+    { label: 'A full copy for me',
+      detail: 'Includes your journal. For your own records — not for sending.',
+      onPick: () => downloadDiveCard(id) }
+  ]);
+}
+
+// Sibling of confirmAction() — same overlay, same _confirmResolve slot, same
+// closeConfirmDirect() teardown, but N labelled choices instead of yes/no.
+// Choices act through onPick rather than a resolved value, so the action runs
+// inside the click that chose it (iOS transient activation, above).
+function chooseAction(message, choices) {
+  if (_confirmResolve) return;            // one at a time, matching confirmAction
+  const prevFocus = document.activeElement;
+  _confirmResolve = () => { _confirmResolve = null; };  // cancel is a no-op here
+
+  const wrap = document.createElement('div');
+  wrap.id = 'confirm-overlay';
+  wrap.className = 'confirm-overlay';
+  wrap.innerHTML =
+    '<div class="confirm-box" role="dialog" aria-modal="true" aria-labelledby="confirm-msg">'
+    + '<p class="confirm-msg" id="confirm-msg"></p>'
+    + '<div class="choose-acts"></div>'
+    + '<div class="confirm-acts"><button type="button" class="confirm-cancel">Cancel</button></div>'
+    + '</div>';
+  wrap.querySelector('.confirm-msg').textContent = message;   // never innerHTML
+
+  const acts = wrap.querySelector('.choose-acts');
+  const focusables = [];
+  choices.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'choose-item';
+    const t = document.createElement('span');
+    t.className = 'choose-t'; t.textContent = c.label;
+    b.appendChild(t);
+    if (c.detail) {
+      const dd = document.createElement('span');
+      dd.className = 'choose-d'; dd.textContent = c.detail;
+      b.appendChild(dd);
+    }
+    b.addEventListener('click', () => { c.onPick(); closeTopOverlay(); });
+    acts.appendChild(b);
+    focusables.push(b);
+  });
+  const noBtn = wrap.querySelector('.confirm-cancel');
+  noBtn.addEventListener('click', () => closeTopOverlay());
+  focusables.push(noBtn);
+
+  wrap.addEventListener('click', e => { if (e.target === wrap) closeTopOverlay(); });
+  wrap.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    e.preventDefault();
+    const i = focusables.indexOf(document.activeElement);
+    focusables[(i + (e.shiftKey ? -1 : 1) + focusables.length) % focusables.length].focus();
+  });
+
+  wrap._prevFocus = prevFocus;
+  document.body.appendChild(wrap);
+  _lockScroll();
+  _pushOverlayState({ type: 'confirm' });
+  focusables[0].focus();
+}
+
 function _exportFilesForDive(d) {
   const filename = d._filename || canonicalFilename(d);
   const files = [];

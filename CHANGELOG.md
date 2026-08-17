@@ -28,6 +28,49 @@ baseline and writes the entry. See CLAUDE.md → "Changelog discipline".
 
 ## [Unreleased]
 
+## [1.1.0] – 2026-08-15
+
+### Fixed
+- **Pointing Shoal at a second dive folder no longer writes your dives into
+  it.** Picking a folder ran a sidecar read-repair over the *whole* in-memory
+  log — still the previous folder's dives — and wrote `.md` and
+  `.footage.json` files into the newly-picked folder, with no save and no
+  prompt. Boot repeated it on every launch. The repair is now limited to
+  dives the sync actually read. (The Obsidian path was never affected: it
+  replaces the dive list wholesale before repairing, where folder sync merges
+  — that difference is now commented at both call sites.)
+- **"Reconnect" can no longer flush your log into someone else's folder.** On
+  the desktop and Android shells it opens a full folder picker, so the user
+  could land anywhere; it then wrote every unsynced dive into whatever came
+  back. It now only writes if the folder that came back is the one you were
+  already on.
+- **Folder mode with no folder connected no longer claims "Synced to your
+  folder".** It now says so plainly and offers to connect one.
+
+### Added
+- **Eject a dive folder.** Settings → your folder → **⏏ Eject** unmounts it
+  the way you'd unmount a drive: the folder pointer and the loaded dives both
+  detach, and **not one file is touched** — your dives stay in the folder.
+  Mounting a different folder now ejects the current one first, which is what
+  stops two people's logs being merged into one. Ejecting is refused while any
+  dive is still being written, with a note to wait rather than a destructive
+  "do it anyway". Now available on Android too, where there had previously
+  been no way to disconnect at all.
+- **Share a dive with a buddy.** A dive's ⋯ menu now has one **Share or save…**
+  item — replacing the old "Download .md" plus two share entries, which gave no
+  clue how they differed. It opens three choices, each explaining itself: *for
+  viewing*, *theirs to keep*, or *a full copy for me* (the only one that keeps
+  your journal). The choice travels with the file and the receiving Shoal
+  honours it — "view" is not added to their log, "keep" offers to add it, with
+  a fresh identity and the next free dive number so it can never overwrite a
+  dive they already have. Uses the system share sheet, so Bluetooth, AirDrop,
+  Nearby Share and Files are all targets; the desktop app writes through a
+  native Save dialog instead, since its webview silently discards ordinary
+  browser downloads. **The journal never travels** — the title and notes are
+  stripped from every shared copy, in both send modes.
+  This is an intent the sender declares, not a permission: anyone holding a
+  plain file can read it, and Shoal doesn't pretend otherwise.
+
 ## [1.0.0] – 2026-08-14
 
 First public release.

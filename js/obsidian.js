@@ -108,8 +108,69 @@ async function testObsConnection() {
 
 
 // ── IMPORT DIVES FROM DEVICE (.md files) ─────────────────────────────────
+// Filenames actually read by the LAST import. syncFromFolder uses this to
+// limit migrateLegacyFootage's read-repair to dives that genuinely came from
+// the folder just read — see the comment at its call site (js/app.js). Without
+// it, picking a new folder rebuilt the PREVIOUS folder's sidecars into the new
+// one, because migrateLegacyFootage was handed the whole in-memory array.
+let _lastImportFilenames = new Set();
+
+// Files carrying shared_intent, handled after the normal import finishes.
+//
+// 'copy' — the sender said the recipient may keep it. Ask, then adopt it as a
+// genuinely new dive: fresh uid and the next free dive number, so it can never
+// collide with (or overwrite) a dive already in the log. The intent flag is
+// stripped, since once adopted it's simply theirs.
+//
+// 'view' — the sender said viewing only, so it is NOT added. Shoal honours
+// that; it can't enforce it, and doesn't pretend to (the recipient can open
+// the .md in any text editor). A richer read-only preview is a follow-up.
+async function _handleSharedDives(shared) {
+  // `normalised` (the full body) is collected at the gate but not needed here —
+  // frontmatterToDive works from the frontmatter alone, and the journal was
+  // stripped before sending anyway. It's kept on the collected object for the
+  // read-only preview that 'view' still owes the user.
+  for (const { filename, fm } of shared) {
+    // (fm, filename) — two parameters. This previously passed `normalised` as
+    // the second arg, so the whole file body was bound to `filename`: the id
+    // hash ran over the entire document and `_filename` held the markdown.
+    // Harmless only because both are overwritten below; a real bug the moment
+    // anything reads them earlier.
+    const dive = frontmatterToDive(fm, filename);
+    const where = [dive.site, dive.date].filter(Boolean).join(' · ') || filename;
+
+    if (dive.shared_intent !== 'copy') {
+      showToast(`“${where}” was shared for viewing, so it hasn't been added to your log.`,
+                { duration: 7000 });
+      continue;
+    }
+
+    const yes = await confirmAction(`Add “${where}” to your dive log?`,
+                                    { confirmLabel: 'Add to my log' });
+    if (!yes) continue;
+
+    delete dive.shared_intent;
+    dive.id  = Date.now() + Math.floor(Math.random() * 1000);
+    dive.uid = mintUid();                       // never inherit the sender's uid
+    dive.divenum = (dives.reduce((m, d) => Math.max(m, parseInt(d.divenum) || 0), 0) || 0) + 1;
+    delete dive._filename;                      // canonicalFilename() re-derives it on save
+    dive._pendingSync = true;
+    dives.push(dive);
+    dives.sort((a, b) => (parseInt(a.divenum) || 0) - (parseInt(b.divenum) || 0));
+    localStorage.setItem('divelog-dives', JSON.stringify(dives));
+    acSaveDiveFields(dive);
+    buildSiteHistory();
+    renderHistory();
+    updateCount();
+    if (syncMode === 'obsidian' && obsAvailable) pushToObsidian(dive).catch(() => {});
+    else if (syncMode === 'folder') writeToFolder(dive).catch(() => {});
+    showToast(`Added as dive #${dive.divenum}.`, { variant: 'success' });
+  }
+}
+
 async function importDivesFromFiles(files) {
   if (!files || files.length === 0) return;
+  _lastImportFilenames = new Set();
 
   const btn = document.querySelector('#import-md-input-data + button') ||
               document.querySelector('[onclick*="import-md-input"]');
@@ -128,6 +189,7 @@ async function importDivesFromFiles(files) {
   }));
 
   let added = 0, updated = 0, skipped = 0, errored = 0;
+  const sharedWithMe = [];   // files carrying shared_intent — handled after the loop
 
   for (const result of results) {
     if (!result) continue;
@@ -136,6 +198,11 @@ async function importDivesFromFiles(files) {
     // Normalise line endings — Proton Drive / Android may use CRLF
     const normalised = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     const fm = parseFrontmatter(normalised);
+    // A file someone shared deliberately. Never merge it into the log on the
+    // normal path — the sender chose what should happen to it, and silently
+    // absorbing a buddy's dive is exactly the collision the divenum+date dedup
+    // below would cause. Collected and dealt with after the loop.
+    if (fm && fm.shared_intent) { sharedWithMe.push({ filename, normalised, fm }); continue; }
     if (!fm) { skipped++; continue; }
     // Accept files with type: dive, or any file with a recognisable dive field
     if (fm.type && fm.type !== 'dive') { skipped++; continue; }
@@ -256,6 +323,7 @@ async function importDivesFromFiles(files) {
       dives.push(dive);
       added++;
     }
+    _lastImportFilenames.add(filename);
   }
 
   dives.sort((a, b) => (parseInt(a.divenum) || 0) - (parseInt(b.divenum) || 0));
@@ -274,6 +342,8 @@ async function importDivesFromFiles(files) {
   // Reset file input so the same files can be re-imported if needed
   const inp = document.getElementById('import-md-input-data');
   if (inp) inp.value = '';
+
+  if (sharedWithMe.length) await _handleSharedDives(sharedWithMe);
 
   const parts = [];
   if (added)   parts.push(`${added} added`);
@@ -359,6 +429,13 @@ async function syncFromObsidian(showBanner) {
     for (const { filename, text } of results) {
       const fm = parseFrontmatter(text);
       if (!fm || fm.type !== 'dive') continue;
+      // A file someone shared, sitting in the vault — skipped, so the two read
+      // paths agree. importDivesFromFiles diverts these to _handleSharedDives;
+      // this path used to adopt them silently instead, ignoring the sender's
+      // stated intent AND carrying shared_intent forward into every later
+      // re-serialisation of the user's own vault file. Skipping means the only
+      // way in is the deliberate, gated Import — which is the point.
+      if (fm.shared_intent) continue;
 
       // ── Strategy: parse the Marine life markdown table first.
       // It contains species, common name, count, AphiaID, and validated status —
@@ -523,7 +600,13 @@ async function syncFromObsidian(showBanner) {
     await loadAllSidecars(dives);
     await loadAllProfileSidecars(dives);
     applyAllSidecars(dives);
-    await migrateLegacyFootage(dives); // read-repair: rebuild missing sidecars from MD clips
+    // read-repair: rebuild missing sidecars from MD clips.
+    // Safe on the full array here, unlike syncFromFolder's two call sites: the
+    // `dives = _merged` above is a wholesale REPLACE, so by this line the array
+    // already contains only this vault's dives. syncFromFolder merges instead,
+    // which is precisely why the folder path had to start filtering and this
+    // one didn't. Keep that difference in mind before "tidying" the two to match.
+    await migrateLegacyFootage(dives);
     migrateAbundance(); // derive abundance from count for any files without it
     localStorage.setItem('divelog-dives', JSON.stringify(dives));
     acBootstrap();

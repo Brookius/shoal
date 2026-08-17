@@ -784,7 +784,7 @@ function renderDiveFile(d) {
         <button class="df-action-btn" onclick="dfToggleMore(event,'df-more-${id}')" title="More">⋯</button>
         <div class="df-more-menu" id="df-more-${id}" style="display:none">
           <button class="df-more-item danger" onclick="armDelete(this, () => { closeDiveFile(); deleteDive(${id}); }, 'Confirm delete?')">Delete dive</button>
-          <button class="df-more-item" onclick="downloadDiveCard(${id})">Download .md</button>
+          <button class="df-more-item" onclick="shareDiveMenu(${id})">Share or save…</button>
         </div>
       </div>
     </div>`;
@@ -817,7 +817,7 @@ function renderDiveFile(d) {
         <button class="df-desk-abtn" onclick="dfToggleMore(event,'df-more-desk-${id}')">⋯</button>
         <div class="df-more-menu" id="df-more-desk-${id}" style="display:none">
           <button class="df-more-item danger" onclick="armDelete(this, () => { closeDiveFile(); deleteDive(${id}); }, 'Confirm delete?')">Delete dive</button>
-          <button class="df-more-item" onclick="downloadDiveCard(${id})">Download .md</button>
+          <button class="df-more-item" onclick="shareDiveMenu(${id})">Share or save…</button>
         </div>
       </div>
     </div>`;

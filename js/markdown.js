@@ -245,6 +245,15 @@ function frontmatterToDive(fm, filename) {
     deco_stop_depth:   (function(v){ const n=parseFloat(v); return isNaN(n)?null:n; })(fm.deco_stop_depth),
     deco_stop_time:    (function(v){ const n=parseFloat(v); return isNaN(n)?null:n; })(fm.deco_stop_time),
     title:      typeof fm.title === 'string' ? fm.title.trim() : '',
+    // Only ever set on a shared file; importDivesFromFiles branches on it and
+    // strips it before anything lands in the log.
+    // ALLOW-LISTED, not merely trimmed. It's an enum of exactly two values, so
+    // anything else is junk that shouldn't be carried on a dive object, let
+    // alone round-tripped back out through generateFrontmatter into a YAML
+    // scalar. Validating on read is stronger than escaping on write, and it's
+    // the same import-boundary hardening the numerics above already get.
+    shared_intent: ['view', 'copy'].includes(String(fm.shared_intent ?? '').trim())
+                     ? String(fm.shared_intent).trim() : '',
     notes:      '',
     marine,
     videos,
@@ -293,6 +302,15 @@ function generateFrontmatter(d) {
     '---',
     `type: dive`,
     ...(d.uid ? [`uid: ${d.uid}`] : []),
+    // Present only on a file produced by shareDive() — 'view' or 'copy'. It
+    // records what the SENDER intended, and a receiving Shoal honours it.
+    // Deliberately advisory: anyone holding the file can read or edit it in a
+    // text editor, and no local-first app can prevent that. See DECISIONS.md.
+    // Quoted and yamlStr'd like every other scalar here, even though
+    // frontmatterToDive now allow-lists this to 'view'|'copy' so junk can't
+    // reach it. Two independent guards, because this field is the one thing in
+    // the block that originates from another person's file.
+    ...(d.shared_intent ? [`shared_intent: "${yamlStr(d.shared_intent)}"`] : []),
     ...(d.title ? [`title: "${yamlStr(d.title)}"`] : []),
     `dive_number: ${d.divenum || ''}`,
     `date: ${d.date || ''}`,

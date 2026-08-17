@@ -4,7 +4,7 @@
 // bump never reaches them, no matter what the dev server has on disk. This
 // exact miss burned two real dive-computer hardware sessions on 2026-07-14
 // (a fix shipped mid-session without a bump; both retests ran the old bytes).
-const CACHE = 'divelog-v324';
+const CACHE = 'divelog-v327';
 // Required for the app to function — cached atomically (all-or-nothing, see
 // fetchShellFile below). Kept deliberately free of large decorative assets:
 // this set gates activation, so its total size is a direct reliability
